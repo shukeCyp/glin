@@ -1,0 +1,60 @@
+import platform
+import sys
+
+import webview
+
+from app import Api, logger
+from app.config import STATIC_DIR, DB_PATH, LOGS_DIR
+from app.database import init_db, get_setting
+from app.activation import get_device_id
+from app.thread_pool import init_pool
+from app.video_scanner import start_scanner
+
+
+def main() -> None:
+    # 初始化数据库
+    init_db()
+
+    logger.info("=" * 50)
+    logger.info("Glin带货神器 启动")
+    logger.info(f"Python: {sys.version}")
+    logger.info(f"OS: {platform.system()} {platform.release()} ({platform.machine()})")
+    logger.info(f"数据库: {DB_PATH}")
+    logger.info(f"日志目录: {LOGS_DIR}")
+    logger.info(f"设备ID: {get_device_id()}")
+    logger.info("=" * 50)
+
+    # 初始化线程池
+    pool_size = int(get_setting("thread_pool_size") or "10")
+    logger.info(f"线程池大小配置: {pool_size}")
+    init_pool(pool_size)
+
+    # 启动视频任务扫描器
+    logger.info("启动视频任务扫描器...")
+    start_scanner()
+
+    index_path = STATIC_DIR / "index.html"
+    if not index_path.exists():
+        logger.error(f"前端资源不存在: {index_path}")
+        raise FileNotFoundError(
+            "static/index.html not found. Run `npm run build` in frontend first."
+        )
+
+    logger.info(f"加载前端页面: {index_path}")
+
+    api = Api()
+    webview.create_window(
+        "Glin带货神器",
+        index_path.as_uri(),
+        js_api=api,
+        width=1200,
+        height=800,
+        min_size=(900, 600),
+    )
+    logger.info("窗口已创建, 启动 webview...")
+    webview.start()
+    logger.info("Glin带货神器 已退出")
+
+
+if __name__ == "__main__":
+    main()

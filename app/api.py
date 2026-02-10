@@ -1,0 +1,583 @@
+from .activation import get_device_id, verify_activation
+from .constants import SettingKeys
+from .database import get_setting, set_setting, get_all_settings
+from .logger import logger
+from .services.nanobanana import NanoBananaYunwu, NanoBananaGuanfang
+from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Guanfang
+
+
+class Api:
+    """pywebview JS API"""
+
+    def get_status(self) -> dict:
+        """检查激活状态"""
+        logger.debug("[API] get_status 调用")
+        device_id = get_device_id()
+        stored_code = get_setting(SettingKeys.ACTIVATION_CODE)
+
+        if stored_code and verify_activation(device_id, stored_code):
+            logger.info(f"[API] get_status -> 设备已激活: {device_id}")
+            return {"state": "activated"}
+
+        logger.info(f"[API] get_status -> 设备未激活: {device_id}")
+        return {
+            "state": "pending",
+            "device_id": device_id,
+        }
+
+    def activate(self, code: str) -> dict:
+        """激活设备"""
+        logger.info(f"[API] activate 调用, code={code[:6]}...")
+        device_id = get_device_id()
+
+        if verify_activation(device_id, code):
+            set_setting(SettingKeys.ACTIVATION_CODE, code.strip().upper())
+            logger.info(f"[API] activate -> 激活成功: {device_id}")
+            return {"ok": True}
+
+        logger.warning(f"[API] activate -> 激活失败: {device_id}, 输入的激活码: {code}")
+        return {"ok": False, "msg": "激活码无效"}
+
+    def save_settings(self, settings: dict) -> dict:
+        """保存设置"""
+        logger.info(f"[API] save_settings 调用, keys={list(settings.keys())}")
+        for key, value in settings.items():
+            set_setting(key, str(value))
+        logger.info(f"[API] save_settings -> 保存成功, 共 {len(settings)} 项")
+        return {"ok": True}
+
+    def get_all_settings(self) -> dict:
+        """获取所有设置"""
+        logger.debug("[API] get_all_settings 调用")
+        return get_all_settings()
+
+    # ==================== 文件夹选择 ====================
+
+    def select_folder(self) -> dict:
+        """打开文件夹选择对话框"""
+        logger.debug("[API] select_folder 调用")
+        import webview
+        window = webview.windows[0] if webview.windows else None
+        if not window:
+            logger.warning("[API] select_folder -> 无法获取窗口实例")
+            return {"ok": False, "msg": "无法获取窗口实例"}
+        result = window.create_file_dialog(webview.FOLDER_DIALOG)
+        if result and len(result) > 0:
+            folder = result[0]
+            logger.info(f"[API] select_folder -> 已选择: {folder}")
+            return {"ok": True, "path": folder}
+        logger.debug("[API] select_folder -> 用户取消选择")
+        return {"ok": False, "msg": "未选择文件夹"}
+
+    # ==================== 图片处理 ====================
+
+    # 图片处理默认提示词
+    _DEFAULT_IMAGE_PROMPT = "请根据图片中的产品，为其绘制一个真实、自然的展示场景。场景需要与产品类型相匹配，突出产品本身，背景环境要逼真有质感。注意：画面中不要出现任何文字、标签或水印。"
+
+    def get_image_process_prompt(self) -> dict:
+        """获取图片处理提示词"""
+        logger.debug("[API] get_image_process_prompt 调用")
+        prompt = get_setting(SettingKeys.IMAGE_PROCESS_PROMPT) or self._DEFAULT_IMAGE_PROMPT
+        return {"ok": True, "prompt": prompt}
+
+    def set_image_process_prompt(self, prompt: str) -> dict:
+        """保存图片处理提示词"""
+        logger.info(f"[API] set_image_process_prompt 调用, prompt={prompt[:50]}...")
+        set_setting(SettingKeys.IMAGE_PROCESS_PROMPT, prompt.strip())
+        logger.info("[API] set_image_process_prompt -> 保存成功")
+        return {"ok": True}
+
+    # ==================== 调试接口 ====================
+
+    def debug_dayangyu_sora2_create(self, prompt: str, image_base64: str = "", mime_type: str = "") -> dict:
+        """调试 大洋芋 Sora2 - 创建任务（文生视频 / 图生视频）"""
+        import base64
+        import os
+        import tempfile
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置大洋芋 API Key，请前往设置页面配置"}
+        model_name = settings.get(SettingKeys.DAYANGYU_SORA2_MODEL, "") or "sora2-portrait-15s"
+        image_path = None
+        try:
+            service = Sora2Dayangyu(api_key)
+            if image_base64:
+                ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+                ext = ext_map.get(mime_type or "", ".png")
+                image_data = base64.b64decode(image_base64)
+                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+                tmp.write(image_data)
+                tmp.close()
+                image_path = tmp.name
+                task = service.create_task(prompt, model=model_name, image_path=image_path)
+            else:
+                task = service.create_task(prompt, model=model_name)
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
+            return {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "prompt": task.prompt,
+                "mode": "图生视频" if image_base64 else "文生视频",
+            }
+        except Exception as e:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+            logger.error(f"调试 大洋芋 Sora2 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_dayangyu_sora2_query(self, task_id: str) -> dict:
+        """调试 大洋芋 Sora2 - 查询任务状态"""
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置大洋芋 API Key"}
+        try:
+            service = Sora2Dayangyu(api_key)
+            task = service.query_task(task_id)
+            result = {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "progress": task.progress,
+            }
+            if task.video_url:
+                result["video_url"] = task.video_url
+            if task.error_message:
+                result["error_message"] = task.error_message
+            return result
+        except Exception as e:
+            logger.error(f"调试 大洋芋 Sora2 查询异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_dayangyu_sora2_content(self, task_id: str) -> dict:
+        """调试 大洋芋 Sora2 - 查看视频内容（接口较慢，建议优先用查询结果中的 video_url）"""
+        import base64
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置大洋芋 API Key"}
+        try:
+            service = Sora2Dayangyu(api_key)
+            data, content_type, err = service.get_video_content(task_id)
+            if err:
+                return {"ok": False, "msg": err}
+            if not data:
+                return {"ok": False, "msg": "未获取到视频数据"}
+            return {
+                "ok": True,
+                "content_type": content_type or "video/mp4",
+                "data": base64.b64encode(data).decode("ascii"),
+            }
+        except Exception as e:
+            logger.error(f"调试 大洋芋 Sora2 查看视频异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_xiaobanshou_sora2_create(self, prompt: str, image_base64: str = "", mime_type: str = "") -> dict:
+        """调试 小扳手 Sora2 - 创建任务（文生视频 / 图生视频）"""
+        import base64
+        import os
+        import tempfile
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.XIAOBANSHOU_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置小扳手 API Key，请前往设置页面配置"}
+        model_name = settings.get(SettingKeys.XIAOBANSHOU_SORA2_MODEL, "") or "sora-2-portrait-10s"
+        image_path = None
+        try:
+            service = Sora2Xiaobanshou(api_key)
+            if image_base64:
+                ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+                ext = ext_map.get(mime_type or "", ".png")
+                image_data = base64.b64decode(image_base64)
+                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+                tmp.write(image_data)
+                tmp.close()
+                image_path = tmp.name
+                task = service.create_task(prompt, model=model_name, image_path=image_path)
+            else:
+                task = service.create_task(prompt, model=model_name)
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
+            return {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "prompt": task.prompt,
+                "mode": "图生视频" if image_base64 else "文生视频",
+            }
+        except Exception as e:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+            logger.error(f"调试 小扳手 Sora2 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_xiaobanshou_sora2_query(self, task_id: str) -> dict:
+        """调试 小扳手 Sora2 - 查询任务状态"""
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.XIAOBANSHOU_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置小扳手 API Key"}
+        try:
+            service = Sora2Xiaobanshou(api_key)
+            task = service.query_task(task_id)
+            result = {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "progress": task.progress,
+            }
+            if task.video_url:
+                result["video_url"] = task.video_url
+            if task.error_message:
+                result["error_message"] = task.error_message
+            return result
+        except Exception as e:
+            logger.error(f"调试 小扳手 Sora2 查询异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_yunwu_sora2_create(self, prompt: str, image_base64: str = "", mime_type: str = "") -> dict:
+        """调试 云雾 Sora2 - 创建任务（传入图片base64后内部自动上传图床+创建任务）"""
+        import base64
+        import tempfile
+        import os
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置云雾 API Key，请前往设置页面配置"}
+
+        orientation = settings.get(SettingKeys.YUNWU_SORA2_ORIENTATION, "portrait")
+        duration = int(settings.get(SettingKeys.YUNWU_SORA2_DURATION, "10"))
+
+        try:
+            service = Sora2Yunwu(api_key)
+            image_path = None
+
+            # 如果有图片，先写入临时文件
+            if image_base64:
+                ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+                ext = ext_map.get(mime_type, ".png")
+                image_data = base64.b64decode(image_base64)
+
+                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+                tmp.write(image_data)
+                tmp.close()
+                image_path = tmp.name
+
+            task = service.create_task(
+                prompt,
+                duration=duration,
+                orientation=orientation,
+                image_path=image_path,
+            )
+
+            # 清理临时文件
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
+
+            return {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "prompt": task.prompt,
+                "mode": "图生视频" if image_base64 else "文生视频",
+                "duration": duration,
+                "orientation": orientation,
+            }
+        except Exception as e:
+            # 清理临时文件
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
+            logger.error(f"调试 云雾 Sora2 创建任务异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_yunwu_sora2_query(self, task_id: str) -> dict:
+        """调试 云雾 Sora2 - 查询任务"""
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置云雾 API Key"}
+
+        try:
+            service = Sora2Yunwu(api_key)
+            task = service.query_task(task_id)
+            result = {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+            }
+            if task.video_url:
+                result["video_url"] = task.video_url
+            if task.prompt:
+                result["enhanced_prompt"] = task.prompt
+            if task.error_message:
+                result["error_message"] = task.error_message
+            return result
+        except Exception as e:
+            logger.error(f"调试 云雾 Sora2 查询任务异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_nanobanana(self, prompt: str, ref_image: str = "", ref_mime_type: str = "") -> dict:
+        """调试 NanoBanana - 生成图片（支持文生图和图生图），根据 API 模式自动选择官方/云雾"""
+        settings = get_all_settings()
+        api_mode = settings.get(SettingKeys.API_MODE, "custom")
+
+        if api_mode == "official":
+            api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+            if not api_key:
+                return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
+            service = NanoBananaGuanfang(api_key)
+            provider_label = "官方"
+        else:
+            api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
+            if not api_key:
+                return {"ok": False, "msg": "未配置云雾 API Key，请前往设置页面配置"}
+            service = NanoBananaYunwu(api_key)
+            provider_label = "云雾"
+
+        aspect_ratio = settings.get(SettingKeys.NANOBANANA_RATIO, "9:16")
+        image_size = settings.get(SettingKeys.NANOBANANA_QUALITY, "1K")
+
+        try:
+            kwargs = {}
+            if ref_image:
+                kwargs["ref_image"] = ref_image
+                kwargs["ref_mime_type"] = ref_mime_type or "image/jpeg"
+                logger.info(f"NanoBanana 调试 ({provider_label}): 图生图模式")
+            else:
+                logger.info(f"NanoBanana 调试 ({provider_label}): 文生图模式")
+
+            result = service.generate(
+                prompt=prompt,
+                aspect_ratio=aspect_ratio,
+                image_size=image_size,
+                **kwargs,
+            )
+
+            if result.success:
+                return {
+                    "ok": True,
+                    "image_data": result.image_data,
+                    "mime_type": result.mime_type,
+                    "text_content": result.text_content,
+                }
+            else:
+                return {"ok": False, "msg": result.error_message}
+        except Exception as e:
+            logger.error(f"调试 NanoBanana ({provider_label}) 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    # ==================== 官方 API 调试接口 ====================
+
+    def debug_guanfang_sora2_create(self, prompt: str, image_base64: str = "", mime_type: str = "") -> dict:
+        """调试 官方 Sora2 - 创建任务（文生视频 / 图生视频）"""
+        import base64
+        import os
+        import tempfile
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
+        model_name = settings.get(SettingKeys.GUANFANG_SORA2_MODEL, "") or "sora2-portrait-15s"
+        image_path = None
+        try:
+            service = Sora2Guanfang(api_key)
+            if image_base64:
+                ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+                ext = ext_map.get(mime_type or "", ".png")
+                image_data = base64.b64decode(image_base64)
+                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+                tmp.write(image_data)
+                tmp.close()
+                image_path = tmp.name
+                task = service.create_task(prompt, model=model_name, image_path=image_path)
+            else:
+                task = service.create_task(prompt, model=model_name)
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
+            return {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "prompt": task.prompt,
+                "mode": "图生视频" if image_base64 else "文生视频",
+            }
+        except Exception as e:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+            logger.error(f"调试 官方 Sora2 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_guanfang_sora2_query(self, task_id: str) -> dict:
+        """调试 官方 Sora2 - 查询任务状态"""
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置官方 API Key"}
+        try:
+            service = Sora2Guanfang(api_key)
+            task = service.query_task(task_id)
+            result = {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "progress": task.progress,
+            }
+            if task.video_url:
+                result["video_url"] = task.video_url
+            if task.error_message:
+                result["error_message"] = task.error_message
+            return result
+        except Exception as e:
+            logger.error(f"调试 官方 Sora2 查询异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_guanfang_sora2_content(self, task_id: str) -> dict:
+        """调试 官方 Sora2 - 查看视频内容"""
+        import base64
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置官方 API Key"}
+        try:
+            service = Sora2Guanfang(api_key)
+            data, content_type, err = service.get_video_content(task_id)
+            if err:
+                return {"ok": False, "msg": err}
+            if not data:
+                return {"ok": False, "msg": "未获取到视频数据"}
+            return {
+                "ok": True,
+                "content_type": content_type or "video/mp4",
+                "data": base64.b64encode(data).decode("ascii"),
+            }
+        except Exception as e:
+            logger.error(f"调试 官方 Sora2 查看视频异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    # ==================== 视频任务 ====================
+
+    _DEFAULT_VIDEO_PROMPT = "根据图片内容生成一段自然流畅的展示视频"
+
+    def get_video_process_prompt(self) -> dict:
+        """获取视频处理提示词"""
+        logger.debug("[API] get_video_process_prompt 调用")
+        prompt = get_setting(SettingKeys.VIDEO_PROCESS_PROMPT) or self._DEFAULT_VIDEO_PROMPT
+        return {"ok": True, "prompt": prompt}
+
+    def set_video_process_prompt(self, prompt: str) -> dict:
+        """保存视频处理提示词"""
+        logger.info(f"[API] set_video_process_prompt 调用, prompt={prompt[:50]}...")
+        set_setting(SettingKeys.VIDEO_PROCESS_PROMPT, prompt.strip())
+        logger.info("[API] set_video_process_prompt -> 保存成功")
+        return {"ok": True}
+
+    def get_video_tasks(self) -> dict:
+        """获取所有视频任务"""
+        logger.debug("[API] get_video_tasks 调用")
+        from .database import get_video_tasks
+        try:
+            tasks = get_video_tasks()
+            logger.debug(f"[API] get_video_tasks -> 返回 {len(tasks)} 条任务")
+            return {
+                "ok": True,
+                "tasks": [
+                    {
+                        "id": t.id,
+                        "image_path": t.image_path,
+                        "prompt": t.prompt,
+                        "status": t.status,
+                        "video_url": t.video_url,
+                        "video_path": t.video_path,
+                        "created_at": str(t.created_at),
+                    }
+                    for t in tasks
+                ],
+            }
+        except Exception as e:
+            logger.error(f"[API] get_video_tasks -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def create_video_task(self, image_base64: str, mime_type: str, prompt: str) -> dict:
+        """手动创建视频任务"""
+        logger.info(f"[API] create_video_task 调用, mime={mime_type}, prompt={prompt[:50]}...")
+        import base64
+        import os
+        import uuid
+        from .config import DATA_DIR
+
+        try:
+            images_dir = DATA_DIR / "images"
+            images_dir.mkdir(exist_ok=True)
+            ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+            ext = ext_map.get(mime_type or "", ".png")
+            filename = f"{uuid.uuid4().hex}{ext}"
+            filepath = images_dir / filename
+            image_data = base64.b64decode(image_base64)
+            filepath.write_bytes(image_data)
+            logger.debug(f"[API] create_video_task -> 图片已保存: {filepath}")
+
+            from .database import create_video_task as db_create
+            task = db_create(image_path=str(filepath), prompt=prompt)
+            logger.info(f"[API] create_video_task -> 成功, id={task.id}, image={filename}")
+            return {"ok": True, "task_id": task.id}
+        except Exception as e:
+            logger.error(f"[API] create_video_task -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def auto_create_video_task(self, image_base64: str, mime_type: str) -> dict:
+        """图片生成完毕后自动创建视频任务"""
+        logger.info(f"[API] auto_create_video_task 调用, mime={mime_type}")
+        import base64
+        import os
+        import uuid
+        from .config import DATA_DIR
+
+        try:
+            prompt = get_setting(SettingKeys.VIDEO_PROCESS_PROMPT) or self._DEFAULT_VIDEO_PROMPT
+            images_dir = DATA_DIR / "images"
+            images_dir.mkdir(exist_ok=True)
+            ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+            ext = ext_map.get(mime_type or "", ".png")
+            filename = f"{uuid.uuid4().hex}{ext}"
+            filepath = images_dir / filename
+            image_data = base64.b64decode(image_base64)
+            filepath.write_bytes(image_data)
+            logger.debug(f"[API] auto_create_video_task -> 图片已保存: {filepath}")
+
+            from .database import create_video_task as db_create
+            task = db_create(image_path=str(filepath), prompt=prompt)
+            logger.info(f"[API] auto_create_video_task -> 成功, id={task.id}, image={filename}")
+            return {"ok": True, "task_id": task.id}
+        except Exception as e:
+            logger.error(f"[API] auto_create_video_task -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def delete_video_task(self, task_id: int) -> dict:
+        """删除视频任务"""
+        logger.info(f"[API] delete_video_task 调用, task_id={task_id}")
+        from .database import delete_video_task as db_delete
+        try:
+            db_delete(task_id)
+            logger.info(f"[API] delete_video_task -> 成功, id={task_id}")
+            return {"ok": True}
+        except Exception as e:
+            logger.error(f"[API] delete_video_task -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
