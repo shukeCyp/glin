@@ -5,16 +5,8 @@ on:
     branches: ["**"]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            platform: windows
-          - os: macos-latest
-            platform: macos
-
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -41,24 +33,62 @@ jobs:
           npm ci
           npm run build
 
-      # ==================== Main App: Glin带货神器 ====================
-
-      - name: Package main app (Windows)
-        if: matrix.platform == 'windows'
+      - name: Package main app
         run: |
           pyinstaller --name "Glin带货神器" --onefile --windowed --add-data "static;static" main.py
 
-      - name: Package main app (macOS)
-        if: matrix.platform == 'macos'
+      - name: Package auth tool
+        run: |
+          pyinstaller --name "Glin授权码" --onefile --windowed generate_code.py
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows
+          path: |
+            dist/Glin带货神器.exe
+            dist/Glin授权码.exe
+          compression-level: 0
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package main app
         run: |
           pyinstaller --name "Glin带货神器" --onefile --windowed --add-data "static:static" main.py
 
-      - name: Create main app DMG (macOS)
-        if: matrix.platform == 'macos'
+      - name: Package auth tool
+        run: |
+          pyinstaller --name "Glin授权码" --onefile --windowed generate_code.py
+
+      - name: Create main app DMG
         run: |
           mkdir -p dmg_main
-          cp -r "dist/Glin带货神器" dmg_main/ 2>/dev/null || cp -r dist/Glin带货神器.app dmg_main/ 2>/dev/null || true
-          # If .app bundle exists, package it; otherwise package the binary
           if [ -d "dist/Glin带货神器.app" ]; then
             cp -r "dist/Glin带货神器.app" dmg_main/
           elif [ -f "dist/Glin带货神器" ]; then
@@ -66,20 +96,7 @@ jobs:
           fi
           hdiutil create -volname "Glin带货神器" -srcfolder dmg_main -ov -format UDZO "dist/Glin带货神器.dmg"
 
-      # ==================== Auth Tool: Glin授权码 ====================
-
-      - name: Package auth tool (Windows)
-        if: matrix.platform == 'windows'
-        run: |
-          pyinstaller --name "Glin授权码" --onefile --windowed generate_code.py
-
-      - name: Package auth tool (macOS)
-        if: matrix.platform == 'macos'
-        run: |
-          pyinstaller --name "Glin授权码" --onefile --windowed generate_code.py
-
-      - name: Create auth tool DMG (macOS)
-        if: matrix.platform == 'macos'
+      - name: Create auth tool DMG
         run: |
           mkdir -p dmg_auth
           if [ -d "dist/Glin授权码.app" ]; then
@@ -89,32 +106,11 @@ jobs:
           fi
           hdiutil create -volname "Glin授权码" -srcfolder dmg_auth -ov -format UDZO "dist/Glin授权码.dmg"
 
-      # ==================== Upload Artifacts ====================
-
-      - name: Upload main app (Windows exe)
-        if: matrix.platform == 'windows'
+      - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Glin带货神器-windows
-          path: dist/Glin带货神器.exe
-
-      - name: Upload main app (macOS dmg)
-        if: matrix.platform == 'macos'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Glin带货神器-macos
-          path: dist/Glin带货神器.dmg
-
-      - name: Upload auth tool (Windows exe)
-        if: matrix.platform == 'windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Glin授权码-windows
-          path: dist/Glin授权码.exe
-
-      - name: Upload auth tool (macOS dmg)
-        if: matrix.platform == 'macos'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Glin授权码-macos
-          path: dist/Glin授权码.dmg
+          name: macOS
+          path: |
+            dist/Glin带货神器.dmg
+            dist/Glin授权码.dmg
+          compression-level: 0
