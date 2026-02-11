@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Glin 授权码生成器（管理员使用）
+万米霖-授权码生成器（管理员使用）
 
 tkinter GUI 版本。输入设备ID，生成激活码。
 """
@@ -16,7 +16,7 @@ class AuthCodeApp:
 
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("Glin授权码")
+        self.root.title("万米霖-授权码生成器")
         self.root.geometry("480x380")
         self.root.resizable(False, False)
 
@@ -31,7 +31,7 @@ class AuthCodeApp:
         # 标题
         title_label = tk.Label(
             self.root,
-            text="Glin 授权码生成器",
+            text="万米霖-授权码生成器",
             font=("Microsoft YaHei", 18, "bold"),
             bg=bg,
             fg="#1d1d1f",

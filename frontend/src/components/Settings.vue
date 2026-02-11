@@ -45,6 +45,10 @@ const video_max_retry = ref('3')
 // 线程池配置
 const thread_pool_size = ref('10')
 
+// 数据文件状态
+const dataStatus = ref(null)
+
+
 const selectDownloadFolder = async () => {
   try {
     const res = await window.pywebview.api.select_folder()
@@ -87,6 +91,35 @@ const saveSettings = async () => {
   }
 }
 
+const loadDataStatus = async () => {
+  try {
+    const res = await window.pywebview.api.get_data_status()
+    if (res.ok) {
+      dataStatus.value = res
+    }
+  } catch { /* ignore */ }
+}
+
+const openRootDirectory = async () => {
+  try {
+    const res = await window.pywebview.api.open_root_directory()
+    if (res.ok) {
+      emit('toast', '已打开根目录', 'success')
+    } else {
+      emit('toast', res.msg || '打开失败', 'error')
+    }
+  } catch {
+    emit('toast', '打开失败', 'error')
+  }
+}
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i]
+}
+
 const loadSettings = async () => {
   try {
     const settings = await window.pywebview.api.get_all_settings()
@@ -117,6 +150,7 @@ const loadSettings = async () => {
 
 onMounted(() => {
   loadSettings()
+  loadDataStatus()
 })
 </script>
 
@@ -163,8 +197,9 @@ onMounted(() => {
                 <span class="field-label">API Key</span>
                 <input
                   v-model="guanfang_api_key"
-                  type="text"
+                  type="password"
                   placeholder="请输入官方 API Key"
+                  autocomplete="off"
                 />
               </label>
             </div>
@@ -243,8 +278,9 @@ onMounted(() => {
                 <span class="field-label">API Key</span>
                 <input
                   v-model="dayangyu_api_key"
-                  type="text"
+                  type="password"
                   placeholder="请输入 DYY API Key"
+                  autocomplete="off"
                 />
               </label>
             </div>
@@ -260,8 +296,9 @@ onMounted(() => {
                 <span class="field-label">API Key</span>
                 <input
                   v-model="yunwu_api_key"
-                  type="text"
+                  type="password"
                   placeholder="请输入 YW API Key"
+                  autocomplete="off"
                 />
               </label>
             </div>
@@ -277,8 +314,9 @@ onMounted(() => {
                 <span class="field-label">API Key</span>
                 <input
                   v-model="xiaobanshou_api_key"
-                  type="text"
+                  type="password"
                   placeholder="请输入 XBS API Key"
+                  autocomplete="off"
                 />
               </label>
             </div>
@@ -556,6 +594,56 @@ onMounted(() => {
             </label>
           </div>
         </div>
+
+        <!-- 数据文件状态 -->
+        <div class="settings-card full-width" v-if="dataStatus">
+          <div class="card-header">
+            <h3 class="card-title">数据文件</h3>
+          </div>
+          <div class="card-body">
+            <div class="data-status-grid">
+              <div class="data-status-item">
+                <div class="data-status-icon db-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                  </svg>
+                </div>
+                <div class="data-status-info">
+                  <span class="data-status-label">数据库文件</span>
+                  <span class="data-status-value">{{ formatFileSize(dataStatus.db_size) }}</span>
+                  <span class="data-status-path" :title="dataStatus.db_path">{{ dataStatus.db_path }}</span>
+                </div>
+              </div>
+              <div class="data-status-item">
+                <div class="data-status-icon log-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                </div>
+                <div class="data-status-info">
+                  <span class="data-status-label">日志文件</span>
+                  <span class="data-status-value">{{ dataStatus.log_files }} 个文件，{{ formatFileSize(dataStatus.log_total_size) }}</span>
+                  <span class="data-status-path" :title="dataStatus.logs_dir">{{ dataStatus.logs_dir }}</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 20px;">
+              <button class="open-dir-btn" @click="openRootDirectory">
+                <svg class="open-dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>打开根目录</span>
+              </button>
+              <span class="data-status-path" style="margin-left: 12px;" :title="dataStatus.base_dir">{{ dataStatus.base_dir }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -758,5 +846,101 @@ onMounted(() => {
   background: rgba(91, 124, 255, 0.12);
   border-color: rgba(91, 124, 255, 0.3);
   color: #8ba3ff;
+}
+
+
+/* 数据文件状态 */
+.data-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.data-status-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(8, 11, 18, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.data-status-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.data-status-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.db-icon {
+  background: rgba(91, 124, 255, 0.12);
+  color: #8ba3ff;
+}
+
+.log-icon {
+  background: rgba(52, 199, 89, 0.12);
+  color: #34c759;
+}
+
+.data-status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.data-status-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(230, 233, 242, 0.85);
+}
+
+.data-status-value {
+  font-size: 13px;
+  color: rgba(230, 233, 242, 0.6);
+}
+
+.data-status-path {
+  font-size: 11px;
+  color: rgba(230, 233, 242, 0.3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.open-dir-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(230, 233, 242, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.open-dir-btn:hover {
+  background: rgba(91, 124, 255, 0.12);
+  border-color: rgba(91, 124, 255, 0.3);
+  color: #8ba3ff;
+}
+
+.open-dir-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 </style>

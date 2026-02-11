@@ -101,3 +101,10 @@ def delete_video_task(task_id: int) -> None:
     """删除视频任务"""
     VideoTask.delete().where(VideoTask.id == task_id).execute()
     logger.info(f"[DB] 删除视频任务: id={task_id}")
+
+
+def delete_all_video_tasks() -> int:
+    """删除所有视频任务，返回删除数量"""
+    count = VideoTask.delete().execute()
+    logger.info(f"[DB] 删除所有视频任务: 共 {count} 条")
+    return count

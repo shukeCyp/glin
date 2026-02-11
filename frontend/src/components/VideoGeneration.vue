@@ -42,6 +42,38 @@ const deleteTask = async (taskId) => {
   }
 }
 
+// 删除全部任务
+const showDeleteAllConfirm = ref(false)
+const deleteAllTasks = async () => {
+  try {
+    const res = await window.pywebview.api.delete_all_video_tasks()
+    if (res.ok) {
+      emit('toast', `已删除全部任务（共 ${res.count} 条）`, 'success')
+      showDeleteAllConfirm.value = false
+      await loadTasks()
+    } else {
+      emit('toast', res.msg || '删除失败', 'error')
+    }
+  } catch {
+    emit('toast', '删除异常', 'error')
+  }
+}
+
+// 重试失败任务
+const retryTask = async (taskId) => {
+  try {
+    const res = await window.pywebview.api.retry_video_task(taskId)
+    if (res.ok) {
+      emit('toast', '任务已重新加入队列', 'success')
+      await loadTasks()
+    } else {
+      emit('toast', res.msg || '重试失败', 'error')
+    }
+  } catch {
+    emit('toast', '重试异常', 'error')
+  }
+}
+
 // ==================== 视频提示词弹窗 ====================
 const showPromptDialog = ref(false)
 const defaultVideoPrompt = '根据图片内容生成一段自然流畅的展示视频'
@@ -160,6 +192,33 @@ const statusMap = {
 
 const getStatusInfo = (status) => statusMap[status] || { text: status, cls: 'pending' }
 
+// 复制提示词到剪贴板
+const copyPrompt = async (text) => {
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    emit('toast', '提示词已复制', 'success')
+  } catch {
+    emit('toast', '复制失败', 'error')
+  }
+}
+
+// 下载视频
+const downloadTask = async (taskId) => {
+  try {
+    emit('toast', '开始下载...', 'success')
+    const res = await window.pywebview.api.download_video_task(taskId)
+    if (res.ok) {
+      emit('toast', '下载完成', 'success')
+      await loadTasks()
+    } else {
+      emit('toast', res.msg || '下载失败', 'error')
+    }
+  } catch {
+    emit('toast', '下载异常', 'error')
+  }
+}
+
 // ==================== 视频预览弹窗 ====================
 const showVideoPreview = ref(false)
 const previewVideoUrl = ref('')
@@ -209,6 +268,16 @@ onUnmounted(() => {
           </svg>
           <span>添加任务</span>
         </button>
+        <button
+          v-if="taskList.length > 0"
+          class="tool-btn delete-all-btn"
+          @click="showDeleteAllConfirm = true"
+        >
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          <span>删除全部</span>
+        </button>
       </div>
     </div>
 
@@ -238,14 +307,18 @@ onUnmounted(() => {
           :key="task.id"
           class="list-row"
         >
-          <div class="col col-index">{{ idx + 1 }}</div>
+          <div class="col col-index">{{ taskList.length - idx }}</div>
           <div class="col col-thumb">
             <div v-if="task.image_path" class="thumb">
               <img :src="'file://' + task.image_path" alt="图片" @error="(e) => e.target.style.display='none'" />
             </div>
             <span v-else class="no-result">-</span>
           </div>
-          <div class="col col-prompt" :title="task.prompt">{{ task.prompt || '-' }}</div>
+          <div
+            class="col col-prompt copyable"
+            :title="task.prompt ? task.prompt + '\n（点击复制）' : ''"
+            @click="copyPrompt(task.prompt)"
+          >{{ task.prompt || '-' }}</div>
           <div class="col col-status">
             <span :class="['status-tag', getStatusInfo(task.status).cls]">
               {{ getStatusInfo(task.status).text }}
@@ -266,6 +339,26 @@ onUnmounted(() => {
             <span v-else class="no-result">-</span>
           </div>
           <div class="col col-actions">
+            <button
+              v-if="task.status === 'failed'"
+              class="action-btn retry-btn"
+              @click="retryTask(task.id)"
+              title="重试"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+            </button>
+            <button
+              v-if="task.video_url"
+              class="action-btn download-btn"
+              @click="downloadTask(task.id)"
+              title="下载视频"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
             <button
               class="action-btn delete-btn"
               @click="deleteTask(task.id)"
@@ -368,6 +461,27 @@ onUnmounted(() => {
       </div>
     </Teleport>
 
+    <!-- 删除全部确认弹窗 -->
+    <Teleport to="body">
+      <div v-if="showDeleteAllConfirm" class="dialog-overlay" @click.self="showDeleteAllConfirm = false">
+        <div class="dialog" style="width: min(400px, calc(100% - 40px));">
+          <div class="dialog-header">
+            <h3 class="dialog-title">确认删除全部</h3>
+            <button class="dialog-close" @click="showDeleteAllConfirm = false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="dialog-body">
+            <p style="margin: 0; color: rgba(230,233,242,0.75); font-size: 14px;">确定要删除全部 <strong>{{ taskList.length }}</strong> 条视频任务吗？此操作不可撤销。</p>
+          </div>
+          <div class="dialog-footer">
+            <button class="cancel-btn" @click="showDeleteAllConfirm = false">取消</button>
+            <button class="primary-btn save-btn delete-confirm-btn" @click="deleteAllTasks">确认删除</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- 视频预览弹窗 -->
     <Teleport to="body">
       <div v-if="showVideoPreview" class="preview-overlay" @click="closeVideoPreview">
@@ -423,9 +537,11 @@ onUnmounted(() => {
 .col-index { width: 40px; flex-shrink: 0; text-align: center; }
 .col-thumb { width: 70px; flex-shrink: 0; }
 .col-prompt { flex: 1; min-width: 0; padding: 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: rgba(230,233,242,0.75); }
+.col-prompt.copyable { cursor: pointer; transition: color 0.15s ease; }
+.col-prompt.copyable:hover { color: #8ba3ff; }
 .col-status { width: 90px; flex-shrink: 0; text-align: center; }
 .col-url { width: 100px; flex-shrink: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col-actions { width: 60px; flex-shrink: 0; display: flex; justify-content: center; gap: 8px; }
+.col-actions { width: 120px; flex-shrink: 0; display: flex; justify-content: center; gap: 6px; }
 .thumb { width: 50px; height: 50px; border-radius: 8px; overflow: hidden; background: rgba(8,11,18,0.6); border: 1px solid rgba(255,255,255,0.06); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .no-result { font-size: 13px; color: rgba(230,233,242,0.2); }
@@ -444,6 +560,11 @@ onUnmounted(() => {
 .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .action-btn svg { width: 15px; height: 15px; }
 .delete-btn:hover:not(:disabled) { background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.4); color: #ff453a; }
+.retry-btn:hover { background: rgba(255,214,10,0.15); border-color: rgba(255,214,10,0.4); color: #ffd60a; }
+.download-btn:hover { background: rgba(52,199,89,0.15); border-color: rgba(52,199,89,0.4); color: #34c759; }
+.delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: #ff453a; }
+.delete-all-btn:hover { background: rgba(255,69,58,0.18); border-color: rgba(255,69,58,0.5); color: #ff453a; }
+.delete-confirm-btn { background: linear-gradient(135deg, #ff453a, #ff6b5e) !important; border-color: rgba(255,69,58,0.5) !important; }
 
 /* ============ 弹窗 ============ */
 .dialog-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }

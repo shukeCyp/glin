@@ -1,3 +1,5 @@
+import sys
+
 from .activation import get_device_id, verify_activation
 from .constants import SettingKeys
 from .database import get_setting, set_setting, get_all_settings
@@ -8,6 +10,12 @@ from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Gu
 
 class Api:
     """pywebview JS API"""
+
+    def get_app_info(self) -> dict:
+        """获取应用信息（是否开发模式等）"""
+        is_dev = not getattr(sys, 'frozen', False)
+        logger.debug(f"[API] get_app_info -> is_dev={is_dev}")
+        return {"is_dev": is_dev}
 
     def get_status(self) -> dict:
         """检查激活状态"""
@@ -580,4 +588,147 @@ class Api:
             return {"ok": True}
         except Exception as e:
             logger.error(f"[API] delete_video_task -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def download_video_task(self, task_id: int) -> dict:
+        """下载视频到设置的下载目录"""
+        import os
+        import urllib.request
+        import uuid
+        from pathlib import Path
+
+        logger.info(f"[API] download_video_task 调用, task_id={task_id}")
+
+        # 检查下载路径
+        download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+        if not download_path or not download_path.strip():
+            logger.warning("[API] download_video_task -> 未设置下载路径")
+            return {"ok": False, "msg": "未设置下载路径，请先在设置中选择下载文件夹"}
+
+        download_dir = Path(download_path)
+        if not download_dir.exists():
+            try:
+                download_dir.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                logger.error(f"[API] download_video_task -> 创建下载目录失败: {e}")
+                return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
+
+        # 获取任务信息
+        from .database import get_video_tasks
+        try:
+            tasks = get_video_tasks()
+            task = None
+            for t in tasks:
+                if t.id == task_id:
+                    task = t
+                    break
+            if not task:
+                return {"ok": False, "msg": "任务不存在"}
+            if not task.video_url:
+                return {"ok": False, "msg": "该任务暂无视频链接"}
+
+            # 下载视频
+            video_url = task.video_url
+            ext = ".mp4"
+            if ".webm" in video_url:
+                ext = ".webm"
+            elif ".mov" in video_url:
+                ext = ".mov"
+            filename = f"video_{task_id}_{uuid.uuid4().hex[:8]}{ext}"
+            filepath = download_dir / filename
+
+            logger.info(f"[API] download_video_task -> 开始下载: {video_url}")
+            urllib.request.urlretrieve(video_url, str(filepath))
+            logger.info(f"[API] download_video_task -> 下载完成: {filepath}")
+
+            # 更新任务的 video_path
+            from .database import update_video_task
+            update_video_task(task_id, video_path=str(filepath))
+
+            return {"ok": True, "path": str(filepath)}
+        except Exception as e:
+            logger.error(f"[API] download_video_task -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def delete_all_video_tasks(self) -> dict:
+        """删除所有视频任务"""
+        logger.info("[API] delete_all_video_tasks 调用")
+        from .database import delete_all_video_tasks as db_delete_all
+        try:
+            count = db_delete_all()
+            logger.info(f"[API] delete_all_video_tasks -> 成功, 共删除 {count} 条")
+            return {"ok": True, "count": count}
+        except Exception as e:
+            logger.error(f"[API] delete_all_video_tasks -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def retry_video_task(self, task_id: int) -> dict:
+        """重试失败的视频任务（重置状态为 pending）"""
+        logger.info(f"[API] retry_video_task 调用, task_id={task_id}")
+        from .database import update_video_task
+        try:
+            update_video_task(task_id, status='pending', video_url='', video_path='')
+            logger.info(f"[API] retry_video_task -> 成功, id={task_id}")
+            return {"ok": True}
+        except Exception as e:
+            logger.error(f"[API] retry_video_task -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    # ==================== 数据文件状态 ====================
+
+    def get_data_status(self) -> dict:
+        """获取数据库和日志文件的状态信息"""
+        import os
+        from .config import BASE_DIR, DB_PATH, LOGS_DIR
+
+        logger.debug("[API] get_data_status 调用")
+        try:
+            # 数据库文件信息
+            db_size = 0
+            db_exists = DB_PATH.exists()
+            if db_exists:
+                db_size = DB_PATH.stat().st_size
+
+            # 日志目录信息
+            log_files = 0
+            log_total_size = 0
+            if LOGS_DIR.exists():
+                for f in LOGS_DIR.iterdir():
+                    if f.is_file():
+                        log_files += 1
+                        log_total_size += f.stat().st_size
+
+            return {
+                "ok": True,
+                "base_dir": str(BASE_DIR),
+                "db_path": str(DB_PATH),
+                "db_exists": db_exists,
+                "db_size": db_size,
+                "logs_dir": str(LOGS_DIR),
+                "log_files": log_files,
+                "log_total_size": log_total_size,
+            }
+        except Exception as e:
+            logger.error(f"[API] get_data_status -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def open_root_directory(self) -> dict:
+        """在文件管理器中打开应用根目录"""
+        import os
+        import platform
+        import subprocess
+        from .config import BASE_DIR
+
+        logger.info(f"[API] open_root_directory 调用, path={BASE_DIR}")
+        try:
+            system = platform.system()
+            if system == "Windows":
+                os.startfile(str(BASE_DIR))
+            elif system == "Darwin":
+                subprocess.Popen(["open", str(BASE_DIR)])
+            else:
+                subprocess.Popen(["xdg-open", str(BASE_DIR)])
+            return {"ok": True}
+        except Exception as e:
+            logger.error(f"[API] open_root_directory -> 异常: {e}")
             return {"ok": False, "msg": str(e)}

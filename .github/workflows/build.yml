@@ -35,19 +35,19 @@ jobs:
 
       - name: Package main app
         run: |
-          pyinstaller --name "Glin带货神器" --onefile --windowed --add-data "static;static" main.py
+          pyinstaller --name "万米霖-带货神器" --onefile --windowed --icon icon.png --add-data "static;static" main.py
 
       - name: Package auth tool
         run: |
-          pyinstaller --name "Glin授权码" --onefile --windowed generate_code.py
+          pyinstaller --name "万米霖-授权码生成器" --onefile --windowed --icon icon.png generate_code.py
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Windows
           path: |
-            dist/Glin带货神器.exe
-            dist/Glin授权码.exe
+            dist/万米霖-带货神器.exe
+            dist/万米霖-授权码生成器.exe
           compression-level: 0
 
   build-macos:
@@ -80,37 +80,37 @@ jobs:
 
       - name: Package main app
         run: |
-          pyinstaller --name "Glin带货神器" --onefile --windowed --add-data "static:static" main.py
+          pyinstaller --name "万米霖-带货神器" --onefile --windowed --icon icon.png --add-data "static:static" main.py
 
       - name: Package auth tool
         run: |
-          pyinstaller --name "Glin授权码" --onefile --windowed generate_code.py
+          pyinstaller --name "万米霖-授权码生成器" --onefile --windowed --icon icon.png generate_code.py
 
       - name: Create main app DMG
         run: |
           mkdir -p dmg_main
-          if [ -d "dist/Glin带货神器.app" ]; then
-            cp -r "dist/Glin带货神器.app" dmg_main/
-          elif [ -f "dist/Glin带货神器" ]; then
-            cp "dist/Glin带货神器" dmg_main/
+          if [ -d "dist/万米霖-带货神器.app" ]; then
+            cp -r "dist/万米霖-带货神器.app" dmg_main/
+          elif [ -f "dist/万米霖-带货神器" ]; then
+            cp "dist/万米霖-带货神器" dmg_main/
           fi
-          hdiutil create -volname "Glin带货神器" -srcfolder dmg_main -ov -format UDZO "dist/Glin带货神器.dmg"
+          hdiutil create -volname "万米霖-带货神器" -srcfolder dmg_main -ov -format UDZO "dist/万米霖-带货神器.dmg"
 
       - name: Create auth tool DMG
         run: |
           mkdir -p dmg_auth
-          if [ -d "dist/Glin授权码.app" ]; then
-            cp -r "dist/Glin授权码.app" dmg_auth/
-          elif [ -f "dist/Glin授权码" ]; then
-            cp "dist/Glin授权码" dmg_auth/
+          if [ -d "dist/万米霖-授权码生成器.app" ]; then
+            cp -r "dist/万米霖-授权码生成器.app" dmg_auth/
+          elif [ -f "dist/万米霖-授权码生成器" ]; then
+            cp "dist/万米霖-授权码生成器" dmg_auth/
           fi
-          hdiutil create -volname "Glin授权码" -srcfolder dmg_auth -ov -format UDZO "dist/Glin授权码.dmg"
+          hdiutil create -volname "万米霖-授权码生成器" -srcfolder dmg_auth -ov -format UDZO "dist/万米霖-授权码生成器.dmg"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macOS
           path: |
-            dist/Glin带货神器.dmg
-            dist/Glin授权码.dmg
+            dist/万米霖-带货神器.dmg
+            dist/万米霖-授权码生成器.dmg
           compression-level: 0

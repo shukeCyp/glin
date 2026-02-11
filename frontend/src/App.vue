@@ -11,6 +11,7 @@ const deviceId = ref('')
 const activationCode = ref('')
 const toastRef = ref(null)
 const currentPage = ref('video') // video | image_process | debug | settings
+const isDevMode = ref(false)
 
 const checkStatus = async () => {
   try {
@@ -19,6 +20,11 @@ const checkStatus = async () => {
     if (res.state === 'pending') {
       deviceId.value = res.device_id
     }
+    // 获取应用信息（是否开发模式）
+    try {
+      const info = await window.pywebview.api.get_app_info()
+      isDevMode.value = info.is_dev
+    } catch { /* ignore */ }
   } catch {
     setTimeout(checkStatus, 100)
   }
@@ -63,7 +69,7 @@ onMounted(() => {
       <div class="brand">
         <div class="brand-mark"></div>
         <div>
-          <div class="brand-title">Glin</div>
+          <div class="brand-title">万米霖</div>
           <div class="brand-subtitle">Loading...</div>
         </div>
       </div>
@@ -74,7 +80,7 @@ onMounted(() => {
       <div class="brand">
         <div class="brand-mark"></div>
         <div>
-          <div class="brand-title">Glin</div>
+          <div class="brand-title">万米霖</div>
           <div class="brand-subtitle">设备激活</div>
         </div>
       </div>
@@ -111,7 +117,7 @@ onMounted(() => {
         <div class="sidebar-header">
           <div class="brand brand--small">
             <div class="brand-mark"></div>
-            <div class="brand-title">Glin</div>
+            <div class="brand-title">万米霖</div>
           </div>
         </div>
         
@@ -138,6 +144,7 @@ onMounted(() => {
             <span>图片处理</span>
           </button>
           <button
+            v-if="isDevMode"
             :class="['nav-item', { active: currentPage === 'debug' }]"
             @click="currentPage = 'debug'"
           >
@@ -177,8 +184,9 @@ onMounted(() => {
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 
-        <!-- Debug page -->
+        <!-- Debug page (dev mode only) -->
         <Debug
+          v-if="isDevMode"
           v-show="currentPage === 'debug'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />

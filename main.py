@@ -16,7 +16,7 @@ def main() -> None:
     init_db()
 
     logger.info("=" * 50)
-    logger.info("Glin带货神器 启动")
+    logger.info("万米霖-带货神器 启动")
     logger.info(f"Python: {sys.version}")
     logger.info(f"OS: {platform.system()} {platform.release()} ({platform.machine()})")
     logger.info(f"数据库: {DB_PATH}")
@@ -44,7 +44,7 @@ def main() -> None:
 
     api = Api()
     webview.create_window(
-        "Glin带货神器",
+        "万米霖-带货神器",
         index_path.as_uri(),
         js_api=api,
         width=1200,
@@ -53,7 +53,7 @@ def main() -> None:
     )
     logger.info("窗口已创建, 启动 webview...")
     webview.start()
-    logger.info("Glin带货神器 已退出")
+    logger.info("万米霖-带货神器 已退出")
 
 
 if __name__ == "__main__":
