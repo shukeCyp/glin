@@ -25,7 +25,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
+          pip install -r requirements.txt pyinstaller Pillow
 
       - name: Build frontend
         working-directory: frontend
@@ -70,7 +70,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
+          pip install -r requirements.txt pyinstaller Pillow
 
       - name: Build frontend
         working-directory: frontend
