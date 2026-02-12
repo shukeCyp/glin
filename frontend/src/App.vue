@@ -4,6 +4,7 @@ import Toast from './components/Toast.vue'
 import Settings from './components/Settings.vue'
 import Debug from './components/Debug.vue'
 import ImageProcess from './components/ImageProcess.vue'
+import ImageGeneration from './components/ImageGeneration.vue'
 import VideoGeneration from './components/VideoGeneration.vue'
 
 const state = ref('loading') // loading | pending | activated
@@ -144,6 +145,17 @@ onMounted(() => {
             <span>图片处理</span>
           </button>
           <button
+            :class="['nav-item', { active: currentPage === 'image_gen' }]"
+            @click="currentPage = 'image_gen'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <span>图片生成</span>
+          </button>
+          <button
             v-if="isDevMode"
             :class="['nav-item', { active: currentPage === 'debug' }]"
             @click="currentPage = 'debug'"
@@ -181,6 +193,12 @@ onMounted(() => {
         <!-- Image Process page -->
         <ImageProcess
           v-show="currentPage === 'image_process'"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
+        <!-- Image Generation page -->
+        <ImageGeneration
+          v-show="currentPage === 'image_gen'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 

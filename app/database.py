@@ -102,6 +102,14 @@ def get_pending_video_tasks() -> List[VideoTask]:
     return tasks
 
 
+def get_processing_video_tasks() -> List[VideoTask]:
+    """获取处理中的视频任务"""
+    tasks = list(VideoTask.select().where(VideoTask.status == 'processing'))
+    if tasks:
+        logger.debug(f"[DB] get_processing_video_tasks: 共 {len(tasks)} 条处理中")
+    return tasks
+
+
 def update_video_task(task_id: int, **kwargs) -> None:
     """更新视频任务"""
     VideoTask.update(**kwargs).where(VideoTask.id == task_id).execute()

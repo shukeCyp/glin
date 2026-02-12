@@ -89,6 +89,13 @@ const removeImage = (idx) => {
 }
 
 // ==================== 生成逻辑 ====================
+const withTimeout = (promise, ms) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('请求超时')), ms))
+  ])
+}
+
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -125,10 +132,9 @@ const generateSingle = async (img) => {
       img.statusText = `重试中 (${attempts}/${maxRetry})...`
     }
     try {
-      const res = await window.pywebview.api.debug_nanobanana(
-        promptText.value,
-        base64,
-        img.file.type || 'image/jpeg'
+      const res = await withTimeout(
+        window.pywebview.api.debug_nanobanana(promptText.value, base64, img.file.type || 'image/jpeg'),
+        200000
       )
       if (res.ok && res.image_data && res.mime_type) {
         img.resultSrc = `data:${res.mime_type};base64,${res.image_data}`

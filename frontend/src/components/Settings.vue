@@ -294,6 +294,19 @@ onMounted(() => {
             </div>
             <div class="card-body">
               <div class="settings-section">
+                <span class="section-label">生图渠道</span>
+                <div class="radio-group horizontal">
+                  <label class="radio-item">
+                    <input type="radio" v-model="nanobanana_model" value="yunwu" />
+                    <span class="radio-label">YW 渠道</span>
+                  </label>
+                  <label class="radio-item">
+                    <input type="radio" v-model="nanobanana_model" value="haotian" />
+                    <span class="radio-label">HT 渠道</span>
+                  </label>
+                </div>
+              </div>
+              <div class="settings-section">
                 <span class="section-label">图片比例</span>
                 <div class="radio-group horizontal">
                   <label class="radio-item">
@@ -303,10 +316,6 @@ onMounted(() => {
                   <label class="radio-item">
                     <input type="radio" v-model="nanobanana_ratio" value="16:9" />
                     <span class="radio-label">16:9</span>
-                  </label>
-                  <label class="radio-item">
-                    <input type="radio" v-model="nanobanana_ratio" value="1:1" />
-                    <span class="radio-label">1:1</span>
                   </label>
                 </div>
               </div>
@@ -514,6 +523,27 @@ onMounted(() => {
             </div>
             <div class="card-body">
               <div class="settings-section">
+                <span class="section-label">生图渠道</span>
+                <div class="radio-group horizontal">
+                  <label class="radio-item">
+                    <input
+                      type="radio"
+                      v-model="nanobanana_model"
+                      value="yunwu"
+                    />
+                    <span class="radio-label">YW 渠道</span>
+                  </label>
+                  <label class="radio-item">
+                    <input
+                      type="radio"
+                      v-model="nanobanana_model"
+                      value="haotian"
+                    />
+                    <span class="radio-label">HT 渠道</span>
+                  </label>
+                </div>
+              </div>
+              <div class="settings-section">
                 <span class="section-label">图片比例</span>
                 <div class="radio-group horizontal">
                   <label class="radio-item">
@@ -531,14 +561,6 @@ onMounted(() => {
                       value="16:9"
                     />
                     <span class="radio-label">16:9</span>
-                  </label>
-                  <label class="radio-item">
-                    <input
-                      type="radio"
-                      v-model="nanobanana_ratio"
-                      value="1:1"
-                    />
-                    <span class="radio-label">1:1</span>
                   </label>
                 </div>
               </div>

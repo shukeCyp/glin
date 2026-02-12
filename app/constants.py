@@ -15,6 +15,7 @@ class ModelProviders:
     YUNWU = "yunwu"
     XIAOBANSHOU = "xiaobanshou"
     GUANFANG = "guanfang"
+    HAOTIAN = "haotian"
 
 
 class SettingKeys:

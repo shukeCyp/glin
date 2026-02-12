@@ -8,6 +8,7 @@ import requests
 from .constants import SettingKeys, ModelProviders
 from .database import (
     get_pending_video_tasks,
+    get_processing_video_tasks,
     update_video_task,
     get_all_settings,
     get_setting,
@@ -236,8 +237,91 @@ def _download_video(task_db_id: int, video_url: str, download_dir: str, service=
         logger.error(f"[Scanner] 下载视频失败 id={task_db_id}: {e}")
 
 
+def _resume_poll_task(task, service) -> None:
+    """恢复轮询一个已有 remote_task_id 的处理中任务（跳过创建阶段）"""
+    task_db_id = task.id
+    remote_task_id = task.remote_task_id
+    logger.info(f"[Scanner] 恢复轮询任务 id={task_db_id}, remote_id={remote_task_id}")
+
+    try:
+        settings = get_all_settings()
+        max_polls = 60
+        poll_interval = 30
+
+        for poll_idx in range(max_polls):
+            time.sleep(poll_interval)
+            logger.info(f"[Scanner] 恢复轮询 id={task_db_id} | 第 {poll_idx + 1}/{max_polls} 次查询")
+            query_result = service.query_task(remote_task_id)
+
+            if query_result.status == Sora2TaskStatus.COMPLETED:
+                video_url = query_result.video_url or ""
+                update_video_task(task_db_id, status='completed', video_url=video_url)
+                logger.info(f"[Scanner] 恢复任务完成 id={task_db_id}, video_url={video_url[:80] if video_url else 'N/A'}")
+
+                auto_download = settings.get(SettingKeys.AUTO_DOWNLOAD, "false") == "true"
+                download_path = settings.get(SettingKeys.DOWNLOAD_PATH, "")
+                if auto_download and download_path:
+                    _download_video(task_db_id, video_url, download_path, service=service, remote_task_id=remote_task_id)
+                return
+
+            elif query_result.status == Sora2TaskStatus.FAILED:
+                logger.error(f"[Scanner] 恢复任务失败 id={task_db_id}: {query_result.error_message}")
+                update_video_task(task_db_id, status='failed')
+                return
+
+        # 轮询超时
+        logger.warning(f"[Scanner] 恢复轮询超时 id={task_db_id}")
+        update_video_task(task_db_id, status='failed')
+
+    except Exception as e:
+        logger.error(f"[Scanner] 恢复轮询异常 id={task_db_id}: {type(e).__name__}: {e}")
+        update_video_task(task_db_id, status='failed')
+
+
+def _resume_processing_tasks() -> None:
+    """启动时恢复处理中的任务"""
+    try:
+        tasks = get_processing_video_tasks()
+        if not tasks:
+            logger.info("[Scanner] 无需恢复的处理中任务")
+            return
+
+        settings = get_all_settings()
+        result, err = _get_sora2_service(settings)
+        if err or not result:
+            logger.error(f"[Scanner] 恢复任务失败，获取 Sora2 服务失败: {err}")
+            # 将所有 processing 任务重置为 pending
+            for task in tasks:
+                update_video_task(task.id, status='pending')
+            return
+
+        service, model = result
+        pool = get_pool()
+        if not pool:
+            logger.error("[Scanner] 恢复任务失败，线程池未初始化")
+            return
+
+        for task in tasks:
+            remote_id = task.remote_task_id or ""
+            if remote_id:
+                # 有远程 ID，直接恢复轮询
+                logger.info(f"[Scanner] 恢复轮询任务 id={task.id}, remote_id={remote_id}")
+                pool.submit(_resume_poll_task, task, service)
+            else:
+                # 没有远程 ID，重置为 pending 让 scanner 重新处理
+                logger.info(f"[Scanner] 任务 id={task.id} 无 remote_task_id，重置为 pending")
+                update_video_task(task.id, status='pending')
+
+        logger.info(f"[Scanner] 已恢复 {len(tasks)} 个处理中的任务")
+    except Exception as e:
+        logger.error(f"[Scanner] 恢复处理中任务异常: {type(e).__name__}: {e}")
+
+
 def start_scanner() -> None:
     """启动后台扫描线程"""
+    # 先恢复处理中的任务
+    _resume_processing_tasks()
+
     def _scan_loop():
         logger.info("[Scanner] 视频任务扫描器已启动, 扫描间隔: 5秒")
         scan_count = 0

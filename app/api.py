@@ -4,7 +4,7 @@ from .activation import get_device_id, verify_activation
 from .constants import SettingKeys
 from .database import get_setting, set_setting, get_all_settings
 from .logger import logger
-from .services.nanobanana import NanoBananaYunwu, NanoBananaGuanfang
+from .services.nanobanana import NanoBananaYunwu, NanoBananaGuanfang, NanoBananaHaotian
 from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Guanfang
 
 
@@ -338,22 +338,34 @@ class Api:
             return {"ok": False, "msg": str(e)}
 
     def debug_nanobanana(self, prompt: str, ref_image: str = "", ref_mime_type: str = "") -> dict:
-        """调试 NanoBanana - 生成图片（支持文生图和图生图），根据 API 模式自动选择官方/云雾"""
+        """调试 NanoBanana - 生成图片（支持文生图和图生图），根据 API 模式和渠道选择"""
         settings = get_all_settings()
         api_mode = settings.get(SettingKeys.API_MODE, "custom")
+        nanobanana_model = settings.get(SettingKeys.NANOBANANA_MODEL, "yunwu")
 
         if api_mode == "official":
             api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
             if not api_key:
                 return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
-            service = NanoBananaGuanfang(api_key)
-            provider_label = "官方"
+            if nanobanana_model == "haotian":
+                service = NanoBananaHaotian(api_key)
+                provider_label = "HT"
+            else:
+                service = NanoBananaGuanfang(api_key)
+                provider_label = "官方"
         else:
-            api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
-            if not api_key:
-                return {"ok": False, "msg": "未配置云雾 API Key，请前往设置页面配置"}
-            service = NanoBananaYunwu(api_key)
-            provider_label = "云雾"
+            if nanobanana_model == "haotian":
+                api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+                if not api_key:
+                    return {"ok": False, "msg": "HT 渠道使用官方 API Key，请前往设置页面配置"}
+                service = NanoBananaHaotian(api_key)
+                provider_label = "HT"
+            else:
+                api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
+                if not api_key:
+                    return {"ok": False, "msg": "未配置云雾 API Key，请前往设置页面配置"}
+                service = NanoBananaYunwu(api_key)
+                provider_label = "云雾"
 
         aspect_ratio = settings.get(SettingKeys.NANOBANANA_RATIO, "9:16")
         image_size = settings.get(SettingKeys.NANOBANANA_QUALITY, "1K")
@@ -718,6 +730,42 @@ class Api:
             return {"ok": True}
         except Exception as e:
             logger.error(f"[API] retry_video_task -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    # ==================== 图片下载 ====================
+
+    def download_image(self, image_base64: str, mime_type: str, filename_prefix: str = "image") -> dict:
+        """将 base64 图片保存到下载目录"""
+        import base64
+        from datetime import datetime
+        from pathlib import Path
+
+        logger.info(f"[API] download_image 调用, prefix={filename_prefix}")
+
+        download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+        if not download_path or not download_path.strip():
+            return {"ok": False, "msg": "未设置下载路径，请先在设置中选择下载文件夹"}
+
+        download_dir = Path(download_path)
+        if not download_dir.exists():
+            try:
+                download_dir.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
+
+        try:
+            ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+            ext = ext_map.get(mime_type or "", ".png")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{filename_prefix}_{timestamp}{ext}"
+            filepath = download_dir / filename
+
+            image_data = base64.b64decode(image_base64)
+            filepath.write_bytes(image_data)
+            logger.info(f"[API] download_image -> 保存成功: {filepath}")
+            return {"ok": True, "path": str(filepath)}
+        except Exception as e:
+            logger.error(f"[API] download_image -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     # ==================== 数据文件状态 ====================
