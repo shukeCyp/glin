@@ -8,6 +8,7 @@ const api_mode = ref('custom')
 
 // 官方 API
 const guanfang_api_key = ref('')
+const guanfang_sora2_provider = ref('dayangyu')
 const guanfang_sora2_model = ref('')
 
 // 自定义 API Keys
@@ -66,6 +67,7 @@ const saveSettings = async () => {
     await window.pywebview.api.save_settings({
       api_mode: api_mode.value,
       guanfang_api_key: guanfang_api_key.value,
+      guanfang_sora2_provider: guanfang_sora2_provider.value,
       guanfang_sora2_model: guanfang_sora2_model.value,
       dayangyu_api_key: dayangyu_api_key.value,
       yunwu_api_key: yunwu_api_key.value,
@@ -113,6 +115,24 @@ const openRootDirectory = async () => {
   }
 }
 
+const cleaningLogs = ref(false)
+const cleanLogs = async () => {
+  cleaningLogs.value = true
+  try {
+    const res = await window.pywebview.api.clean_logs()
+    if (res.ok) {
+      emit('toast', `已清理 ${res.count} 个日志文件`, 'success')
+      await loadDataStatus()
+    } else {
+      emit('toast', res.msg || '清理失败', 'error')
+    }
+  } catch {
+    emit('toast', '清理失败', 'error')
+  } finally {
+    cleaningLogs.value = false
+  }
+}
+
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -125,6 +145,7 @@ const loadSettings = async () => {
     const settings = await window.pywebview.api.get_all_settings()
     if (settings.api_mode) api_mode.value = settings.api_mode
     if (settings.guanfang_api_key) guanfang_api_key.value = settings.guanfang_api_key
+    if (settings.guanfang_sora2_provider) guanfang_sora2_provider.value = settings.guanfang_sora2_provider
     if (settings.guanfang_sora2_model) guanfang_sora2_model.value = settings.guanfang_sora2_model
     if (settings.dayangyu_api_key) dayangyu_api_key.value = settings.dayangyu_api_key
     if (settings.yunwu_api_key) yunwu_api_key.value = settings.yunwu_api_key
@@ -205,16 +226,60 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- 官方 Sora2 配置 -->
+          <!-- 官方 Sora2 渠道选择 -->
           <div class="settings-card">
             <div class="card-header">
-              <h3 class="card-title">官方 Sora2 配置</h3>
+              <h3 class="card-title">Sora2 渠道选择</h3>
+            </div>
+            <div class="card-body">
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input
+                    type="radio"
+                    v-model="guanfang_sora2_provider"
+                    value="dayangyu"
+                  />
+                  <span class="radio-label">DYY 渠道</span>
+                </label>
+                <label class="radio-item">
+                  <input
+                    type="radio"
+                    v-model="guanfang_sora2_provider"
+                    value="xiaobanshou"
+                  />
+                  <span class="radio-label">XBS 渠道</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- DYY Sora2 模型配置（官方） -->
+          <div class="settings-card">
+            <div class="card-header">
+              <h3 class="card-title">DYY Sora2 配置</h3>
             </div>
             <div class="card-body">
               <label class="field">
                 <span class="field-label">模型</span>
                 <input
                   v-model="guanfang_sora2_model"
+                  type="text"
+                  placeholder="请输入模型名称"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- XBS Sora2 模型配置（官方） -->
+          <div class="settings-card">
+            <div class="card-header">
+              <h3 class="card-title">XBS Sora2 配置</h3>
+            </div>
+            <div class="card-body">
+              <label class="field">
+                <span class="field-label">模型</span>
+                <input
+                  v-model="xiaobanshou_sora2_model"
                   type="text"
                   placeholder="请输入模型名称"
                 />
@@ -633,14 +698,20 @@ onMounted(() => {
                 </div>
               </div>
             </div>
-            <div style="margin-top: 20px;">
+            <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <button class="open-dir-btn" @click="openRootDirectory">
                 <svg class="open-dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                 </svg>
                 <span>打开根目录</span>
               </button>
-              <span class="data-status-path" style="margin-left: 12px;" :title="dataStatus.base_dir">{{ dataStatus.base_dir }}</span>
+              <button class="open-dir-btn clean-log-btn" @click="cleanLogs" :disabled="cleaningLogs || (dataStatus && dataStatus.log_files <= 1)">
+                <svg class="open-dir-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span>{{ cleaningLogs ? '清理中...' : '清理日志' }}</span>
+              </button>
+              <span class="data-status-path" :title="dataStatus.base_dir">{{ dataStatus.base_dir }}</span>
             </div>
           </div>
         </div>
@@ -936,6 +1007,27 @@ onMounted(() => {
   background: rgba(91, 124, 255, 0.12);
   border-color: rgba(91, 124, 255, 0.3);
   color: #8ba3ff;
+}
+
+.open-dir-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.open-dir-btn:disabled:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(230, 233, 242, 0.8);
+}
+
+.clean-log-btn {
+  border-color: rgba(255, 69, 58, 0.25);
+}
+
+.clean-log-btn:hover:not(:disabled) {
+  background: rgba(255, 69, 58, 0.12);
+  border-color: rgba(255, 69, 58, 0.4);
+  color: #ff453a;
 }
 
 .open-dir-icon {

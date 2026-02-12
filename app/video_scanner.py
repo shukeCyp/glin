@@ -14,7 +14,7 @@ from .database import (
 )
 from .logger import logger
 from .thread_pool import get_pool
-from .services.sora2 import Sora2Guanfang, Sora2Dayangyu, Sora2Yunwu, Sora2Xiaobanshou
+from .services.sora2 import Sora2Guanfang, Sora2GuanfangXbs, Sora2Dayangyu, Sora2Yunwu, Sora2Xiaobanshou
 from .services.sora2.base import Sora2TaskStatus
 
 
@@ -26,8 +26,16 @@ def _get_sora2_service(settings: dict):
         api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
         if not api_key:
             return None, "未配置官方 API Key"
+        provider = settings.get(SettingKeys.GUANFANG_SORA2_PROVIDER, ModelProviders.DAYANGYU)
         model = settings.get(SettingKeys.GUANFANG_SORA2_MODEL, "") or "sora2-portrait-15s"
-        return (Sora2Guanfang(api_key), model), None
+
+        if provider == ModelProviders.XIAOBANSHOU:
+            # 官方 API + 小扳手调用方式
+            xbs_model = settings.get(SettingKeys.XIAOBANSHOU_SORA2_MODEL, "") or "sora-2-portrait-10s"
+            return (Sora2GuanfangXbs(api_key), xbs_model), None
+        else:
+            # 官方 API + 大洋芋调用方式（默认）
+            return (Sora2Guanfang(api_key), model), None
     else:
         # 自定义模式 - 按 sora2_model 选择
         provider = settings.get(SettingKeys.SORA2_MODEL, ModelProviders.DAYANGYU)
@@ -57,7 +65,7 @@ def _get_sora2_service(settings: dict):
 
 
 def _create_sora2_task(service, settings, prompt, image_path, model):
-    """创建 Sora2 任务，封装云雾特殊参数"""
+    """创建 Sora2 任务，根据 API 模式和渠道选择封装参数"""
     kwargs = {}
     if model:
         kwargs["model"] = model
@@ -65,14 +73,24 @@ def _create_sora2_task(service, settings, prompt, image_path, model):
         kwargs["image_path"] = image_path
 
     api_mode = settings.get(SettingKeys.API_MODE, "custom")
-    provider = settings.get(SettingKeys.SORA2_MODEL, "dayangyu")
-    if api_mode == "custom" and provider == ModelProviders.YUNWU:
-        orientation = settings.get(SettingKeys.YUNWU_SORA2_ORIENTATION, "portrait")
-        duration = int(settings.get(SettingKeys.YUNWU_SORA2_DURATION, "10"))
-        kwargs["orientation"] = orientation
-        return service.create_task(prompt, duration=duration, **kwargs)
-    else:
+
+    if api_mode == "official":
+        # 官方模式：根据 guanfang_sora2_provider 判断渠道
+        provider = settings.get(SettingKeys.GUANFANG_SORA2_PROVIDER, ModelProviders.DAYANGYU)
+        # 官方模式下 DYY / XBS 都是标准调用，无需特殊参数
         return service.create_task(prompt, **kwargs)
+    else:
+        # 自定义模式：根据 sora2_model 判断渠道
+        provider = settings.get(SettingKeys.SORA2_MODEL, ModelProviders.DAYANGYU)
+        if provider == ModelProviders.YUNWU:
+            # 云雾需要额外的 orientation / duration 参数
+            orientation = settings.get(SettingKeys.YUNWU_SORA2_ORIENTATION, "portrait")
+            duration = int(settings.get(SettingKeys.YUNWU_SORA2_DURATION, "10"))
+            kwargs["orientation"] = orientation
+            return service.create_task(prompt, duration=duration, **kwargs)
+        else:
+            # DYY / XBS 标准调用
+            return service.create_task(prompt, **kwargs)
 
 
 def _process_task(task) -> None:
@@ -114,6 +132,8 @@ def _process_task(task) -> None:
 
             remote_task_id = sora2_task.task_id
             logger.info(f"[Scanner] 任务已提交 id={task_db_id}, remote_id={remote_task_id}")
+            # 保存远程任务 ID
+            update_video_task(task_db_id, remote_task_id=remote_task_id)
 
             # 轮询等待完成 - 每 30 秒查询一次，最多 30 分钟
             max_polls = 60
@@ -137,8 +157,8 @@ def _process_task(task) -> None:
                     # 自动下载
                     auto_download = settings.get(SettingKeys.AUTO_DOWNLOAD, "false") == "true"
                     download_path = settings.get(SettingKeys.DOWNLOAD_PATH, "")
-                    if auto_download and download_path and video_url:
-                        _download_video(task_db_id, video_url, download_path)
+                    if auto_download and download_path:
+                        _download_video(task_db_id, video_url, download_path, service=service, remote_task_id=remote_task_id)
 
                     return  # 成功，退出
 
@@ -167,14 +187,42 @@ def _process_task(task) -> None:
         update_video_task(task_db_id, status='failed')
 
 
-def _download_video(task_db_id: int, video_url: str, download_dir: str) -> None:
-    """下载视频到本地"""
+def _download_video(task_db_id: int, video_url: str, download_dir: str, service=None, remote_task_id: str = "") -> None:
+    """下载视频到本地（DYY 类型优先用 get_video_content API，其他走 URL）"""
+    from datetime import datetime
     try:
         os.makedirs(download_dir, exist_ok=True)
-        filename = f"video_{task_db_id}.mp4"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # 判断是否可以走 DYY 类型的 get_video_content API 下载
+        if service and remote_task_id and hasattr(service, 'get_video_content'):
+            logger.info(f"[Scanner] 使用 API 下载视频 id={task_db_id}, remote_id={remote_task_id}")
+            data, content_type, err = service.get_video_content(remote_task_id)
+            if not err and data:
+                ext = ".mp4"
+                if content_type and "webm" in content_type:
+                    ext = ".webm"
+                elif content_type and "mov" in content_type:
+                    ext = ".mov"
+                filename = f"video_{task_db_id}_{timestamp}{ext}"
+                filepath = os.path.join(download_dir, filename)
+                with open(filepath, "wb") as f:
+                    f.write(data)
+                update_video_task(task_db_id, video_path=filepath)
+                logger.info(f"[Scanner] API 下载完成 id={task_db_id}: {filepath}")
+                return
+            else:
+                logger.warning(f"[Scanner] API 下载失败 id={task_db_id}: {err}，回退到 URL 下载")
+
+        # URL 直接下载
+        if not video_url:
+            logger.warning(f"[Scanner] 无视频 URL，跳过下载 id={task_db_id}")
+            return
+
+        filename = f"video_{task_db_id}_{timestamp}.mp4"
         filepath = os.path.join(download_dir, filename)
 
-        logger.info(f"[Scanner] 开始下载视频 id={task_db_id} | {video_url[:80]}")
+        logger.info(f"[Scanner] 使用 URL 下载视频 id={task_db_id} | {video_url[:80]}")
         resp = requests.get(video_url, timeout=120, stream=True)
         resp.raise_for_status()
 
@@ -183,7 +231,7 @@ def _download_video(task_db_id: int, video_url: str, download_dir: str) -> None:
                 f.write(chunk)
 
         update_video_task(task_db_id, video_path=filepath)
-        logger.info(f"[Scanner] 视频已下载 id={task_db_id}: {filepath}")
+        logger.info(f"[Scanner] URL 下载完成 id={task_db_id}: {filepath}")
     except Exception as e:
         logger.error(f"[Scanner] 下载视频失败 id={task_db_id}: {e}")
 

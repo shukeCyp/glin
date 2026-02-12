@@ -219,6 +219,84 @@ const downloadTask = async (taskId) => {
   }
 }
 
+// ==================== 页面级拖拽批量添加 ====================
+const pageDragging = ref(false)
+const batchAdding = ref(false)
+
+const onPageDragEnter = (e) => { e.preventDefault(); pageDragging.value = true }
+const onPageDragOver = (e) => { e.preventDefault(); pageDragging.value = true }
+const onPageDragLeave = (e) => {
+  e.preventDefault()
+  if (e.currentTarget.contains(e.relatedTarget)) return
+  pageDragging.value = false
+}
+
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result
+      resolve({ base64: dataUrl.split(',')[1], mime: file.type })
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+const onPageDrop = async (e) => {
+  e.preventDefault()
+  pageDragging.value = false
+
+  // 收集所有图片文件
+  const files = []
+  const items = e.dataTransfer?.items
+  if (items) {
+    for (const item of items) {
+      if (item.kind === 'file') {
+        const f = item.getAsFile()
+        if (f && f.type.startsWith('image/')) files.push(f)
+      }
+    }
+  }
+  if (files.length === 0) {
+    const rawFiles = e.dataTransfer?.files
+    if (rawFiles) {
+      for (const f of rawFiles) {
+        if (f.type.startsWith('image/')) files.push(f)
+      }
+    }
+  }
+
+  if (files.length === 0) {
+    emit('toast', '未检测到图片文件', 'error')
+    return
+  }
+
+  // 使用已保存的视频提示词
+  const prompt = videoPromptText.value || defaultVideoPrompt
+  batchAdding.value = true
+  let success = 0
+  let fail = 0
+
+  for (const file of files) {
+    if (file.size > 10 * 1024 * 1024) { fail++; continue }
+    try {
+      const { base64, mime } = await fileToBase64(file)
+      const res = await window.pywebview.api.create_video_task(base64, mime, prompt)
+      if (res.ok) success++
+      else fail++
+    } catch { fail++ }
+  }
+
+  batchAdding.value = false
+  if (success > 0) {
+    emit('toast', `批量添加完成：成功 ${success} 个${fail > 0 ? '，失败 ' + fail + ' 个' : ''}`, 'success')
+    await loadTasks()
+  } else {
+    emit('toast', '批量添加失败', 'error')
+  }
+}
+
 // ==================== 视频预览弹窗 ====================
 const showVideoPreview = ref(false)
 const previewVideoUrl = ref('')
@@ -282,18 +360,41 @@ onUnmounted(() => {
     </div>
 
     <!-- 内容区 -->
-    <div class="page-body">
+    <div
+      class="page-body"
+      :class="{ 'drag-active': pageDragging }"
+      @dragenter="onPageDragEnter"
+      @dragover="onPageDragOver"
+      @dragleave="onPageDragLeave"
+      @drop="onPageDrop"
+    >
+      <!-- 拖拽遮罩 -->
+      <div v-if="pageDragging" class="drag-overlay">
+        <svg class="drag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p class="drag-text">松开鼠标批量添加视频任务</p>
+        <p class="drag-hint">每张图片将使用当前视频提示词创建一个任务</p>
+      </div>
+
+      <!-- 批量添加中遮罩 -->
+      <div v-if="batchAdding" class="drag-overlay batch-adding-overlay">
+        <p class="drag-text">正在批量添加任务...</p>
+      </div>
+
       <!-- 空状态 -->
-      <div v-if="taskList.length === 0" class="empty-state">
+      <div v-if="taskList.length === 0 && !pageDragging && !batchAdding" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
         </svg>
         <p class="empty-text">暂无视频任务</p>
-        <p class="empty-hint">点击上方"添加任务"按钮创建新的视频生成任务</p>
+        <p class="empty-hint">点击上方"添加任务"按钮，或直接拖拽图片到此处批量创建任务</p>
       </div>
 
       <!-- 列表 -->
-      <div v-else class="list-wrap">
+      <div v-else-if="!pageDragging && !batchAdding" class="list-wrap">
         <div class="list-header">
           <div class="col col-index">#</div>
           <div class="col col-thumb">图片</div>
@@ -340,10 +441,10 @@ onUnmounted(() => {
           </div>
           <div class="col col-actions">
             <button
-              v-if="task.status === 'failed'"
+              v-if="task.status === 'failed' || task.status === 'completed'"
               class="action-btn retry-btn"
               @click="retryTask(task.id)"
-              title="重试"
+              :title="task.status === 'completed' ? '重新生成' : '重试'"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
@@ -518,7 +619,15 @@ onUnmounted(() => {
 .tool-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ============ 内容区 ============ */
-.page-body { flex: 1; padding: 24px 32px; overflow-y: auto; }
+.page-body { flex: 1; padding: 24px 32px; overflow-y: auto; position: relative; transition: background 0.2s ease; }
+.page-body.drag-active { background: rgba(91,124,255,0.04); }
+
+/* ============ 拖拽 ============ */
+.drag-overlay { position: absolute; inset: 16px; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; border: 2px dashed rgba(91,124,255,0.5); background: rgba(91,124,255,0.08); pointer-events: none; }
+.batch-adding-overlay { border-style: solid; border-color: rgba(52,199,89,0.4); background: rgba(52,199,89,0.06); }
+.drag-icon { width: 48px; height: 48px; color: rgba(139,163,255,0.7); }
+.drag-text { margin: 0; font-size: 16px; font-weight: 500; color: rgba(139,163,255,0.8); }
+.drag-hint { margin: 0; font-size: 13px; color: rgba(139,163,255,0.5); }
 
 /* ============ 空状态 ============ */
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; }
@@ -541,7 +650,7 @@ onUnmounted(() => {
 .col-prompt.copyable:hover { color: #8ba3ff; }
 .col-status { width: 90px; flex-shrink: 0; text-align: center; }
 .col-url { width: 100px; flex-shrink: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col-actions { width: 120px; flex-shrink: 0; display: flex; justify-content: center; gap: 6px; }
+.col-actions { width: 140px; flex-shrink: 0; display: flex; justify-content: center; gap: 6px; }
 .thumb { width: 50px; height: 50px; border-radius: 8px; overflow: hidden; background: rgba(8,11,18,0.6); border: 1px solid rgba(255,255,255,0.06); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .no-result { font-size: 13px; color: rgba(230,233,242,0.2); }

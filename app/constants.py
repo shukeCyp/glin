@@ -25,6 +25,7 @@ class SettingKeys:
     API_MODE = "api_mode"
     # 官方 API
     GUANFANG_API_KEY = "guanfang_api_key"
+    GUANFANG_SORA2_PROVIDER = "guanfang_sora2_provider"
     GUANFANG_SORA2_MODEL = "guanfang_sora2_model"
     # 自定义 API
     DAYANGYU_API_KEY = "dayangyu_api_key"

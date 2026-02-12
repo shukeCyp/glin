@@ -165,13 +165,36 @@ const batchGenerate = async () => {
     return
   }
   batchGenerating.value = true
+
+  // 读取并发数（使用线程池大小设置，默认 10）
+  let concurrency = 10
+  try {
+    const settings = await window.pywebview.api.get_all_settings()
+    const poolSize = parseInt(settings.thread_pool_size || '10', 10)
+    if (poolSize > 0) concurrency = poolSize
+  } catch { /* ignore */ }
+
   let success = 0
   let fail = 0
-  for (const img of targets) {
-    await generateSingle(img)
-    if (img.status === 'completed') success++
-    else fail++
+  let idx = 0
+
+  // 并发池：同时处理 concurrency 个任务
+  const runNext = async () => {
+    while (idx < targets.length) {
+      const currentIdx = idx++
+      const img = targets[currentIdx]
+      await generateSingle(img)
+      if (img.status === 'completed') success++
+      else fail++
+    }
   }
+
+  const workers = []
+  for (let i = 0; i < Math.min(concurrency, targets.length); i++) {
+    workers.push(runNext())
+  }
+  await Promise.all(workers)
+
   batchGenerating.value = false
   emit('toast', `批量处理完成：成功 ${success}，失败 ${fail}`, success > 0 ? 'success' : 'error')
 }

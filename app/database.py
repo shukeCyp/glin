@@ -28,9 +28,19 @@ class VideoTask(BaseModel):
     image_path = CharField(default='')
     prompt = CharField(default='')
     status = CharField(default='pending')  # pending / processing / completed / failed
+    remote_task_id = CharField(default='')  # 远程 Sora2 任务 ID
     video_url = CharField(default='')
     video_path = CharField(default='')
     created_at = DateTimeField(default=datetime.datetime.now)
+
+
+def _migrate_db() -> None:
+    """数据库迁移：为旧表添加新字段"""
+    cursor = db.execute_sql("PRAGMA table_info(videotask)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if 'remote_task_id' not in columns:
+        db.execute_sql("ALTER TABLE videotask ADD COLUMN remote_task_id VARCHAR(255) DEFAULT ''")
+        logger.info("[DB] 迁移: 已添加 remote_task_id 字段")
 
 
 def init_db() -> None:
@@ -38,6 +48,7 @@ def init_db() -> None:
     logger.info(f"[DB] 连接数据库: {DB_PATH}")
     db.connect()
     db.create_tables([Settings, VideoTask], safe=True)
+    _migrate_db()
     logger.info("[DB] 数据库初始化完成, 表: Settings, VideoTask")
 
 

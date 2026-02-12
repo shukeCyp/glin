@@ -1,3 +1,4 @@
+import os
 import platform
 import sys
 
@@ -9,6 +10,12 @@ from app.database import init_db, get_setting
 from app.activation import get_device_id
 from app.thread_pool import init_pool
 from app.video_scanner import start_scanner
+
+
+def _on_closed():
+    """窗口关闭回调：强制终止进程，避免后台线程阻塞退出"""
+    logger.info("窗口已关闭, 强制退出进程")
+    os._exit(0)
 
 
 def main() -> None:
@@ -43,7 +50,7 @@ def main() -> None:
     logger.info(f"加载前端页面: {index_path}")
 
     api = Api()
-    webview.create_window(
+    window = webview.create_window(
         "万米霖-带货神器",
         index_path.as_uri(),
         js_api=api,
@@ -51,6 +58,7 @@ def main() -> None:
         height=800,
         min_size=(900, 600),
     )
+    window.events.closed += _on_closed
     logger.info("窗口已创建, 启动 webview...")
     webview.start()
     logger.info("万米霖-带货神器 已退出")

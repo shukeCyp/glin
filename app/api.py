@@ -512,6 +512,7 @@ class Api:
                         "image_path": t.image_path,
                         "prompt": t.prompt,
                         "status": t.status,
+                        "remote_task_id": t.remote_task_id,
                         "video_url": t.video_url,
                         "video_path": t.video_path,
                         "created_at": str(t.created_at),
@@ -591,10 +592,9 @@ class Api:
             return {"ok": False, "msg": str(e)}
 
     def download_video_task(self, task_id: int) -> dict:
-        """下载视频到设置的下载目录"""
-        import os
-        import urllib.request
-        import uuid
+        """下载视频到设置的下载目录（DYY 类型走 get_video_content API，其他走 URL 直接下载）"""
+        import requests
+        from datetime import datetime
         from pathlib import Path
 
         logger.info(f"[API] download_video_task 调用, task_id={task_id}")
@@ -614,7 +614,7 @@ class Api:
                 return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
 
         # 获取任务信息
-        from .database import get_video_tasks
+        from .database import get_video_tasks, update_video_task
         try:
             tasks = get_video_tasks()
             task = None
@@ -627,24 +627,70 @@ class Api:
             if not task.video_url:
                 return {"ok": False, "msg": "该任务暂无视频链接"}
 
-            # 下载视频
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            remote_id = task.remote_task_id or ""
+
+            # 判断是否可以走 DYY 类型的 get_video_content API 下载
+            settings = get_all_settings()
+            api_mode = settings.get(SettingKeys.API_MODE, "custom")
+            use_api_download = False
+
+            if remote_id:
+                if api_mode == "official":
+                    provider = settings.get("guanfang_sora2_provider", "dayangyu")
+                    if provider == "dayangyu":
+                        use_api_download = True
+                else:
+                    provider = settings.get(SettingKeys.SORA2_MODEL, "dayangyu")
+                    if provider == "dayangyu":
+                        use_api_download = True
+
+            if use_api_download:
+                # DYY 类型：通过 get_video_content API 下载
+                logger.info(f"[API] download_video_task -> 使用 API 下载, remote_id={remote_id}")
+                if api_mode == "official":
+                    api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+                    service = Sora2Guanfang(api_key)
+                else:
+                    api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
+                    service = Sora2Dayangyu(api_key)
+
+                data, content_type, err = service.get_video_content(remote_id)
+                if err or not data:
+                    logger.warning(f"[API] download_video_task -> API 下载失败: {err}，回退到 URL 下载")
+                    use_api_download = False
+                else:
+                    ext = ".mp4"
+                    if content_type and "webm" in content_type:
+                        ext = ".webm"
+                    elif content_type and "mov" in content_type:
+                        ext = ".mov"
+                    filename = f"video_{task_id}_{timestamp}{ext}"
+                    filepath = download_dir / filename
+                    filepath.write_bytes(data)
+                    logger.info(f"[API] download_video_task -> API 下载完成: {filepath}")
+                    update_video_task(task_id, video_path=str(filepath))
+                    return {"ok": True, "path": str(filepath)}
+
+            # 其他类型 / API 下载失败回退：通过 URL 直接下载
             video_url = task.video_url
             ext = ".mp4"
             if ".webm" in video_url:
                 ext = ".webm"
             elif ".mov" in video_url:
                 ext = ".mov"
-            filename = f"video_{task_id}_{uuid.uuid4().hex[:8]}{ext}"
+            filename = f"video_{task_id}_{timestamp}{ext}"
             filepath = download_dir / filename
 
-            logger.info(f"[API] download_video_task -> 开始下载: {video_url}")
-            urllib.request.urlretrieve(video_url, str(filepath))
-            logger.info(f"[API] download_video_task -> 下载完成: {filepath}")
+            logger.info(f"[API] download_video_task -> 使用 URL 下载: {video_url}")
+            resp = requests.get(video_url, timeout=120, stream=True)
+            resp.raise_for_status()
+            with open(str(filepath), "wb") as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            logger.info(f"[API] download_video_task -> URL 下载完成: {filepath}")
 
-            # 更新任务的 video_path
-            from .database import update_video_task
             update_video_task(task_id, video_path=str(filepath))
-
             return {"ok": True, "path": str(filepath)}
         except Exception as e:
             logger.error(f"[API] download_video_task -> 异常: {e}")
@@ -710,6 +756,32 @@ class Api:
             }
         except Exception as e:
             logger.error(f"[API] get_data_status -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def clean_logs(self) -> dict:
+        """清理历史日志文件（保留当前运行的日志）"""
+        import os
+        from .config import LOGS_DIR
+        from .logger import log_filename as current_log_filename
+
+        logger.info("[API] clean_logs 调用")
+        try:
+            if not LOGS_DIR.exists():
+                return {"ok": True, "count": 0}
+
+            deleted = 0
+            for f in LOGS_DIR.iterdir():
+                if f.is_file() and f.name != current_log_filename:
+                    try:
+                        f.unlink()
+                        deleted += 1
+                    except Exception as e:
+                        logger.warning(f"[API] clean_logs -> 删除文件失败 {f.name}: {e}")
+
+            logger.info(f"[API] clean_logs -> 已删除 {deleted} 个日志文件")
+            return {"ok": True, "count": deleted}
+        except Exception as e:
+            logger.error(f"[API] clean_logs -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     def open_root_directory(self) -> dict:
