@@ -7,6 +7,7 @@ import ImageProcess from './components/ImageProcess.vue'
 import ImageGeneration from './components/ImageGeneration.vue'
 import VideoGeneration from './components/VideoGeneration.vue'
 import VeoGeneration from './components/VeoGeneration.vue'
+import VeoProduct from './components/VeoProduct.vue'
 
 const state = ref('loading') // loading | pending | activated
 const deviceId = ref('')
@@ -169,6 +170,17 @@ onMounted(() => {
             <span>VEO视频</span>
           </button>
           <button
+            :class="['nav-item', { active: currentPage === 'veo_product' }]"
+            @click="currentPage = 'veo_product'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            <span>VEO带货</span>
+          </button>
+          <button
             v-if="isDevMode"
             :class="['nav-item', { active: currentPage === 'debug' }]"
             @click="currentPage = 'debug'"
@@ -218,6 +230,12 @@ onMounted(() => {
         <!-- VEO Video page -->
         <VeoGeneration
           v-show="currentPage === 'veo'"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
+        <!-- VEO Product page -->
+        <VeoProduct
+          v-show="currentPage === 'veo_product'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 

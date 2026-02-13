@@ -337,7 +337,7 @@ class Api:
             logger.error(f"调试 云雾 Sora2 查询任务异常: {e}")
             return {"ok": False, "msg": str(e)}
 
-    def debug_nanobanana(self, prompt: str, ref_image: str = "", ref_mime_type: str = "") -> dict:
+    def debug_nanobanana(self, prompt: str, ref_image: str = "", ref_mime_type: str = "", aspect_ratio: str = None, image_size: str = None) -> dict:
         """调试 NanoBanana - 生成图片（支持文生图和图生图），根据 API 模式和渠道选择"""
         settings = get_all_settings()
         api_mode = settings.get(SettingKeys.API_MODE, "custom")
@@ -367,8 +367,8 @@ class Api:
                 service = NanoBananaYunwu(api_key)
                 provider_label = "云雾"
 
-        aspect_ratio = settings.get(SettingKeys.NANOBANANA_RATIO, "9:16")
-        image_size = settings.get(SettingKeys.NANOBANANA_QUALITY, "1K")
+        aspect_ratio = aspect_ratio or settings.get(SettingKeys.NANOBANANA_RATIO, "9:16")
+        image_size = image_size or settings.get(SettingKeys.NANOBANANA_QUALITY, "1K")
 
         try:
             kwargs = {}
@@ -570,6 +570,94 @@ class Api:
             return {"ok": False, "msg": "请求超时（600秒）"}
         except Exception as e:
             logger.error(f"[API] veo_text_to_video -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def veo_image_to_video(self, prompt: str, image_base64: str, mime_type: str, orientation: str = "landscape") -> dict:
+        """VEO 图生视频 - 通过 SSE 流式调用 VEO API，以图片为首帧生成视频"""
+        import json
+        import re
+        import requests
+
+        logger.info(f"[API] veo_image_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
+
+        # 根据方向选择图生视频模型
+        if orientation == "portrait":
+            model = "veo_3_1_i2v_s_fast_portrait_fl"
+        else:
+            model = "veo_3_1_i2v_s_fast_fl"
+
+        url = f"{ApiUrls.GUANFANG}/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        # multimodal content: text + image
+        content = [
+            {"type": "text", "text": prompt},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:{mime_type};base64,{image_base64}"
+                }
+            }
+        ]
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": content}],
+            "stream": True,
+        }
+
+        try:
+            resp = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
+            resp.raise_for_status()
+
+            video_url = ""
+            error_msg = ""
+
+            for line in resp.iter_lines(decode_unicode=True):
+                if not line or not line.startswith("data: "):
+                    continue
+                data_str = line[6:].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    data = json.loads(data_str)
+                    choices = data.get("choices", [])
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta", {})
+                    # 检查是否有视频内容
+                    delta_content = delta.get("content", "")
+                    if delta_content:
+                        match = re.search(r"<video\s+src='([^']+)'", delta_content)
+                        if match:
+                            video_url = match.group(1)
+                    # 检查是否有错误信息
+                    reasoning = delta.get("reasoning_content", "")
+                    if reasoning and ("❌" in reasoning or "失败" in reasoning):
+                        error_msg = reasoning.strip()
+                except json.JSONDecodeError:
+                    continue
+
+            if video_url:
+                logger.info(f"[API] veo_image_to_video -> 成功, url={video_url[:80]}...")
+                return {"ok": True, "video_url": video_url}
+            elif error_msg:
+                logger.warning(f"[API] veo_image_to_video -> 失败: {error_msg}")
+                return {"ok": False, "msg": error_msg}
+            else:
+                logger.warning("[API] veo_image_to_video -> 未获取到视频链接")
+                return {"ok": False, "msg": "未获取到视频链接"}
+        except requests.Timeout:
+            logger.error("[API] veo_image_to_video -> 请求超时")
+            return {"ok": False, "msg": "请求超时（600秒）"}
+        except Exception as e:
+            logger.error(f"[API] veo_image_to_video -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     def download_veo_video(self, video_url: str) -> dict:
