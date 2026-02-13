@@ -7,7 +7,7 @@ const emit = defineEmits(['toast'])
 const taskList = ref([])
 let taskIdCounter = 0
 
-// ==================== 添加/编辑 弹窗 ====================
+// ==================== 添加/编辑图片 弹窗 ====================
 const showDialog = ref(false)
 const dialogMode = ref('add') // 'add' | 'edit'
 const editingTaskId = ref(null)
@@ -18,8 +18,6 @@ const dialogImageMime = ref('')
 const dialogImagePrompt = ref('')
 const dialogImageRatio = ref('9:16')
 const dialogImageQuality = ref('1K')
-const dialogVideoPrompt = ref('')
-const dialogVideoOrientation = ref('portrait')
 const dialogIsDragging = ref(false)
 const dialogFileInput = ref(null)
 
@@ -32,8 +30,6 @@ const openAddDialog = () => {
   dialogImagePrompt.value = ''
   dialogImageRatio.value = '9:16'
   dialogImageQuality.value = '1K'
-  dialogVideoPrompt.value = ''
-  dialogVideoOrientation.value = 'portrait'
   showDialog.value = true
 }
 
@@ -46,8 +42,6 @@ const openEditDialog = (task) => {
   dialogImagePrompt.value = task.imagePrompt
   dialogImageRatio.value = task.imageRatio
   dialogImageQuality.value = task.imageQuality
-  dialogVideoPrompt.value = task.videoPrompt
-  dialogVideoOrientation.value = task.videoOrientation
   showDialog.value = true
 }
 
@@ -90,6 +84,41 @@ const removeDialogImage = () => {
   dialogImageMime.value = ''
 }
 
+// ==================== 视频生成 弹窗 ====================
+const showVideoDialog = ref(false)
+const videoDialogTaskId = ref(null)
+const videoDialogPrompt = ref('')
+const videoDialogOrientation = ref('portrait')
+
+const openVideoDialog = (task) => {
+  if (isTaskBusy(task)) return
+  if (!task.resultImageBase64) {
+    emit('toast', '请先确认图片生成结果', 'error')
+    return
+  }
+  videoDialogTaskId.value = task.id
+  videoDialogPrompt.value = task.videoPrompt || ''
+  videoDialogOrientation.value = task.videoOrientation || 'portrait'
+  showVideoDialog.value = true
+}
+
+const closeVideoDialog = () => { showVideoDialog.value = false }
+
+const submitVideoDialog = () => {
+  if (!videoDialogPrompt.value.trim()) {
+    emit('toast', '请输入视频提示词', 'error')
+    return
+  }
+  const task = taskList.value.find(t => t.id === videoDialogTaskId.value)
+  if (!task) return
+
+  task.videoPrompt = videoDialogPrompt.value
+  task.videoOrientation = videoDialogOrientation.value
+  showVideoDialog.value = false
+
+  generateVideo(task)
+}
+
 // ==================== 统计信息 ====================
 const stats = computed(() => {
   const total = taskList.value.length
@@ -99,14 +128,12 @@ const stats = computed(() => {
   return { total, completed, processing, failed }
 })
 
-// ==================== 提交任务 ====================
+// ==================== 提交图片任务 ====================
 const submitDialog = () => {
   if (!dialogImageBase64.value) { emit('toast', '请先选择图片', 'error'); return }
   if (!dialogImagePrompt.value.trim()) { emit('toast', '请输入图片提示词', 'error'); return }
-  if (!dialogVideoPrompt.value.trim()) { emit('toast', '请输入视频提示词', 'error'); return }
 
   if (dialogMode.value === 'edit') {
-    // 编辑模式：更新任务参数
     const task = taskList.value.find(t => t.id === editingTaskId.value)
     if (task) {
       task.originSrc = dialogImagePreview.value
@@ -115,8 +142,6 @@ const submitDialog = () => {
       task.imagePrompt = dialogImagePrompt.value
       task.imageRatio = dialogImageRatio.value
       task.imageQuality = dialogImageQuality.value
-      task.videoPrompt = dialogVideoPrompt.value
-      task.videoOrientation = dialogVideoOrientation.value
       showDialog.value = false
       emit('toast', '任务已更新', 'success')
     }
@@ -132,8 +157,8 @@ const submitDialog = () => {
     imagePrompt: dialogImagePrompt.value,
     imageRatio: dialogImageRatio.value,
     imageQuality: dialogImageQuality.value,
-    videoPrompt: dialogVideoPrompt.value,
-    videoOrientation: dialogVideoOrientation.value,
+    videoPrompt: '',
+    videoOrientation: 'portrait',
     resultImageSrc: '',
     resultImageBase64: '',
     resultImageMime: '',
@@ -144,20 +169,11 @@ const submitDialog = () => {
   taskList.value.unshift(task)
   showDialog.value = false
 
-  // 启动生成
-  runTaskPipeline(task)
+  // 仅启动图片生成
+  generateImage(task)
 }
 
-// ==================== 生成管线：图片 → 视频 ====================
-const runTaskPipeline = async (task) => {
-  // 阶段一：图片生成
-  const imageOk = await generateImage(task)
-  if (!imageOk) return
-
-  // 阶段二：视频生成
-  await generateVideo(task)
-}
-
+// ==================== 图片生成 ====================
 const generateImage = async (task) => {
   task.status = 'image_processing'
   task.statusText = '图片生成中...'
@@ -165,7 +181,6 @@ const generateImage = async (task) => {
   task.resultImageBase64 = ''
   task.resultImageMime = ''
 
-  // 读取重试次数
   let maxRetry = 0
   try {
     const settings = await window.pywebview.api.get_all_settings()
@@ -194,7 +209,7 @@ const generateImage = async (task) => {
         task.resultImageBase64 = res.image_data
         task.resultImageMime = res.mime_type
         task.status = 'image_done'
-        task.statusText = '图片已完成'
+        task.statusText = '图片已完成，待生成视频'
         return true
       } else {
         lastError = res.msg || '图片生成失败'
@@ -210,12 +225,12 @@ const generateImage = async (task) => {
   return false
 }
 
+// ==================== 视频生成 ====================
 const generateVideo = async (task) => {
   task.status = 'video_processing'
   task.statusText = '视频生成中...'
   task.videoUrl = ''
 
-  // 读取重试次数
   let maxRetry = 0
   try {
     const settings = await window.pywebview.api.get_all_settings()
@@ -242,7 +257,6 @@ const generateVideo = async (task) => {
         task.videoUrl = res.video_url
         task.status = 'completed'
         task.statusText = '已完成'
-        // 自动下载
         try {
           const settings = await window.pywebview.api.get_all_settings()
           if (settings.auto_download === 'true') {
@@ -270,7 +284,9 @@ const isTaskBusy = (task) => ['image_processing', 'video_processing'].includes(t
 const regenImage = (task) => {
   if (isTaskBusy(task)) return
   task.videoUrl = ''
-  runTaskPipeline(task)
+  task.videoPrompt = ''
+  task.videoOrientation = 'portrait'
+  generateImage(task)
 }
 
 const regenVideo = (task) => {
@@ -279,7 +295,8 @@ const regenVideo = (task) => {
     emit('toast', '暂无生成图片，请先重新生成图片', 'error')
     return
   }
-  generateVideo(task)
+  // 重新打开视频弹窗让用户确认/修改参数
+  openVideoDialog(task)
 }
 
 const deleteTask = (idx) => {
@@ -319,7 +336,7 @@ const downloadVideo = async (task, silent = false) => {
 }
 
 // ==================== 预览 ====================
-const previewType = ref('') // 'image' | 'video'
+const previewType = ref('')
 const previewSrc = ref('')
 const showPreview = ref(false)
 const openImagePreview = (src) => { previewType.value = 'image'; previewSrc.value = src; showPreview.value = true }
@@ -373,7 +390,7 @@ const statusClass = (status) => {
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         <p class="empty-text">暂无带货任务</p>
-        <p class="empty-hint">点击"添加任务"上传商品图，自动完成图片生成 + 视频生成</p>
+        <p class="empty-hint">点击"添加任务"上传商品图生成图片，确认后再生成视频</p>
       </div>
 
       <!-- 列表 -->
@@ -417,23 +434,23 @@ const statusClass = (status) => {
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
               </svg>
             </button>
-            <!-- 视频重新生成 -->
+            <!-- 生成视频 / 视频重新生成 -->
             <button
-              class="action-btn regen-vid-btn"
-              @click="regenVideo(task)"
+              class="action-btn gen-vid-btn"
+              @click="task.videoUrl ? regenVideo(task) : openVideoDialog(task)"
               :disabled="isTaskBusy(task) || !task.resultImageBase64"
-              title="视频重新生成"
+              :title="task.videoUrl ? '视频重新生成' : '生成视频'"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
               </svg>
             </button>
-            <!-- 编辑 -->
+            <!-- 编辑图片参数 -->
             <button
               class="action-btn edit-btn"
               @click="openEditDialog(task)"
               :disabled="isTaskBusy(task)"
-              title="编辑"
+              title="编辑图片参数"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -492,12 +509,12 @@ const statusClass = (status) => {
       </div>
     </div>
 
-    <!-- 添加/编辑 弹窗 -->
+    <!-- 添加/编辑图片 弹窗 -->
     <Teleport to="body">
       <div v-if="showDialog" class="dialog-overlay" @click.self="closeDialog">
-        <div class="dialog">
+        <div class="dialog dialog--image">
           <div class="dialog-header">
-            <h3 class="dialog-title">{{ dialogMode === 'edit' ? '编辑任务' : '添加带货任务' }}</h3>
+            <h3 class="dialog-title">{{ dialogMode === 'edit' ? '编辑图片参数' : '添加带货任务' }}</h3>
             <button class="dialog-close" @click="closeDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -533,19 +550,14 @@ const statusClass = (status) => {
               </div>
             </div>
 
-            <!-- 右侧：参数设置 -->
+            <!-- 右侧：图片参数 -->
             <div class="dialog-right">
-              <!-- 图片生成区 -->
-              <div class="section-divider">
-                <span class="section-label">图片生成</span>
-              </div>
-
               <label class="field">
                 <span class="field-label">图片提示词（必填）</span>
                 <textarea
                   v-model="dialogImagePrompt"
                   placeholder="描述你期望生成的图片效果，例如：将商品放在优雅的展示场景中"
-                  rows="3"
+                  rows="5"
                 ></textarea>
               </label>
 
@@ -566,43 +578,57 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
-
-              <!-- 视频生成区 -->
-              <div class="section-divider">
-                <span class="section-label">视频生成</span>
-              </div>
-
-              <label class="field">
-                <span class="field-label">视频提示词（必填）</span>
-                <textarea
-                  v-model="dialogVideoPrompt"
-                  placeholder="描述你期望生成的视频效果，例如：让商品缓缓旋转展示各个角度"
-                  rows="3"
-                ></textarea>
-              </label>
-
-              <div class="form-row">
-                <div class="field field-inline">
-                  <span class="field-label">视频方向</span>
-                  <div class="toggle-group">
-                    <button :class="['toggle-btn', { active: dialogVideoOrientation === 'portrait' }]" @click="dialogVideoOrientation = 'portrait'">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
-                      竖屏
-                    </button>
-                    <button :class="['toggle-btn', { active: dialogVideoOrientation === 'landscape' }]" @click="dialogVideoOrientation = 'landscape'">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
-                      横屏
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
           <div class="dialog-footer">
             <button class="cancel-btn" @click="closeDialog">取消</button>
             <button class="primary-btn save-btn" @click="submitDialog">
-              {{ dialogMode === 'edit' ? '保存修改' : '添加并生成' }}
+              {{ dialogMode === 'edit' ? '保存修改' : '添加并生成图片' }}
             </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 视频生成 弹窗 -->
+    <Teleport to="body">
+      <div v-if="showVideoDialog" class="dialog-overlay" @click.self="closeVideoDialog">
+        <div class="dialog dialog--video">
+          <div class="dialog-header">
+            <h3 class="dialog-title">生成视频</h3>
+            <button class="dialog-close" @click="closeVideoDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="dialog-body">
+            <label class="field">
+              <span class="field-label">视频提示词（必填）</span>
+              <textarea
+                v-model="videoDialogPrompt"
+                placeholder="描述你期望生成的视频效果，例如：让商品缓缓旋转展示各个角度"
+                rows="4"
+              ></textarea>
+            </label>
+
+            <div class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">视频方向</span>
+                <div class="toggle-group">
+                  <button :class="['toggle-btn', { active: videoDialogOrientation === 'portrait' }]" @click="videoDialogOrientation = 'portrait'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                    竖屏
+                  </button>
+                  <button :class="['toggle-btn', { active: videoDialogOrientation === 'landscape' }]" @click="videoDialogOrientation = 'landscape'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
+                    横屏
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dialog-footer">
+            <button class="cancel-btn" @click="closeVideoDialog">取消</button>
+            <button class="primary-btn save-btn" @click="submitVideoDialog">开始生成视频</button>
           </div>
         </div>
       </div>
@@ -685,7 +711,7 @@ const statusClass = (status) => {
 .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .action-btn svg { width: 15px; height: 15px; }
 .regen-img-btn:hover:not(:disabled) { background: rgba(100,210,255,0.15); border-color: rgba(100,210,255,0.4); color: #64d2ff; }
-.regen-vid-btn:hover:not(:disabled) { background: rgba(175,82,222,0.15); border-color: rgba(175,82,222,0.4); color: #bf5af2; }
+.gen-vid-btn:hover:not(:disabled) { background: rgba(175,82,222,0.15); border-color: rgba(175,82,222,0.4); color: #bf5af2; }
 .edit-btn:hover:not(:disabled) { background: rgba(91,124,255,0.15); border-color: rgba(91,124,255,0.4); color: #8ba3ff; }
 .download-btn:hover:not(:disabled) { background: rgba(52,199,89,0.15); border-color: rgba(52,199,89,0.4); color: #34c759; }
 .download-btn { overflow: hidden; }
@@ -695,9 +721,11 @@ const statusClass = (status) => {
 .view-btn:hover:not(:disabled) { background: rgba(91,124,255,0.15); border-color: rgba(91,124,255,0.4); color: #8ba3ff; }
 .delete-btn:hover:not(:disabled) { background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.4); color: #ff453a; }
 
-/* ============ 弹窗 ============ */
+/* ============ 弹窗通用 ============ */
 .dialog-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-.dialog { width: min(920px, calc(100% - 40px)); max-height: calc(100vh - 60px); border-radius: 16px; background: linear-gradient(180deg, rgba(20,24,38,0.98), rgba(12,15,25,0.99)); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 60px rgba(5,7,12,0.8); overflow: hidden; display: flex; flex-direction: column; }
+.dialog { max-height: calc(100vh - 60px); border-radius: 16px; background: linear-gradient(180deg, rgba(20,24,38,0.98), rgba(12,15,25,0.99)); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 60px rgba(5,7,12,0.8); overflow: hidden; display: flex; flex-direction: column; }
+.dialog--image { width: min(860px, calc(100% - 40px)); }
+.dialog--video { width: min(520px, calc(100% - 40px)); }
 .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
 .dialog-title { margin: 0; font-size: 16px; font-weight: 600; color: #e6e9f2; }
 .dialog-close { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: none; background: transparent; color: rgba(230,233,242,0.5); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
@@ -710,7 +738,6 @@ const statusClass = (status) => {
 .dialog-left .ref-image-preview { max-height: 100%; }
 .dialog-left .ref-image-preview img { max-height: 360px; width: 100%; object-fit: contain; }
 .dialog-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.dialog-right .section-divider:first-child { margin-top: 0; }
 .dialog-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
 .cancel-btn { padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: rgba(230,233,242,0.7); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
 .cancel-btn:hover { background: rgba(255,255,255,0.1); color: rgba(230,233,242,0.9); }
@@ -722,11 +749,6 @@ const statusClass = (status) => {
 .dialog-body textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,18,0.8); color: #f5f7ff; font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
 .dialog-body textarea::placeholder { color: rgba(230,233,242,0.4); }
 .dialog-body textarea:focus { border-color: rgba(91,124,255,0.6); box-shadow: 0 0 0 3px rgba(91,124,255,0.15); }
-
-/* 分隔线 */
-.section-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 16px; }
-.section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-.section-label { font-size: 12px; font-weight: 600; color: rgba(230,233,242,0.4); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
 
 /* 表单行 */
 .form-row { display: flex; gap: 24px; margin-top: 12px; align-items: flex-start; }
