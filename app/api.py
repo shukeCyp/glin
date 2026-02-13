@@ -1,7 +1,7 @@
 import sys
 
 from .activation import get_device_id, verify_activation
-from .constants import SettingKeys
+from .constants import SettingKeys, ApiUrls
 from .database import get_setting, set_setting, get_all_settings
 from .logger import logger
 from .services.nanobanana import NanoBananaYunwu, NanoBananaGuanfang, NanoBananaHaotian
@@ -490,6 +490,123 @@ class Api:
             }
         except Exception as e:
             logger.error(f"调试 官方 Sora2 查看视频异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    # ==================== VEO 视频生成 ====================
+
+    def veo_text_to_video(self, prompt: str, orientation: str = "landscape") -> dict:
+        """VEO 文生视频 - 通过 SSE 流式调用 VEO API 生成视频"""
+        import json
+        import re
+        import requests
+
+        logger.info(f"[API] veo_text_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
+
+        # 根据方向选择模型
+        if orientation == "portrait":
+            model = "veo_3_1_t2v_fast_portrait"
+        else:
+            model = "veo_3_1_t2v_fast_landscape"
+
+        url = f"{ApiUrls.GUANFANG}/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": True,
+        }
+
+        try:
+            resp = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
+            resp.raise_for_status()
+
+            video_url = ""
+            error_msg = ""
+
+            for line in resp.iter_lines(decode_unicode=True):
+                if not line or not line.startswith("data: "):
+                    continue
+                data_str = line[6:].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    data = json.loads(data_str)
+                    choices = data.get("choices", [])
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta", {})
+                    # 检查是否有视频内容
+                    content = delta.get("content", "")
+                    if content:
+                        match = re.search(r"<video\s+src='([^']+)'", content)
+                        if match:
+                            video_url = match.group(1)
+                    # 检查是否有错误信息
+                    reasoning = delta.get("reasoning_content", "")
+                    if reasoning and ("❌" in reasoning or "失败" in reasoning):
+                        error_msg = reasoning.strip()
+                except json.JSONDecodeError:
+                    continue
+
+            if video_url:
+                logger.info(f"[API] veo_text_to_video -> 成功, url={video_url[:80]}...")
+                return {"ok": True, "video_url": video_url}
+            elif error_msg:
+                logger.warning(f"[API] veo_text_to_video -> 失败: {error_msg}")
+                return {"ok": False, "msg": error_msg}
+            else:
+                logger.warning("[API] veo_text_to_video -> 未获取到视频链接")
+                return {"ok": False, "msg": "未获取到视频链接"}
+        except requests.Timeout:
+            logger.error("[API] veo_text_to_video -> 请求超时")
+            return {"ok": False, "msg": "请求超时（600秒）"}
+        except Exception as e:
+            logger.error(f"[API] veo_text_to_video -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def download_veo_video(self, video_url: str) -> dict:
+        """下载 VEO 视频到下载目录"""
+        import requests
+        from datetime import datetime
+        from pathlib import Path
+
+        logger.info(f"[API] download_veo_video 调用, url={video_url[:80]}...")
+
+        download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+        if not download_path or not download_path.strip():
+            return {"ok": False, "msg": "未设置下载路径，请先在设置中选择下载文件夹"}
+
+        download_dir = Path(download_path)
+        if not download_dir.exists():
+            try:
+                download_dir.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
+
+        try:
+            resp = requests.get(video_url, timeout=120, stream=True)
+            resp.raise_for_status()
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            filename = f"veo_{timestamp}.mp4"
+            filepath = download_dir / filename
+
+            with open(str(filepath), "wb") as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+            logger.info(f"[API] download_veo_video -> 保存成功: {filepath}")
+            return {"ok": True, "path": str(filepath)}
+        except Exception as e:
+            logger.error(f"[API] download_veo_video -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     # ==================== 视频任务 ====================

@@ -6,7 +6,7 @@ class ApiUrls:
     DAYANGYU = "https://api.dyuapi.com"
     YUNWU = "https://yunwu.zeabur.app"
     XIAOBANSHOU = "https://api.xintianwengai.com"
-    GUANFANG = "https://api.haoapi.top"
+    GUANFANG = "http://api.haoapi.top"
 
 
 class ModelProviders:
