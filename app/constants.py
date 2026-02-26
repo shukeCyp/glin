@@ -7,6 +7,7 @@ class ApiUrls:
     YUNWU = "https://yunwu.zeabur.app"
     XIAOBANSHOU = "https://api.xintianwengai.com"
     GUANFANG = "https://api.haoapi.top"
+    BANDIANWA = "https://api.hellobabygo.com"
 
 
 class ModelProviders:
@@ -16,6 +17,7 @@ class ModelProviders:
     XIAOBANSHOU = "xiaobanshou"
     GUANFANG = "guanfang"
     HAOTIAN = "haotian"
+    BANDIANWA = "bandianwa"
 
 
 class SettingKeys:
@@ -43,6 +45,9 @@ class SettingKeys:
     YUNWU_SORA2_DURATION = "yunwu_sora2_duration"
     # 小扳手 Sora2 配置
     XIAOBANSHOU_SORA2_MODEL = "xiaobanshou_sora2_model"
+    # 斑点蛙 Sora2 配置
+    BANDIANWA_API_KEY = "bandianwa_api_key"
+    BANDIANWA_SORA2_MODEL = "bandianwa_sora2_model"
     # 下载配置
     AUTO_DOWNLOAD = "auto_download"
     DOWNLOAD_PATH = "download_path"

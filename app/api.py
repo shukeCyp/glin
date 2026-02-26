@@ -5,7 +5,7 @@ from .constants import SettingKeys, ApiUrls
 from .database import get_setting, set_setting, get_all_settings
 from .logger import logger
 from .services.nanobanana import NanoBananaYunwu, NanoBananaGuanfang, NanoBananaHaotian
-from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Guanfang
+from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Guanfang, Sora2Bandianwa
 
 
 class Api:
@@ -253,6 +253,73 @@ class Api:
             return result
         except Exception as e:
             logger.error(f"调试 小扳手 Sora2 查询异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_bandianwa_sora2_create(self, prompt: str, image_base64: str = "", mime_type: str = "") -> dict:
+        """调试 斑点蛙 Sora2 - 创建任务（文生视频 / 图生视频）"""
+        import base64
+        import os
+        import tempfile
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.BANDIANWA_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置斑点蛙 API Key，请前往设置页面配置"}
+        model_name = settings.get(SettingKeys.BANDIANWA_SORA2_MODEL, "") or "sora-2-portrait-15s-guanzhuan"
+        image_path = None
+        try:
+            service = Sora2Bandianwa(api_key)
+            if image_base64:
+                ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
+                ext = ext_map.get(mime_type or "", ".png")
+                image_data = base64.b64decode(image_base64)
+                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+                tmp.write(image_data)
+                tmp.close()
+                image_path = tmp.name
+                task = service.create_task(prompt, model=model_name, image_path=image_path)
+            else:
+                task = service.create_task(prompt, model=model_name)
+            if image_path and os.path.exists(image_path):
+                os.remove(image_path)
+            return {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "prompt": task.prompt,
+                "mode": "图生视频" if image_base64 else "文生视频",
+            }
+        except Exception as e:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+            logger.error(f"调试 斑点蛙 Sora2 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def debug_bandianwa_sora2_query(self, task_id: str) -> dict:
+        """调试 斑点蛙 Sora2 - 查询任务状态"""
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.BANDIANWA_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置斑点蛙 API Key"}
+        try:
+            service = Sora2Bandianwa(api_key)
+            task = service.query_task(task_id)
+            result = {
+                "ok": True,
+                "task_id": task.task_id,
+                "status": task.status.value,
+                "progress": task.progress,
+            }
+            if task.video_url:
+                result["video_url"] = task.video_url
+            if task.error_message:
+                result["error_message"] = task.error_message
+            return result
+        except Exception as e:
+            logger.error(f"调试 斑点蛙 Sora2 查询异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     def debug_yunwu_sora2_create(self, prompt: str, image_base64: str = "", mime_type: str = "") -> dict:

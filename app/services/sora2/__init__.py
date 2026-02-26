@@ -3,6 +3,7 @@ from .yunwu import Sora2Yunwu
 from .dayangyu import Sora2Dayangyu
 from .xiaobanshou import Sora2Xiaobanshou
 from .guanfang import Sora2Guanfang, Sora2GuanfangXbs
+from .bandianwa import Sora2Bandianwa
 
 __all__ = [
     "Sora2Base",
@@ -13,4 +14,5 @@ __all__ = [
     "Sora2Xiaobanshou",
     "Sora2Guanfang",
     "Sora2GuanfangXbs",
+    "Sora2Bandianwa",
 ]

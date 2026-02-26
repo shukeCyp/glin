@@ -322,6 +322,73 @@ const debugXbsSora2Query = async () => {
   } finally { xbs_query_loading.value = false }
 }
 
+// ==================== BDW Sora2 调试 ====================
+const bdw_prompt = ref('')
+const bdw_file_input = ref(null)
+const bdw_image_preview = ref('')
+const bdw_image_base64 = ref('')
+const bdw_image_mime = ref('')
+const bdw_loading = ref(false)
+const bdw_result = ref(null)
+
+const handleBdwImage = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) { emit('toast', '请选择图片文件', 'error'); return }
+  if (file.size > 10 * 1024 * 1024) { emit('toast', '图片不能超过 10MB', 'error'); return }
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const dataUrl = e.target.result
+    bdw_image_preview.value = dataUrl
+    bdw_image_mime.value = file.type
+    bdw_image_base64.value = dataUrl.split(',')[1]
+  }
+  reader.readAsDataURL(file)
+}
+
+const removeBdwImage = () => {
+  bdw_image_preview.value = ''
+  bdw_image_base64.value = ''
+  bdw_image_mime.value = ''
+  if (bdw_file_input.value) bdw_file_input.value.value = ''
+}
+
+const debugBdwSora2Create = async () => {
+  if (!bdw_prompt.value.trim()) { emit('toast', '请输入提示词', 'error'); return }
+  bdw_loading.value = true
+  bdw_result.value = null
+  try {
+    const res = await window.pywebview.api.debug_bandianwa_sora2_create(
+      bdw_prompt.value, bdw_image_base64.value || '', bdw_image_mime.value || ''
+    )
+    bdw_result.value = res
+    if (res.ok) emit('toast', 'BDW 任务已提交', 'success')
+    else emit('toast', res.msg || '创建失败', 'error')
+  } catch (e) {
+    bdw_result.value = { ok: false, msg: String(e) }
+    emit('toast', '请求异常', 'error')
+  } finally { bdw_loading.value = false }
+}
+
+const bdw_task_id = ref('')
+const bdw_query_loading = ref(false)
+const bdw_query_result = ref(null)
+
+const debugBdwSora2Query = async () => {
+  if (!bdw_task_id.value.trim()) { emit('toast', '请输入任务ID', 'error'); return }
+  bdw_query_loading.value = true
+  bdw_query_result.value = null
+  try {
+    const res = await window.pywebview.api.debug_bandianwa_sora2_query(bdw_task_id.value)
+    bdw_query_result.value = res
+    if (res.ok) emit('toast', '查询成功', 'success')
+    else emit('toast', res.msg || '查询失败', 'error')
+  } catch (e) {
+    bdw_query_result.value = { ok: false, msg: String(e) }
+    emit('toast', '查询异常', 'error')
+  } finally { bdw_query_loading.value = false }
+}
+
 // ==================== NanoBanana 调试 ====================
 const nb_prompt = ref('')
 const nb_loading = ref(false)
@@ -405,6 +472,12 @@ const debugNanoBanana = async () => {
         @click="activeTab = 'xiaobanshou_sora2'"
       >
         XBS Sora2 调试
+      </button>
+      <button
+        :class="['tab-item', { active: activeTab === 'bandianwa_sora2' }]"
+        @click="activeTab = 'bandianwa_sora2'"
+      >
+        BDW Sora2 调试
       </button>
       <button
         :class="['tab-item', { active: activeTab === 'nanobanana' }]"
@@ -695,6 +768,70 @@ const debugNanoBanana = async () => {
               <span :class="['result-badge', xbs_query_result.ok ? 'success' : 'error']">{{ xbs_query_result.ok ? '成功' : '失败' }}</span>
             </div>
             <pre class="result-json">{{ JSON.stringify(xbs_query_result, null, 2) }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BDW Sora2 调试面板 -->
+    <div v-if="activeTab === 'bandianwa_sora2'" class="page-body">
+      <div class="debug-grid">
+        <div class="debug-card">
+          <div class="card-header">
+            <h3 class="card-title">创建 BDW Sora2 任务</h3>
+            <span class="card-subtitle">文生视频或上传图片为图生视频，模型在设置中配置</span>
+          </div>
+          <div class="card-body">
+            <label class="field">
+              <span class="field-label">提示词 (prompt)</span>
+              <textarea v-model="bdw_prompt" placeholder="请输入视频描述提示词" rows="4"></textarea>
+            </label>
+            <div class="field">
+              <span class="field-label">图片（可选，上传后为图生视频）</span>
+              <div v-if="!bdw_image_preview" class="upload-area" @click="bdw_file_input?.click()">
+                <input ref="bdw_file_input" type="file" accept="image/*" class="upload-input" @change="handleBdwImage" />
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span class="upload-text">点击选择图片</span>
+                <span class="upload-hint">支持 JPG / PNG / WebP，最大 10MB</span>
+              </div>
+              <div v-else class="ref-image-preview">
+                <img :src="bdw_image_preview" alt="参考图片" />
+                <button class="remove-btn" @click="removeBdwImage" title="移除图片">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+            <button class="primary-btn debug-btn" @click="debugBdwSora2Create" :disabled="bdw_loading">
+              {{ bdw_loading ? '请求中...' : (bdw_image_base64 ? '图生视频' : '文生视频') }}
+            </button>
+          </div>
+          <div v-if="bdw_result" class="card-result">
+            <div class="result-header">
+              <span :class="['result-badge', bdw_result.ok ? 'success' : 'error']">{{ bdw_result.ok ? '成功' : '失败' }}</span>
+            </div>
+            <pre class="result-json">{{ JSON.stringify(bdw_result, null, 2) }}</pre>
+          </div>
+        </div>
+        <div class="debug-card">
+          <div class="card-header">
+            <h3 class="card-title">查询 BDW Sora2 任务</h3>
+          </div>
+          <div class="card-body">
+            <label class="field">
+              <span class="field-label">任务 ID</span>
+              <input v-model="bdw_task_id" type="text" placeholder="请输入任务ID" />
+            </label>
+            <button class="primary-btn debug-btn" @click="debugBdwSora2Query" :disabled="bdw_query_loading">
+              {{ bdw_query_loading ? '查询中...' : '查询状态' }}
+            </button>
+          </div>
+          <div v-if="bdw_query_result" class="card-result">
+            <div class="result-header">
+              <span :class="['result-badge', bdw_query_result.ok ? 'success' : 'error']">{{ bdw_query_result.ok ? '成功' : '失败' }}</span>
+            </div>
+            <pre class="result-json">{{ JSON.stringify(bdw_query_result, null, 2) }}</pre>
           </div>
         </div>
       </div>

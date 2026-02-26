@@ -34,6 +34,10 @@ const yunwu_sora2_duration = ref('10')
 // 小扳手 Sora2 配置
 const xiaobanshou_sora2_model = ref('')
 
+// 斑点蛙 配置
+const bandianwa_api_key = ref('')
+const bandianwa_sora2_model = ref('')
+
 // 下载配置
 const auto_download = ref(false)
 const download_path = ref('')
@@ -80,6 +84,8 @@ const saveSettings = async () => {
       yunwu_sora2_orientation: yunwu_sora2_orientation.value,
       yunwu_sora2_duration: yunwu_sora2_duration.value,
       xiaobanshou_sora2_model: xiaobanshou_sora2_model.value,
+      bandianwa_api_key: bandianwa_api_key.value,
+      bandianwa_sora2_model: bandianwa_sora2_model.value,
       auto_download: auto_download.value ? 'true' : 'false',
       download_path: download_path.value,
       auto_retry: auto_retry.value ? 'true' : 'false',
@@ -158,6 +164,8 @@ const loadSettings = async () => {
     if (settings.yunwu_sora2_duration) yunwu_sora2_duration.value = settings.yunwu_sora2_duration
     if (settings.xiaobanshou_api_key) xiaobanshou_api_key.value = settings.xiaobanshou_api_key
     if (settings.xiaobanshou_sora2_model) xiaobanshou_sora2_model.value = settings.xiaobanshou_sora2_model
+    if (settings.bandianwa_api_key) bandianwa_api_key.value = settings.bandianwa_api_key
+    if (settings.bandianwa_sora2_model) bandianwa_sora2_model.value = settings.bandianwa_sora2_model
     if (settings.auto_download) auto_download.value = settings.auto_download === 'true'
     if (settings.download_path) download_path.value = settings.download_path
     if (settings.auto_retry) auto_retry.value = settings.auto_retry === 'true'
@@ -249,6 +257,14 @@ onMounted(() => {
                   />
                   <span class="radio-label">XBS 渠道</span>
                 </label>
+                <label class="radio-item">
+                  <input
+                    type="radio"
+                    v-model="guanfang_sora2_provider"
+                    value="bandianwa"
+                  />
+                  <span class="radio-label">BDW 渠道</span>
+                </label>
               </div>
             </div>
           </div>
@@ -261,11 +277,14 @@ onMounted(() => {
             <div class="card-body">
               <label class="field">
                 <span class="field-label">模型</span>
-                <input
-                  v-model="guanfang_sora2_model"
-                  type="text"
-                  placeholder="请输入模型名称"
-                />
+                <select v-model="guanfang_sora2_model">
+                  <option value="sora2-pro-landscape-25s">sora2-pro-landscape-25s</option>
+                  <option value="sora2-pro-landscape-hd-10s">sora2-pro-landscape-hd-10s</option>
+                  <option value="sora2-pro-landscape-hd-15s">sora2-pro-landscape-hd-15s</option>
+                  <option value="sora2-pro-portrait-25s">sora2-pro-portrait-25s</option>
+                  <option value="sora2-pro-portrait-hd-10s">sora2-pro-portrait-hd-10s</option>
+                  <option value="sora2-pro-portrait-hd-15s">sora2-pro-portrait-hd-15s</option>
+                </select>
               </label>
             </div>
           </div>
@@ -278,11 +297,38 @@ onMounted(() => {
             <div class="card-body">
               <label class="field">
                 <span class="field-label">模型</span>
-                <input
-                  v-model="xiaobanshou_sora2_model"
-                  type="text"
-                  placeholder="请输入模型名称"
-                />
+                <select v-model="xiaobanshou_sora2_model">
+                  <option value="sora-2">sora-2</option>
+                  <option value="sora-2-landscape-10s">sora-2-landscape-10s</option>
+                  <option value="sora-2-landscape-15s">sora-2-landscape-15s</option>
+                  <option value="sora-2-portrait-10s">sora-2-portrait-10s</option>
+                  <option value="sora-2-portrait-15s">sora-2-portrait-15s</option>
+                  <option value="sora-2-pro">sora-2-pro</option>
+                  <option value="sora-2-pro-landscape-25s">sora-2-pro-landscape-25s</option>
+                  <option value="sora-2-pro-landscape-hd-10s">sora-2-pro-landscape-hd-10s</option>
+                  <option value="sora-2-pro-landscape-hd-15s">sora-2-pro-landscape-hd-15s</option>
+                  <option value="sora-2-pro-portrait-25s">sora-2-pro-portrait-25s</option>
+                  <option value="sora-2-pro-portrait-hd-10s">sora-2-pro-portrait-hd-10s</option>
+                  <option value="sora-2-pro-portrait-hd-15s">sora-2-pro-portrait-hd-15s</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <!-- BDW Sora2 模型配置（官方） -->
+          <div class="settings-card">
+            <div class="card-header">
+              <h3 class="card-title">BDW Sora2 配置</h3>
+            </div>
+            <div class="card-body">
+              <label class="field">
+                <span class="field-label">模型</span>
+                <select v-model="bandianwa_sora2_model">
+                  <option value="sora-2-landscape-10s-guanzhuan">sora-2-landscape-10s-guanzhuan</option>
+                  <option value="sora-2-landscape-15s-guanzhuan">sora-2-landscape-15s-guanzhuan</option>
+                  <option value="sora-2-portrait-10s-guanzhuan">sora-2-portrait-10s-guanzhuan</option>
+                  <option value="sora-2-portrait-15s-guanzhuan">sora-2-portrait-15s-guanzhuan</option>
+                </select>
               </label>
             </div>
           </div>
@@ -396,6 +442,24 @@ onMounted(() => {
             </div>
           </div>
 
+          <!-- 斑点蛙 API -->
+          <div class="settings-card">
+            <div class="card-header">
+              <h3 class="card-title">BDW API 设置</h3>
+            </div>
+            <div class="card-body">
+              <label class="field">
+                <span class="field-label">API Key</span>
+                <input
+                  v-model="bandianwa_api_key"
+                  type="password"
+                  placeholder="请输入 BDW API Key"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+          </div>
+
           <!-- Sora2 模型选择 -->
           <div class="settings-card">
             <div class="card-header">
@@ -427,6 +491,14 @@ onMounted(() => {
                   />
                   <span class="radio-label">XBS API</span>
                 </label>
+                <label class="radio-item">
+                  <input
+                    type="radio"
+                    v-model="sora2_model"
+                    value="bandianwa"
+                  />
+                  <span class="radio-label">BDW API</span>
+                </label>
               </div>
             </div>
           </div>
@@ -439,11 +511,14 @@ onMounted(() => {
             <div class="card-body">
               <label class="field">
                 <span class="field-label">模型</span>
-                <input
-                  v-model="dayangyu_sora2_model"
-                  type="text"
-                  placeholder="请输入模型名称"
-                />
+                <select v-model="dayangyu_sora2_model">
+                  <option value="sora2-pro-landscape-25s">sora2-pro-landscape-25s</option>
+                  <option value="sora2-pro-landscape-hd-10s">sora2-pro-landscape-hd-10s</option>
+                  <option value="sora2-pro-landscape-hd-15s">sora2-pro-landscape-hd-15s</option>
+                  <option value="sora2-pro-portrait-25s">sora2-pro-portrait-25s</option>
+                  <option value="sora2-pro-portrait-hd-10s">sora2-pro-portrait-hd-10s</option>
+                  <option value="sora2-pro-portrait-hd-15s">sora2-pro-portrait-hd-15s</option>
+                </select>
               </label>
             </div>
           </div>
@@ -507,11 +582,38 @@ onMounted(() => {
             <div class="card-body">
               <label class="field">
                 <span class="field-label">模型</span>
-                <input
-                  v-model="xiaobanshou_sora2_model"
-                  type="text"
-                  placeholder="请输入模型名称"
-                />
+                <select v-model="xiaobanshou_sora2_model">
+                  <option value="sora-2">sora-2</option>
+                  <option value="sora-2-landscape-10s">sora-2-landscape-10s</option>
+                  <option value="sora-2-landscape-15s">sora-2-landscape-15s</option>
+                  <option value="sora-2-portrait-10s">sora-2-portrait-10s</option>
+                  <option value="sora-2-portrait-15s">sora-2-portrait-15s</option>
+                  <option value="sora-2-pro">sora-2-pro</option>
+                  <option value="sora-2-pro-landscape-25s">sora-2-pro-landscape-25s</option>
+                  <option value="sora-2-pro-landscape-hd-10s">sora-2-pro-landscape-hd-10s</option>
+                  <option value="sora-2-pro-landscape-hd-15s">sora-2-pro-landscape-hd-15s</option>
+                  <option value="sora-2-pro-portrait-25s">sora-2-pro-portrait-25s</option>
+                  <option value="sora-2-pro-portrait-hd-10s">sora-2-pro-portrait-hd-10s</option>
+                  <option value="sora-2-pro-portrait-hd-15s">sora-2-pro-portrait-hd-15s</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <!-- BDW Sora2 配置 -->
+          <div class="settings-card">
+            <div class="card-header">
+              <h3 class="card-title">BDW Sora2 配置</h3>
+            </div>
+            <div class="card-body">
+              <label class="field">
+                <span class="field-label">模型</span>
+                <select v-model="bandianwa_sora2_model">
+                  <option value="sora-2-landscape-10s-guanzhuan">sora-2-landscape-10s-guanzhuan</option>
+                  <option value="sora-2-landscape-15s-guanzhuan">sora-2-landscape-15s-guanzhuan</option>
+                  <option value="sora-2-portrait-10s-guanzhuan">sora-2-portrait-10s-guanzhuan</option>
+                  <option value="sora-2-portrait-15s-guanzhuan">sora-2-portrait-15s-guanzhuan</option>
+                </select>
               </label>
             </div>
           </div>
@@ -858,6 +960,33 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 11, 18, 0.8);
+  color: #f5f7ff;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(230,233,242,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+select:focus {
+  border-color: rgba(91, 124, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.15);
+}
+
+select option {
+  background: #14182a;
+  color: #f5f7ff;
 }
 
 .settings-section + .settings-section {

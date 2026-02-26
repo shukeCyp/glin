@@ -15,7 +15,7 @@ from .database import (
 )
 from .logger import logger
 from .thread_pool import get_pool
-from .services.sora2 import Sora2Guanfang, Sora2GuanfangXbs, Sora2Dayangyu, Sora2Yunwu, Sora2Xiaobanshou
+from .services.sora2 import Sora2Guanfang, Sora2GuanfangXbs, Sora2Dayangyu, Sora2Yunwu, Sora2Xiaobanshou, Sora2Bandianwa
 from .services.sora2.base import Sora2TaskStatus
 
 
@@ -34,6 +34,10 @@ def _get_sora2_service(settings: dict):
             # 官方 API + 小扳手调用方式
             xbs_model = settings.get(SettingKeys.XIAOBANSHOU_SORA2_MODEL, "") or "sora-2-portrait-10s"
             return (Sora2GuanfangXbs(api_key), xbs_model), None
+        elif provider == ModelProviders.BANDIANWA:
+            # 官方 API + BDW 调用方式
+            bdw_model = settings.get(SettingKeys.BANDIANWA_SORA2_MODEL, "") or "sora-2-portrait-15s-guanzhuan"
+            return (Sora2Guanfang(api_key), bdw_model), None
         else:
             # 官方 API + 大洋芋调用方式（默认）
             return (Sora2Guanfang(api_key), model), None
@@ -61,6 +65,13 @@ def _get_sora2_service(settings: dict):
                 return None, "未配置 XBS API Key"
             model = settings.get(SettingKeys.XIAOBANSHOU_SORA2_MODEL, "") or "sora-2-portrait-10s"
             return (Sora2Xiaobanshou(api_key), model), None
+
+        elif provider == ModelProviders.BANDIANWA:
+            api_key = settings.get(SettingKeys.BANDIANWA_API_KEY, "")
+            if not api_key:
+                return None, "未配置斑点蛙 API Key"
+            model = settings.get(SettingKeys.BANDIANWA_SORA2_MODEL, "") or "sora-2-portrait-15s-guanzhuan"
+            return (Sora2Bandianwa(api_key), model), None
 
         return None, f"未知的 Sora2 提供商: {provider}"
 
