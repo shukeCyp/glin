@@ -1,68 +1,91 @@
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 
 const emit = defineEmits(['toast'])
+
+// ==================== 默认提示词 ====================
+const defaultImagePrompt = ref('')
+const defaultVideoPrompt = ref('')
+
+const showPromptDialog = ref(false)
+const promptDialogType = ref('image')
+const promptDialogText = ref('')
+
+onMounted(async () => {
+  try {
+    const [imgRes, vidRes, settings] = await Promise.all([
+      window.pywebview.api.get_image_process_prompt(),
+      window.pywebview.api.get_video_process_prompt(),
+      window.pywebview.api.get_all_settings(),
+    ])
+    if (imgRes.ok) defaultImagePrompt.value = imgRes.prompt
+    if (vidRes.ok) defaultVideoPrompt.value = vidRes.prompt
+    if (settings.glin_nanobanana_ratio) dialogImageRatio.value = settings.glin_nanobanana_ratio
+    if (settings.glin_nanobanana_quality) dialogImageQuality.value = settings.glin_nanobanana_quality
+    if (settings.glin_veo_orientation) dialogVideoOrientation.value = settings.glin_veo_orientation
+  } catch { /* ignore */ }
+})
+
+const openPromptDialog = (type) => {
+  promptDialogType.value = type
+  promptDialogText.value = type === 'image' ? defaultImagePrompt.value : defaultVideoPrompt.value
+  showPromptDialog.value = true
+}
+const closePromptDialog = () => { showPromptDialog.value = false }
+const savePromptDialog = async () => {
+  const text = promptDialogText.value.trim()
+  if (!text) { emit('toast', '提示词不能为空', 'error'); return }
+  try {
+    if (promptDialogType.value === 'image') {
+      await window.pywebview.api.set_image_process_prompt(text)
+      defaultImagePrompt.value = text
+    } else {
+      await window.pywebview.api.set_video_process_prompt(text)
+      defaultVideoPrompt.value = text
+    }
+    emit('toast', '提示词已保存', 'success')
+    showPromptDialog.value = false
+  } catch { emit('toast', '保存失败', 'error') }
+}
 
 // ==================== 任务列表（内存中，不持久化） ====================
 const taskList = ref([])
 let taskIdCounter = 0
 
-// ==================== 添加/编辑图片 弹窗 ====================
+// ==================== 添加任务 弹窗 ====================
 const showDialog = ref(false)
-const dialogMode = ref('add') // 'add' | 'edit'
-const editingTaskId = ref(null)
 
-const dialogImagePreview = ref('')
-const dialogImageBase64 = ref('')
-const dialogImageMime = ref('')
-const dialogImagePrompt = ref('')
+const dialogImages = ref([])
 const dialogImageRatio = ref('9:16')
 const dialogImageQuality = ref('1K')
+const dialogVideoOrientation = ref('portrait')
 const dialogIsDragging = ref(false)
 const dialogFileInput = ref(null)
 
 const openAddDialog = () => {
-  dialogMode.value = 'add'
-  editingTaskId.value = null
-  dialogImagePreview.value = ''
-  dialogImageBase64.value = ''
-  dialogImageMime.value = ''
-  dialogImagePrompt.value = ''
-  dialogImageRatio.value = '9:16'
-  dialogImageQuality.value = '1K'
-  showDialog.value = true
-}
-
-const openEditDialog = (task) => {
-  dialogMode.value = 'edit'
-  editingTaskId.value = task.id
-  dialogImagePreview.value = task.originSrc
-  dialogImageBase64.value = task.originBase64
-  dialogImageMime.value = task.originMime
-  dialogImagePrompt.value = task.imagePrompt
-  dialogImageRatio.value = task.imageRatio
-  dialogImageQuality.value = task.imageQuality
+  dialogImages.value = []
   showDialog.value = true
 }
 
 const closeDialog = () => { showDialog.value = false }
 
-// 图片处理
 const handleDialogImage = (file) => {
   if (!file) return
   if (!file.type.startsWith('image/')) { emit('toast', '请选择图片文件', 'error'); return }
   if (file.size > 10 * 1024 * 1024) { emit('toast', '图片不能超过 10MB', 'error'); return }
   const reader = new FileReader()
   reader.onload = (e) => {
-    const dataUrl = e.target.result
-    dialogImagePreview.value = dataUrl
-    dialogImageMime.value = file.type
-    dialogImageBase64.value = dataUrl.split(',')[1]
+    dialogImages.value.push({
+      preview: e.target.result,
+      base64: e.target.result.split(',')[1],
+      mime: file.type,
+    })
   }
   reader.readAsDataURL(file)
 }
 const handleDialogFileSelect = (event) => {
-  handleDialogImage(event.target.files[0])
+  const files = Array.from(event.target.files || [])
+  files.forEach(f => handleDialogImage(f))
   if (dialogFileInput.value) dialogFileInput.value.value = ''
 }
 const onDragEnter = (e) => { e.preventDefault(); dialogIsDragging.value = true }
@@ -75,49 +98,10 @@ const onDragLeave = (e) => {
 const onDrop = (e) => {
   e.preventDefault()
   dialogIsDragging.value = false
-  const file = e.dataTransfer?.files?.[0]
-  if (file) handleDialogImage(file)
+  const files = Array.from(e.dataTransfer?.files || [])
+  files.forEach(f => handleDialogImage(f))
 }
-const removeDialogImage = () => {
-  dialogImagePreview.value = ''
-  dialogImageBase64.value = ''
-  dialogImageMime.value = ''
-}
-
-// ==================== 视频生成 弹窗 ====================
-const showVideoDialog = ref(false)
-const videoDialogTaskId = ref(null)
-const videoDialogPrompt = ref('')
-const videoDialogOrientation = ref('portrait')
-
-const openVideoDialog = (task) => {
-  if (isTaskBusy(task)) return
-  if (!task.resultImageBase64) {
-    emit('toast', '请先确认图片生成结果', 'error')
-    return
-  }
-  videoDialogTaskId.value = task.id
-  videoDialogPrompt.value = task.videoPrompt || ''
-  videoDialogOrientation.value = task.videoOrientation || 'portrait'
-  showVideoDialog.value = true
-}
-
-const closeVideoDialog = () => { showVideoDialog.value = false }
-
-const submitVideoDialog = () => {
-  if (!videoDialogPrompt.value.trim()) {
-    emit('toast', '请输入视频提示词', 'error')
-    return
-  }
-  const task = taskList.value.find(t => t.id === videoDialogTaskId.value)
-  if (!task) return
-
-  task.videoPrompt = videoDialogPrompt.value
-  task.videoOrientation = videoDialogOrientation.value
-  showVideoDialog.value = false
-
-  generateVideo(task)
-}
+const removeDialogImage = (idx) => { dialogImages.value.splice(idx, 1) }
 
 // ==================== 统计信息 ====================
 const stats = computed(() => {
@@ -128,52 +112,42 @@ const stats = computed(() => {
   return { total, completed, processing, failed }
 })
 
-// ==================== 提交图片任务 ====================
+// ==================== 提交任务 ====================
 const submitDialog = () => {
-  if (!dialogImageBase64.value) { emit('toast', '请先选择图片', 'error'); return }
-  if (!dialogImagePrompt.value.trim()) { emit('toast', '请输入图片提示词', 'error'); return }
+  if (!dialogImages.value.length) { emit('toast', '请先选择图片', 'error'); return }
+  if (!defaultImagePrompt.value.trim()) { emit('toast', '请先设置图片提示词', 'error'); return }
+  if (!defaultVideoPrompt.value.trim()) { emit('toast', '请先设置视频提示词', 'error'); return }
 
-  if (dialogMode.value === 'edit') {
-    const task = taskList.value.find(t => t.id === editingTaskId.value)
-    if (task) {
-      task.originSrc = dialogImagePreview.value
-      task.originBase64 = dialogImageBase64.value
-      task.originMime = dialogImageMime.value
-      task.imagePrompt = dialogImagePrompt.value
-      task.imageRatio = dialogImageRatio.value
-      task.imageQuality = dialogImageQuality.value
-      showDialog.value = false
-      emit('toast', '任务已更新', 'success')
-    }
-    return
-  }
+  window.pywebview.api.save_settings({
+    glin_nanobanana_ratio: dialogImageRatio.value,
+    glin_nanobanana_quality: dialogImageQuality.value,
+    glin_veo_orientation: dialogVideoOrientation.value,
+  }).catch(() => {})
 
-  // 添加模式
+  const images = dialogImages.value.map(img => ({ ...img }))
   const task = reactive({
     id: ++taskIdCounter,
-    originSrc: dialogImagePreview.value,
-    originBase64: dialogImageBase64.value,
-    originMime: dialogImageMime.value,
-    imagePrompt: dialogImagePrompt.value,
+    images,
+    imagePrompt: defaultImagePrompt.value,
     imageRatio: dialogImageRatio.value,
     imageQuality: dialogImageQuality.value,
-    videoPrompt: '',
-    videoOrientation: 'portrait',
+    videoPrompt: defaultVideoPrompt.value,
+    videoOrientation: dialogVideoOrientation.value,
     resultImageSrc: '',
     resultImageBase64: '',
     resultImageMime: '',
     videoUrl: '',
+    filePath: '',
     status: 'pending',
     statusText: '待处理',
   })
   taskList.value.unshift(task)
   showDialog.value = false
 
-  // 仅启动图片生成
   generateImage(task)
 }
 
-// ==================== 图片生成 ====================
+// ==================== 图片生成 → 自动生成视频 ====================
 const generateImage = async (task) => {
   task.status = 'image_processing'
   task.statusText = '图片生成中...'
@@ -193,23 +167,22 @@ const generateImage = async (task) => {
   let lastError = ''
 
   while (attempts <= maxRetry) {
-    if (attempts > 0) {
-      task.statusText = `图片重试中 (${attempts}/${maxRetry})...`
-    }
+    if (attempts > 0) task.statusText = `图片重试中 (${attempts}/${maxRetry})...`
     try {
+      const refImages = (task.images || []).map(img => ({ base64: img.base64, mime: img.mime }))
       const res = await window.pywebview.api.debug_nanobanana(
         task.imagePrompt,
-        task.originBase64,
-        task.originMime,
+        refImages,
         task.imageRatio,
-        task.imageQuality
+        task.imageQuality,
       )
       if (res.ok && res.image_data && res.mime_type) {
         task.resultImageSrc = `data:${res.mime_type};base64,${res.image_data}`
         task.resultImageBase64 = res.image_data
         task.resultImageMime = res.mime_type
         task.status = 'image_done'
-        task.statusText = '图片已完成，待生成视频'
+        task.statusText = '图片完成，开始生成视频...'
+        generateVideo(task)
         return true
       } else {
         lastError = res.msg || '图片生成失败'
@@ -230,6 +203,7 @@ const generateVideo = async (task) => {
   task.status = 'video_processing'
   task.statusText = '视频生成中...'
   task.videoUrl = ''
+  task.filePath = ''
 
   let maxRetry = 0
   try {
@@ -243,26 +217,22 @@ const generateVideo = async (task) => {
   let lastError = ''
 
   while (attempts <= maxRetry) {
-    if (attempts > 0) {
-      task.statusText = `视频重试中 (${attempts}/${maxRetry})...`
-    }
+    if (attempts > 0) task.statusText = `视频重试中 (${attempts}/${maxRetry})...`
     try {
-      const res = await window.pywebview.api.veo_image_to_video(
+      const refImages = [{ base64: task.resultImageBase64, mime: task.resultImageMime }]
+      const res = await window.pywebview.api.glin_veo_generate(
         task.videoPrompt,
-        task.resultImageBase64,
-        task.resultImageMime,
-        task.videoOrientation
+        refImages,
+        task.videoOrientation,
       )
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url
+        task.filePath = res.file_path || ''
         task.status = 'completed'
         task.statusText = '已完成'
-        try {
-          const settings = await window.pywebview.api.get_all_settings()
-          if (settings.auto_download === 'true') {
-            downloadVideo(task, true)
-          }
-        } catch { /* ignore */ }
+        if (task.filePath) {
+          emit('toast', `视频已保存: ${task.filePath.split(/[\\/]/).pop()}`, 'success')
+        }
         return true
       } else {
         lastError = res.msg || '视频生成失败'
@@ -284,8 +254,7 @@ const isTaskBusy = (task) => ['image_processing', 'video_processing'].includes(t
 const regenImage = (task) => {
   if (isTaskBusy(task)) return
   task.videoUrl = ''
-  task.videoPrompt = ''
-  task.videoOrientation = 'portrait'
+  task.filePath = ''
   generateImage(task)
 }
 
@@ -295,8 +264,7 @@ const regenVideo = (task) => {
     emit('toast', '暂无生成图片，请先重新生成图片', 'error')
     return
   }
-  // 重新打开视频弹窗让用户确认/修改参数
-  openVideoDialog(task)
+  generateVideo(task)
 }
 
 const deleteTask = (idx) => {
@@ -365,6 +333,18 @@ const statusClass = (status) => {
           <template v-if="stats.completed > 0"> · <span class="stats-completed">{{ stats.completed }} 完成</span></template>
           <template v-if="stats.failed > 0"> · <span class="stats-failed">{{ stats.failed }} 失败</span></template>
         </span>
+        <button class="tool-btn prompt-btn" @click="openPromptDialog('image')">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span>图片提示词</span>
+        </button>
+        <button class="tool-btn prompt-btn" @click="openPromptDialog('video')">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+          <span>视频提示词</span>
+        </button>
         <button v-if="taskList.length > 0" class="tool-btn delete-all-btn" @click="deleteAllTasks">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -409,8 +389,13 @@ const statusClass = (status) => {
         >
           <div class="col col-index">{{ taskList.length - idx }}</div>
           <div class="col col-origin">
-            <div class="thumb clickable" @click="openImagePreview(task.originSrc)">
-              <img :src="task.originSrc" alt="原图" />
+            <div v-if="task.images && task.images.length" class="thumb-group">
+              <div
+                v-for="(img, i) in task.images.slice(0, 3)" :key="i"
+                class="thumb mini clickable"
+                @click="openImagePreview(img.preview)"
+              ><img :src="img.preview" alt="原图" /></div>
+              <span v-if="task.images.length > 3" class="thumb-more">+{{ task.images.length - 3 }}</span>
             </div>
           </div>
           <div class="col col-result">
@@ -434,26 +419,15 @@ const statusClass = (status) => {
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
               </svg>
             </button>
-            <!-- 生成视频 / 视频重新生成 -->
+            <!-- 视频重新生成 -->
             <button
               class="action-btn gen-vid-btn"
-              @click="task.videoUrl ? regenVideo(task) : openVideoDialog(task)"
+              @click="regenVideo(task)"
               :disabled="isTaskBusy(task) || !task.resultImageBase64"
-              :title="task.videoUrl ? '视频重新生成' : '生成视频'"
+              title="视频重新生成"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-              </svg>
-            </button>
-            <!-- 编辑图片参数 -->
-            <button
-              class="action-btn edit-btn"
-              @click="openEditDialog(task)"
-              :disabled="isTaskBusy(task)"
-              title="编辑图片参数"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
               </svg>
             </button>
             <!-- 下载图片 -->
@@ -509,23 +483,30 @@ const statusClass = (status) => {
       </div>
     </div>
 
-    <!-- 添加/编辑图片 弹窗 -->
+    <!-- 添加任务弹窗 -->
     <Teleport to="body">
       <div v-if="showDialog" class="dialog-overlay" @click.self="closeDialog">
         <div class="dialog dialog--image">
           <div class="dialog-header">
-            <h3 class="dialog-title">{{ dialogMode === 'edit' ? '编辑图片参数' : '添加带货任务' }}</h3>
+            <h3 class="dialog-title">添加带货任务</h3>
             <button class="dialog-close" @click="closeDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="dialog-body dialog-body--split">
-            <!-- 左侧：图片上传 -->
+            <!-- 左侧：图片上传（多图） -->
             <div class="dialog-left">
               <div class="field">
-                <span class="field-label">商品图片（必填，支持拖拽）</span>
+                <span class="field-label">商品图片（必填，支持多图拖拽）</span>
+                <div class="ref-images-grid" v-if="dialogImages.length">
+                  <div v-for="(img, idx) in dialogImages" :key="idx" class="ref-image-preview">
+                    <img :src="img.preview" alt="商品图片" />
+                    <button class="remove-btn" @click="removeDialogImage(idx)" title="移除">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
                 <div
-                  v-if="!dialogImagePreview"
                   class="upload-area"
                   :class="{ 'drag-active': dialogIsDragging }"
                   @click="dialogFileInput?.click()"
@@ -534,43 +515,33 @@ const statusClass = (status) => {
                   @dragleave="onDragLeave"
                   @drop="onDrop"
                 >
-                  <input ref="dialogFileInput" type="file" accept="image/*" class="upload-input" @change="handleDialogFileSelect" />
+                  <input ref="dialogFileInput" type="file" accept="image/*" multiple class="upload-input" @change="handleDialogFileSelect" />
                   <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                   </svg>
-                  <span class="upload-text">点击或拖拽图片到此处</span>
+                  <span class="upload-text">{{ dialogImages.length ? '继续添加图片' : '点击或拖拽图片到此处' }}</span>
                   <span class="upload-hint">支持 JPG / PNG / WebP，最大 10MB</span>
-                </div>
-                <div v-else class="ref-image-preview">
-                  <img :src="dialogImagePreview" alt="商品图片" />
-                  <button class="remove-btn" @click="removeDialogImage" title="移除图片">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
                 </div>
               </div>
             </div>
 
-            <!-- 右侧：图片参数 -->
+            <!-- 右侧：参数 -->
             <div class="dialog-right">
-              <label class="field">
-                <span class="field-label">图片提示词（必填）</span>
-                <textarea
-                  v-model="dialogImagePrompt"
-                  placeholder="描述你期望生成的图片效果，例如：将商品放在优雅的展示场景中"
-                  rows="5"
-                ></textarea>
-              </label>
-
               <div class="form-row">
                 <div class="field field-inline">
                   <span class="field-label">图片比例</span>
                   <div class="toggle-group">
                     <button :class="['toggle-btn', { active: dialogImageRatio === '9:16' }]" @click="dialogImageRatio = '9:16'">9:16 竖屏</button>
                     <button :class="['toggle-btn', { active: dialogImageRatio === '16:9' }]" @click="dialogImageRatio = '16:9'">16:9 横屏</button>
+                    <button :class="['toggle-btn', { active: dialogImageRatio === '1:1' }]" @click="dialogImageRatio = '1:1'">1:1 方图</button>
+                    <button :class="['toggle-btn', { active: dialogImageRatio === '4:3' }]" @click="dialogImageRatio = '4:3'">4:3</button>
+                    <button :class="['toggle-btn', { active: dialogImageRatio === '3:4' }]" @click="dialogImageRatio = '3:4'">3:4</button>
                   </div>
                 </div>
+              </div>
+              <div class="form-row">
                 <div class="field field-inline">
-                  <span class="field-label">图片质量</span>
+                  <span class="field-label">图片清晰度</span>
                   <div class="toggle-group">
                     <button :class="['toggle-btn', { active: dialogImageQuality === '1K' }]" @click="dialogImageQuality = '1K'">1K</button>
                     <button :class="['toggle-btn', { active: dialogImageQuality === '2K' }]" @click="dialogImageQuality = '2K'">2K</button>
@@ -578,57 +549,54 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          <div class="dialog-footer">
-            <button class="cancel-btn" @click="closeDialog">取消</button>
-            <button class="primary-btn save-btn" @click="submitDialog">
-              {{ dialogMode === 'edit' ? '保存修改' : '添加并生成图片' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- 视频生成 弹窗 -->
-    <Teleport to="body">
-      <div v-if="showVideoDialog" class="dialog-overlay" @click.self="closeVideoDialog">
-        <div class="dialog dialog--video">
-          <div class="dialog-header">
-            <h3 class="dialog-title">生成视频</h3>
-            <button class="dialog-close" @click="closeVideoDialog">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-          <div class="dialog-body">
-            <label class="field">
-              <span class="field-label">视频提示词（必填）</span>
-              <textarea
-                v-model="videoDialogPrompt"
-                placeholder="描述你期望生成的视频效果，例如：让商品缓缓旋转展示各个角度"
-                rows="4"
-              ></textarea>
-            </label>
-
-            <div class="form-row">
-              <div class="field field-inline">
-                <span class="field-label">视频方向</span>
-                <div class="toggle-group">
-                  <button :class="['toggle-btn', { active: videoDialogOrientation === 'portrait' }]" @click="videoDialogOrientation = 'portrait'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
-                    竖屏
-                  </button>
-                  <button :class="['toggle-btn', { active: videoDialogOrientation === 'landscape' }]" @click="videoDialogOrientation = 'landscape'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
-                    横屏
-                  </button>
+              <div class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">视频方向</span>
+                  <div class="toggle-group">
+                    <button :class="['toggle-btn', { active: dialogVideoOrientation === 'portrait' }]" @click="dialogVideoOrientation = 'portrait'">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                      竖屏
+                    </button>
+                    <button :class="['toggle-btn', { active: dialogVideoOrientation === 'landscape' }]" @click="dialogVideoOrientation = 'landscape'">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
+                      横屏
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           <div class="dialog-footer">
-            <button class="cancel-btn" @click="closeVideoDialog">取消</button>
-            <button class="primary-btn save-btn" @click="submitVideoDialog">开始生成视频</button>
+            <button class="cancel-btn" @click="closeDialog">取消</button>
+            <button class="primary-btn save-btn" @click="submitDialog">添加并开始生成</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 提示词编辑弹窗 -->
+    <Teleport to="body">
+      <div v-if="showPromptDialog" class="dialog-overlay" @click.self="closePromptDialog">
+        <div class="dialog dialog--video">
+          <div class="dialog-header">
+            <h3 class="dialog-title">{{ promptDialogType === 'image' ? '图片提示词' : '视频提示词' }}</h3>
+            <button class="dialog-close" @click="closePromptDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="dialog-body">
+            <label class="field">
+              <span class="field-label">{{ promptDialogType === 'image' ? '所有任务的图片生成提示词' : '所有任务的视频生成提示词' }}</span>
+              <textarea
+                v-model="promptDialogText"
+                :placeholder="promptDialogType === 'image' ? '描述图片生成效果' : '描述视频生成效果'"
+                rows="6"
+              ></textarea>
+            </label>
+          </div>
+          <div class="dialog-footer">
+            <button class="cancel-btn" @click="closePromptDialog">取消</button>
+            <button class="primary-btn save-btn" @click="savePromptDialog">保存</button>
           </div>
         </div>
       </div>
@@ -653,19 +621,21 @@ const statusClass = (status) => {
 .page { position: relative; min-height: 100%; display: flex; flex-direction: column; }
 
 /* ============ 顶栏 ============ */
-.page-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
-.page-title { margin: 0; font-size: 18px; font-weight: 600; color: #e6e9f2; }
+.page-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.page-title { margin: 0; font-size: 18px; font-weight: 600; color: var(--text-primary); }
 .toolbar-actions { display: flex; gap: 10px; align-items: center; }
-.stats-text { font-size: 13px; color: rgba(230,233,242,0.45); margin-right: 8px; }
-.stats-processing { color: #8ba3ff; }
-.stats-completed { color: #34c759; }
-.stats-failed { color: #ff453a; }
-.tool-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: rgba(230,233,242,0.8); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
-.tool-btn:hover { background: rgba(91,124,255,0.12); border-color: rgba(91,124,255,0.3); color: #8ba3ff; }
-.add-btn { border-color: rgba(52,199,89,0.3); background: rgba(52,199,89,0.08); color: #34c759; }
-.add-btn:hover { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); color: #34c759; }
-.delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: #ff453a; }
-.delete-all-btn:hover { background: rgba(255,69,58,0.18); border-color: rgba(255,69,58,0.5); color: #ff453a; }
+.stats-text { font-size: 13px; color: var(--text-dim); margin-right: 8px; }
+.stats-processing { color: var(--accent); }
+.stats-completed { color: var(--success); }
+.stats-failed { color: var(--error); }
+.tool-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--border-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+.tool-btn:hover { background: var(--accent-bg-strong); border-color: var(--accent-border); color: var(--accent); }
+.add-btn { border-color: rgba(52,199,89,0.3); background: rgba(52,199,89,0.08); color: var(--success); }
+.add-btn:hover { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); color: var(--success); }
+.prompt-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
+.prompt-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
+.delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: var(--error); }
+.delete-all-btn:hover { background: rgba(255,69,58,0.18); border-color: rgba(255,69,58,0.5); color: var(--error); }
 .tool-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ============ 内容区 ============ */
@@ -673,82 +643,84 @@ const statusClass = (status) => {
 
 /* ============ 空状态 ============ */
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; }
-.empty-icon { width: 64px; height: 64px; color: rgba(230,233,242,0.15); margin-bottom: 20px; }
-.empty-text { margin: 0; font-size: 16px; font-weight: 500; color: rgba(230,233,242,0.4); }
-.empty-hint { margin: 8px 0 0; font-size: 13px; color: rgba(230,233,242,0.25); }
+.empty-icon { width: 64px; height: 64px; color: var(--border-strong); margin-bottom: 20px; }
+.empty-text { margin: 0; font-size: 16px; font-weight: 500; color: var(--text-placeholder); }
+.empty-hint { margin: 8px 0 0; font-size: 13px; color: var(--text-hint); }
 
 /* ============ 列表 ============ */
-.list-wrap { border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
+.list-wrap { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .list-header, .list-row { display: flex; align-items: center; }
-.list-header { background: rgba(16,20,28,0.9); padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.list-header .col { font-size: 12px; font-weight: 600; color: rgba(230,233,242,0.45); text-transform: uppercase; letter-spacing: 0.5px; }
-.list-row { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease; }
+.list-header { background: var(--bg-surface); padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.list-header .col { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.list-row { padding: 12px 16px; border-bottom: 1px solid var(--border-light); transition: background 0.15s ease; }
 .list-row:last-child { border-bottom: none; }
-.list-row:hover { background: rgba(255,255,255,0.02); }
+.list-row:hover { background: var(--border-subtle); }
 
 .col-index { width: 40px; flex-shrink: 0; text-align: center; }
-.col-origin { width: 80px; flex-shrink: 0; }
+.col-origin { width: 120px; flex-shrink: 0; }
 .col-result { width: 80px; flex-shrink: 0; }
 .col-status { flex: 1; min-width: 0; padding: 0 12px; }
 .col-actions { width: 300px; flex-shrink: 0; display: flex; justify-content: center; gap: 5px; flex-wrap: wrap; }
 
-.thumb { width: 56px; height: 56px; border-radius: 8px; overflow: hidden; background: rgba(8,11,18,0.6); border: 1px solid rgba(255,255,255,0.06); }
+.thumb { width: 56px; height: 56px; border-radius: 8px; overflow: hidden; background: var(--bg-surface); border: 1px solid var(--border); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb.clickable { cursor: pointer; transition: opacity 0.15s ease; }
 .thumb.clickable:hover { opacity: 0.8; }
-.no-result { font-size: 13px; color: rgba(230,233,242,0.2); display: flex; width: 56px; height: 56px; align-items: center; justify-content: center; }
+.no-result { font-size: 13px; color: var(--text-hint); display: flex; width: 56px; height: 56px; align-items: center; justify-content: center; }
+.thumb-group { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+.thumb.mini { width: 36px; height: 36px; border-radius: 6px; }
+.thumb-more { font-size: 11px; color: var(--text-hint); margin-left: 2px; }
 
 /* 状态标签 */
 .status-tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .status-tag.pending { background: rgba(255,214,10,0.1); color: #ffd60a; }
-.status-tag.processing { background: rgba(91,124,255,0.1); color: #8ba3ff; }
+.status-tag.processing { background: var(--accent-bg); color: var(--accent); }
 .status-tag.image-done { background: rgba(100,210,255,0.1); color: #64d2ff; }
-.status-tag.completed { background: rgba(52,199,89,0.1); color: #34c759; }
-.status-tag.failed { background: rgba(255,69,58,0.1); color: #ff453a; }
+.status-tag.completed { background: var(--success-bg); color: var(--success); }
+.status-tag.failed { background: var(--error-bg); color: var(--error); }
 
 /* 操作按钮 */
-.action-btn { width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: rgba(230,233,242,0.6); cursor: pointer; transition: all 0.15s ease; position: relative; }
+.action-btn { width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--border-medium); background: var(--border-light); color: var(--text-tertiary); cursor: pointer; transition: all 0.15s ease; position: relative; }
 .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .action-btn svg { width: 15px; height: 15px; }
 .regen-img-btn:hover:not(:disabled) { background: rgba(100,210,255,0.15); border-color: rgba(100,210,255,0.4); color: #64d2ff; }
 .gen-vid-btn:hover:not(:disabled) { background: rgba(175,82,222,0.15); border-color: rgba(175,82,222,0.4); color: #bf5af2; }
-.edit-btn:hover:not(:disabled) { background: rgba(91,124,255,0.15); border-color: rgba(91,124,255,0.4); color: #8ba3ff; }
-.download-btn:hover:not(:disabled) { background: rgba(52,199,89,0.15); border-color: rgba(52,199,89,0.4); color: #34c759; }
+.download-btn:hover:not(:disabled) { background: rgba(52,199,89,0.15); border-color: rgba(52,199,89,0.4); color: var(--success); }
 .download-btn { overflow: hidden; }
 .download-btn svg:first-child { width: 15px; height: 15px; }
 .download-overlay-icon { position: absolute; width: 10px !important; height: 10px !important; bottom: 2px; right: 2px; }
-.download-vid-btn:hover:not(:disabled) { background: rgba(52,199,89,0.15); border-color: rgba(52,199,89,0.4); color: #34c759; }
-.view-btn:hover:not(:disabled) { background: rgba(91,124,255,0.15); border-color: rgba(91,124,255,0.4); color: #8ba3ff; }
-.delete-btn:hover:not(:disabled) { background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.4); color: #ff453a; }
+.download-vid-btn:hover:not(:disabled) { background: rgba(52,199,89,0.15); border-color: rgba(52,199,89,0.4); color: var(--success); }
+.view-btn:hover:not(:disabled) { background: var(--accent-bg-strong); border-color: rgba(200,96,122,0.4); color: var(--accent); }
+.delete-btn:hover:not(:disabled) { background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.4); color: var(--error); }
 
 /* ============ 弹窗通用 ============ */
 .dialog-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-.dialog { max-height: calc(100vh - 60px); border-radius: 16px; background: linear-gradient(180deg, rgba(20,24,38,0.98), rgba(12,15,25,0.99)); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 24px 60px rgba(5,7,12,0.8); overflow: hidden; display: flex; flex-direction: column; }
+.dialog { max-height: calc(100vh - 60px); border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-medium); box-shadow: var(--shadow-dialog); overflow: hidden; display: flex; flex-direction: column; }
 .dialog--image { width: min(860px, calc(100% - 40px)); }
 .dialog--video { width: min(520px, calc(100% - 40px)); }
-.dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
-.dialog-title { margin: 0; font-size: 16px; font-weight: 600; color: #e6e9f2; }
-.dialog-close { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: none; background: transparent; color: rgba(230,233,242,0.5); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
-.dialog-close:hover { background: rgba(255,255,255,0.08); color: rgba(230,233,242,0.9); }
+.dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.dialog-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.dialog-close { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+.dialog-close:hover { background: var(--border-medium); color: var(--text-primary); }
 .dialog-close svg { width: 18px; height: 18px; }
 .dialog-body { padding: 24px; overflow-y: auto; flex: 1; }
 .dialog-body--split { display: flex; gap: 24px; }
 .dialog-left { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; }
-.dialog-left .upload-area { flex: 1; min-height: 200px; }
-.dialog-left .ref-image-preview { max-height: 100%; }
-.dialog-left .ref-image-preview img { max-height: 360px; width: 100%; object-fit: contain; }
+.dialog-left .upload-area { min-height: 120px; }
+.ref-images-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.ref-images-grid .ref-image-preview img { width: 80px; height: 80px; object-fit: cover; display: block; }
 .dialog-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
-.cancel-btn { padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: rgba(230,233,242,0.7); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
-.cancel-btn:hover { background: rgba(255,255,255,0.1); color: rgba(230,233,242,0.9); }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.cancel-btn { padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--border-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
+.cancel-btn:hover { background: var(--border-strong); color: var(--text-primary); }
 .save-btn { width: auto; padding: 10px 24px; font-size: 13px; }
 
 .field { display: flex; flex-direction: column; gap: 8px; }
-.field-label { font-size: 13px; color: rgba(230,233,242,0.6); }
+.field-label { font-size: 13px; color: var(--text-tertiary); }
 
-.dialog-body textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,18,0.8); color: #f5f7ff; font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-.dialog-body textarea::placeholder { color: rgba(230,233,242,0.4); }
-.dialog-body textarea:focus { border-color: rgba(91,124,255,0.6); box-shadow: 0 0 0 3px rgba(91,124,255,0.15); }
+.dialog-body textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.dialog-body textarea::placeholder { color: var(--text-placeholder); }
+.dialog-body textarea:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
 
 /* 表单行 */
 .form-row { display: flex; gap: 24px; margin-top: 12px; align-items: flex-start; }
@@ -756,29 +728,29 @@ const statusClass = (status) => {
 
 /* 切换按钮组 */
 .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
-.toggle-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: rgba(230,233,242,0.6); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
-.toggle-btn:hover { background: rgba(91,124,255,0.08); border-color: rgba(91,124,255,0.2); color: rgba(230,233,242,0.8); }
-.toggle-btn.active { background: rgba(91,124,255,0.15); border-color: rgba(91,124,255,0.4); color: #8ba3ff; }
+.toggle-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--border-light); color: var(--text-tertiary); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+.toggle-btn:hover { background: var(--accent-bg); border-color: rgba(200,96,122,0.2); color: var(--text-secondary); }
+.toggle-btn.active { background: var(--accent-bg-strong); border-color: rgba(200,96,122,0.4); color: var(--accent); }
 .toggle-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* 上传区 */
-.upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 20px; border-radius: 12px; border: 2px dashed rgba(255,255,255,0.1); background: rgba(8,11,18,0.5); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
-.upload-area:hover, .upload-area.drag-active { border-color: rgba(91,124,255,0.4); background: rgba(91,124,255,0.05); }
+.upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 20px; border-radius: 12px; border: 2px dashed var(--border-strong); background: var(--bg-surface); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
+.upload-area:hover, .upload-area.drag-active { border-color: rgba(200,96,122,0.4); background: var(--accent-bg-subtle); }
 .upload-input { display: none; }
-.upload-icon { width: 32px; height: 32px; color: rgba(230,233,242,0.3); }
-.upload-text { font-size: 14px; color: rgba(230,233,242,0.6); }
-.upload-hint { font-size: 12px; color: rgba(230,233,242,0.3); }
+.upload-icon { width: 32px; height: 32px; color: var(--text-hint); }
+.upload-text { font-size: 14px; color: var(--text-tertiary); }
+.upload-hint { font-size: 12px; color: var(--text-hint); }
 
-.ref-image-preview { position: relative; display: inline-block; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,18,0.6); }
+.ref-image-preview { position: relative; display: inline-block; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-medium); background: var(--bg-surface); }
 .ref-image-preview img { display: block; max-width: 100%; max-height: 200px; object-fit: contain; }
-.remove-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; background: rgba(0,0,0,0.7); color: rgba(255,255,255,0.8); cursor: pointer; transition: background 0.2s ease; }
+.remove-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; background: rgba(0,0,0,0.7); color: rgba(255,255,255,0.9); cursor: pointer; transition: background 0.2s ease; }
 .remove-btn:hover { background: rgba(255,69,58,0.8); }
 .remove-btn svg { width: 14px; height: 14px; }
 
 /* ============ 预览 ============ */
 .preview-overlay { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); cursor: zoom-out; }
-.preview-close { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); cursor: pointer; transition: background 0.15s ease; z-index: 1; }
-.preview-close:hover { background: rgba(255,255,255,0.2); }
+.preview-close { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: none; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); cursor: pointer; transition: background 0.15s ease; z-index: 1; }
+.preview-close:hover { background: rgba(255,255,255,0.25); }
 .preview-close svg { width: 20px; height: 20px; }
 .preview-img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; cursor: default; }
 .preview-video { max-width: 90vw; max-height: 90vh; border-radius: 8px; cursor: default; outline: none; }

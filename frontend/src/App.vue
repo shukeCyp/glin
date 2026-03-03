@@ -2,19 +2,25 @@
 import { ref, onMounted } from 'vue'
 import Toast from './components/Toast.vue'
 import Settings from './components/Settings.vue'
-import Debug from './components/Debug.vue'
-import ImageProcess from './components/ImageProcess.vue'
-import ImageGeneration from './components/ImageGeneration.vue'
-import VideoGeneration from './components/VideoGeneration.vue'
+import NanoBanana from './components/NanoBanana.vue'
+import GlinVeo from './components/GlinVeo.vue'
 import VeoGeneration from './components/VeoGeneration.vue'
 import VeoProduct from './components/VeoProduct.vue'
 
-const state = ref('loading') // loading | pending | activated
+const state = ref('loading')
 const deviceId = ref('')
 const activationCode = ref('')
 const toastRef = ref(null)
-const currentPage = ref('video') // video | image_process | debug | settings
-const isDevMode = ref(false)
+const currentPage = ref('nanobanana')
+
+const loadTheme = async () => {
+  try {
+    const settings = await window.pywebview.api.get_all_settings()
+    if (settings.theme) {
+      document.documentElement.setAttribute('data-theme', settings.theme)
+    }
+  } catch { /* ignore */ }
+}
 
 const checkStatus = async () => {
   try {
@@ -23,11 +29,10 @@ const checkStatus = async () => {
     if (res.state === 'pending') {
       deviceId.value = res.device_id
     }
-    // 获取应用信息（是否开发模式）
     try {
       const info = await window.pywebview.api.get_app_info()
-      isDevMode.value = info.is_dev
     } catch { /* ignore */ }
+    loadTheme()
   } catch {
     setTimeout(checkStatus, 100)
   }
@@ -126,36 +131,15 @@ onMounted(() => {
         
         <nav class="sidebar-nav">
           <button
-            :class="['nav-item', { active: currentPage === 'video' }]"
-            @click="currentPage = 'video'"
-          >
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="23 7 16 12 23 17 23 7"></polygon>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-            </svg>
-            <span>视频生成</span>
-          </button>
-          <button
-            :class="['nav-item', { active: currentPage === 'image_process' }]"
-            @click="currentPage = 'image_process'"
+            :class="['nav-item', { active: currentPage === 'nanobanana' }]"
+            @click="currentPage = 'nanobanana'"
           >
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
             </svg>
-            <span>图片处理</span>
-          </button>
-          <button
-            :class="['nav-item', { active: currentPage === 'image_gen' }]"
-            @click="currentPage = 'image_gen'"
-          >
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <line x1="12" y1="8" x2="12" y2="16"/>
-              <line x1="8" y1="12" x2="16" y2="12"/>
-            </svg>
-            <span>图片生成</span>
+            <span>香蕉生图</span>
           </button>
           <button
             :class="['nav-item', { active: currentPage === 'veo' }]"
@@ -164,8 +148,6 @@ onMounted(() => {
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="23 7 16 12 23 17 23 7"></polygon>
               <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-              <line x1="5" y1="9" x2="5" y2="15" stroke-width="2.5"/>
-              <line x1="9" y1="9" x2="9" y2="15" stroke-width="2.5"/>
             </svg>
             <span>VEO视频</span>
           </button>
@@ -179,17 +161,6 @@ onMounted(() => {
               <line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
             <span>VEO带货</span>
-          </button>
-          <button
-            v-if="isDevMode"
-            :class="['nav-item', { active: currentPage === 'debug' }]"
-            @click="currentPage = 'debug'"
-          >
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
-              <path d="M12 6v6l4 2"></path>
-            </svg>
-            <span>调试</span>
           </button>
         </nav>
 
@@ -209,40 +180,21 @@ onMounted(() => {
 
       <!-- Main content -->
       <main class="main-content">
-        <!-- Video page -->
-        <VideoGeneration
-          v-show="currentPage === 'video'"
+        <!-- 香蕉生图 -->
+        <NanoBanana
+          v-show="currentPage === 'nanobanana'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 
-        <!-- Image Process page -->
-        <ImageProcess
-          v-show="currentPage === 'image_process'"
-          @toast="(msg, type) => toastRef?.show(msg, type)"
-        />
-
-        <!-- Image Generation page -->
-        <ImageGeneration
-          v-show="currentPage === 'image_gen'"
-          @toast="(msg, type) => toastRef?.show(msg, type)"
-        />
-
-        <!-- VEO Video page -->
-        <VeoGeneration
+        <!-- VEO视频 -->
+        <GlinVeo
           v-show="currentPage === 'veo'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 
-        <!-- VEO Product page -->
+        <!-- VEO带货 -->
         <VeoProduct
           v-show="currentPage === 'veo_product'"
-          @toast="(msg, type) => toastRef?.show(msg, type)"
-        />
-
-        <!-- Debug page (dev mode only) -->
-        <Debug
-          v-if="isDevMode"
-          v-show="currentPage === 'debug'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 

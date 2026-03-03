@@ -4,8 +4,8 @@ from .activation import get_device_id, verify_activation
 from .constants import SettingKeys, ApiUrls
 from .database import get_setting, set_setting, get_all_settings
 from .logger import logger
-from .services.nanobanana import NanoBananaYunwu, NanoBananaGuanfang, NanoBananaHaotian
-from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Guanfang, Sora2Bandianwa
+from .services.nanobanana import NanoBananaYunwu, NanoBananaHaotian, NanoBananaGlin
+from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Bandianwa
 
 
 class Api:
@@ -79,7 +79,6 @@ class Api:
 
     # ==================== 图片处理 ====================
 
-    # 图片处理默认提示词
     _DEFAULT_IMAGE_PROMPT = "请根据图片中的产品，为其绘制一个真实、自然的展示场景。场景需要与产品类型相匹配，突出产品本身，背景环境要逼真有质感。注意：画面中不要出现任何文字、标签或水印。"
 
     def get_image_process_prompt(self) -> dict:
@@ -107,7 +106,9 @@ class Api:
         api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
         if not api_key:
             return {"ok": False, "msg": "未配置大洋芋 API Key，请前往设置页面配置"}
-        model_name = settings.get(SettingKeys.DAYANGYU_SORA2_MODEL, "") or "sora2-portrait-15s"
+        orientation = settings.get(SettingKeys.SORA2_ORIENTATION, "portrait")
+        duration = settings.get(SettingKeys.SORA2_DURATION, "10")
+        model_name = f"sora2-pro-{orientation}-hd-{duration}s"
         image_path = None
         try:
             service = Sora2Dayangyu(api_key)
@@ -198,7 +199,9 @@ class Api:
         api_key = settings.get(SettingKeys.XIAOBANSHOU_API_KEY, "")
         if not api_key:
             return {"ok": False, "msg": "未配置小扳手 API Key，请前往设置页面配置"}
-        model_name = settings.get(SettingKeys.XIAOBANSHOU_SORA2_MODEL, "") or "sora-2-portrait-10s"
+        orientation = settings.get(SettingKeys.SORA2_ORIENTATION, "portrait")
+        duration = settings.get(SettingKeys.SORA2_DURATION, "10")
+        model_name = f"sora-2-pro-{orientation}-hd-{duration}s"
         image_path = None
         try:
             service = Sora2Xiaobanshou(api_key)
@@ -265,7 +268,9 @@ class Api:
         api_key = settings.get(SettingKeys.BANDIANWA_API_KEY, "")
         if not api_key:
             return {"ok": False, "msg": "未配置斑点蛙 API Key，请前往设置页面配置"}
-        model_name = settings.get(SettingKeys.BANDIANWA_SORA2_MODEL, "") or "sora-2-portrait-15s-guanzhuan"
+        orientation = settings.get(SettingKeys.SORA2_ORIENTATION, "portrait")
+        duration = settings.get(SettingKeys.SORA2_DURATION, "10")
+        model_name = f"sora-2-{orientation}-{duration}s-guanzhuan"
         image_path = None
         try:
             service = Sora2Bandianwa(api_key)
@@ -333,14 +338,13 @@ class Api:
         if not api_key:
             return {"ok": False, "msg": "未配置云雾 API Key，请前往设置页面配置"}
 
-        orientation = settings.get(SettingKeys.YUNWU_SORA2_ORIENTATION, "portrait")
-        duration = int(settings.get(SettingKeys.YUNWU_SORA2_DURATION, "10"))
+        orientation = settings.get(SettingKeys.SORA2_ORIENTATION, "portrait")
+        duration = int(settings.get(SettingKeys.SORA2_DURATION, "10"))
 
         try:
             service = Sora2Yunwu(api_key)
             image_path = None
 
-            # 如果有图片，先写入临时文件
             if image_base64:
                 ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
                 ext = ext_map.get(mime_type, ".png")
@@ -358,7 +362,6 @@ class Api:
                 image_path=image_path,
             )
 
-            # 清理临时文件
             if image_path and os.path.exists(image_path):
                 os.remove(image_path)
 
@@ -372,7 +375,6 @@ class Api:
                 "orientation": orientation,
             }
         except Exception as e:
-            # 清理临时文件
             if image_path and os.path.exists(image_path):
                 os.remove(image_path)
             logger.error(f"调试 云雾 Sora2 创建任务异常: {e}")
@@ -404,47 +406,49 @@ class Api:
             logger.error(f"调试 云雾 Sora2 查询任务异常: {e}")
             return {"ok": False, "msg": str(e)}
 
-    def debug_nanobanana(self, prompt: str, ref_image: str = "", ref_mime_type: str = "", aspect_ratio: str = None, image_size: str = None) -> dict:
-        """调试 NanoBanana - 生成图片（支持文生图和图生图），根据 API 模式和渠道选择"""
+    def debug_nanobanana(self, prompt: str, ref_images: list = None, aspect_ratio: str = None, image_size: str = None) -> dict:
+        """NanoBanana 生成图片（支持文生图和多图生图）
+
+        Args:
+            ref_images: [{base64: str, mime: str}, ...]  或空列表/None 表示文生图
+        """
         settings = get_all_settings()
-        api_mode = settings.get(SettingKeys.API_MODE, "custom")
         nanobanana_model = settings.get(SettingKeys.NANOBANANA_MODEL, "yunwu")
 
-        if api_mode == "official":
-            api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        if nanobanana_model == "haotian":
+            api_key = settings.get(SettingKeys.HAOTIAN_API_KEY, "")
             if not api_key:
-                return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
-            if nanobanana_model == "haotian":
-                service = NanoBananaHaotian(api_key)
-                provider_label = "HT"
-            else:
-                service = NanoBananaGuanfang(api_key)
-                provider_label = "官方"
+                return {"ok": False, "msg": "未配置荷塘 API Key，请前往设置页面配置"}
+            service = NanoBananaHaotian(api_key)
+            provider_label = "荷塘"
+        elif nanobanana_model == "glin":
+            api_key = settings.get(SettingKeys.GLIN_API_KEY, "")
+            if not api_key:
+                return {"ok": False, "msg": "未配置万米霖 API Key，请前往设置页面配置"}
+            service = NanoBananaGlin(api_key)
+            provider_label = "万米霖"
         else:
-            if nanobanana_model == "haotian":
-                api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
-                if not api_key:
-                    return {"ok": False, "msg": "HT 渠道使用官方 API Key，请前往设置页面配置"}
-                service = NanoBananaHaotian(api_key)
-                provider_label = "HT"
-            else:
-                api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
-                if not api_key:
-                    return {"ok": False, "msg": "未配置云雾 API Key，请前往设置页面配置"}
-                service = NanoBananaYunwu(api_key)
-                provider_label = "云雾"
+            api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
+            if not api_key:
+                return {"ok": False, "msg": "未配置云雾 API Key，请前往设置页面配置"}
+            service = NanoBananaYunwu(api_key)
+            provider_label = "云雾"
 
         aspect_ratio = aspect_ratio or settings.get(SettingKeys.NANOBANANA_RATIO, "9:16")
         image_size = image_size or settings.get(SettingKeys.NANOBANANA_QUALITY, "1K")
 
         try:
             kwargs = {}
-            if ref_image:
-                kwargs["ref_image"] = ref_image
-                kwargs["ref_mime_type"] = ref_mime_type or "image/jpeg"
-                logger.info(f"NanoBanana 调试 ({provider_label}): 图生图模式")
+            imgs = ref_images or []
+            if imgs:
+                kwargs["ref_images"] = imgs
+                logger.info(f"NanoBanana 调试 ({provider_label}): 图生图模式, {len(imgs)} 张图片")
             else:
                 logger.info(f"NanoBanana 调试 ({provider_label}): 文生图模式")
+
+            download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+            if download_path and download_path.strip():
+                kwargs["download_dir"] = download_path.strip()
 
             result = service.generate(
                 prompt=prompt,
@@ -454,115 +458,25 @@ class Api:
             )
 
             if result.success:
-                return {
+                resp = {
                     "ok": True,
                     "image_data": result.image_data,
                     "mime_type": result.mime_type,
                     "text_content": result.text_content,
                 }
+                if result.file_path:
+                    resp["file_path"] = result.file_path
+                return resp
             else:
                 return {"ok": False, "msg": result.error_message}
         except Exception as e:
             logger.error(f"调试 NanoBanana ({provider_label}) 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
-    # ==================== 官方 API 调试接口 ====================
-
-    def debug_guanfang_sora2_create(self, prompt: str, image_base64: str = "", mime_type: str = "") -> dict:
-        """调试 官方 Sora2 - 创建任务（文生视频 / 图生视频）"""
-        import base64
-        import os
-        import tempfile
-
-        settings = get_all_settings()
-        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
-        if not api_key:
-            return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
-        model_name = settings.get(SettingKeys.GUANFANG_SORA2_MODEL, "") or "sora2-portrait-15s"
-        image_path = None
-        try:
-            service = Sora2Guanfang(api_key)
-            if image_base64:
-                ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
-                ext = ext_map.get(mime_type or "", ".png")
-                image_data = base64.b64decode(image_base64)
-                tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
-                tmp.write(image_data)
-                tmp.close()
-                image_path = tmp.name
-                task = service.create_task(prompt, model=model_name, image_path=image_path)
-            else:
-                task = service.create_task(prompt, model=model_name)
-            if image_path and os.path.exists(image_path):
-                os.remove(image_path)
-            return {
-                "ok": True,
-                "task_id": task.task_id,
-                "status": task.status.value,
-                "prompt": task.prompt,
-                "mode": "图生视频" if image_base64 else "文生视频",
-            }
-        except Exception as e:
-            if image_path and os.path.exists(image_path):
-                try:
-                    os.remove(image_path)
-                except Exception:
-                    pass
-            logger.error(f"调试 官方 Sora2 异常: {e}")
-            return {"ok": False, "msg": str(e)}
-
-    def debug_guanfang_sora2_query(self, task_id: str) -> dict:
-        """调试 官方 Sora2 - 查询任务状态"""
-        settings = get_all_settings()
-        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
-        if not api_key:
-            return {"ok": False, "msg": "未配置官方 API Key"}
-        try:
-            service = Sora2Guanfang(api_key)
-            task = service.query_task(task_id)
-            result = {
-                "ok": True,
-                "task_id": task.task_id,
-                "status": task.status.value,
-                "progress": task.progress,
-            }
-            if task.video_url:
-                result["video_url"] = task.video_url
-            if task.error_message:
-                result["error_message"] = task.error_message
-            return result
-        except Exception as e:
-            logger.error(f"调试 官方 Sora2 查询异常: {e}")
-            return {"ok": False, "msg": str(e)}
-
-    def debug_guanfang_sora2_content(self, task_id: str) -> dict:
-        """调试 官方 Sora2 - 查看视频内容"""
-        import base64
-
-        settings = get_all_settings()
-        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
-        if not api_key:
-            return {"ok": False, "msg": "未配置官方 API Key"}
-        try:
-            service = Sora2Guanfang(api_key)
-            data, content_type, err = service.get_video_content(task_id)
-            if err:
-                return {"ok": False, "msg": err}
-            if not data:
-                return {"ok": False, "msg": "未获取到视频数据"}
-            return {
-                "ok": True,
-                "content_type": content_type or "video/mp4",
-                "data": base64.b64encode(data).decode("ascii"),
-            }
-        except Exception as e:
-            logger.error(f"调试 官方 Sora2 查看视频异常: {e}")
-            return {"ok": False, "msg": str(e)}
-
     # ==================== VEO 视频生成 ====================
 
     def veo_text_to_video(self, prompt: str, orientation: str = "landscape") -> dict:
-        """VEO 文生视频 - 通过 SSE 流式调用 VEO API 生成视频"""
+        """VEO 文生视频 - 通过 SSE 流式调用 Glin API 生成视频"""
         import json
         import re
         import requests
@@ -570,17 +484,16 @@ class Api:
         logger.info(f"[API] veo_text_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
 
         settings = get_all_settings()
-        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        api_key = settings.get(SettingKeys.GLIN_API_KEY, "")
         if not api_key:
-            return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
+            return {"ok": False, "msg": "未配置万米霖 API Key，请前往设置页面配置"}
 
-        # 根据方向选择模型
         if orientation == "portrait":
             model = "veo_3_1_t2v_fast_portrait"
         else:
             model = "veo_3_1_t2v_fast_landscape"
 
-        url = f"{ApiUrls.GUANFANG}/v1/chat/completions"
+        url = f"{ApiUrls.GLIN}/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -610,13 +523,11 @@ class Api:
                     if not choices:
                         continue
                     delta = choices[0].get("delta", {})
-                    # 检查是否有视频内容
                     content = delta.get("content", "")
                     if content:
                         match = re.search(r"<video\s+src='([^']+)'", content)
                         if match:
                             video_url = match.group(1)
-                    # 检查是否有错误信息
                     reasoning = delta.get("reasoning_content", "")
                     if reasoning and ("❌" in reasoning or "失败" in reasoning):
                         error_msg = reasoning.strip()
@@ -640,7 +551,7 @@ class Api:
             return {"ok": False, "msg": str(e)}
 
     def veo_image_to_video(self, prompt: str, image_base64: str, mime_type: str, orientation: str = "landscape") -> dict:
-        """VEO 图生视频 - 通过 SSE 流式调用 VEO API，以图片为首帧生成视频"""
+        """VEO 图生视频 - 通过 SSE 流式调用 Glin API，以图片为首帧生成视频"""
         import json
         import re
         import requests
@@ -648,22 +559,20 @@ class Api:
         logger.info(f"[API] veo_image_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
 
         settings = get_all_settings()
-        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+        api_key = settings.get(SettingKeys.GLIN_API_KEY, "")
         if not api_key:
-            return {"ok": False, "msg": "未配置官方 API Key，请前往设置页面配置"}
+            return {"ok": False, "msg": "未配置万米霖 API Key，请前往设置页面配置"}
 
-        # 根据方向选择图生视频模型
         if orientation == "portrait":
             model = "veo_3_1_i2v_s_fast_portrait_fl"
         else:
             model = "veo_3_1_i2v_s_fast_fl"
 
-        url = f"{ApiUrls.GUANFANG}/v1/chat/completions"
+        url = f"{ApiUrls.GLIN}/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        # multimodal content: text + image
         content = [
             {"type": "text", "text": prompt},
             {
@@ -698,13 +607,11 @@ class Api:
                     if not choices:
                         continue
                     delta = choices[0].get("delta", {})
-                    # 检查是否有视频内容
                     delta_content = delta.get("content", "")
                     if delta_content:
                         match = re.search(r"<video\s+src='([^']+)'", delta_content)
                         if match:
                             video_url = match.group(1)
-                    # 检查是否有错误信息
                     reasoning = delta.get("reasoning_content", "")
                     if reasoning and ("❌" in reasoning or "失败" in reasoning):
                         error_msg = reasoning.strip()
@@ -725,6 +632,113 @@ class Api:
             return {"ok": False, "msg": "请求超时（600秒）"}
         except Exception as e:
             logger.error(f"[API] veo_image_to_video -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def glin_veo_generate(self, prompt: str, ref_images: list = None, orientation: str = "landscape") -> dict:
+        """Glin VEO 视频生成（统一接口：文生视频 / 首尾帧生视频，自动下载）
+
+        Args:
+            prompt: 视频描述
+            ref_images: [{base64, mime}, ...]  空=文生视频，有图=首尾帧生视频
+            orientation: portrait / landscape
+        """
+        import json
+        import re
+        import requests
+        from datetime import datetime
+        from pathlib import Path
+
+        imgs = ref_images or []
+        mode = f"首尾帧({len(imgs)}张)" if imgs else "文生视频"
+
+        logger.info(f"[API] glin_veo_generate 调用, orientation={orientation}, 模式={mode}")
+
+        settings = get_all_settings()
+        api_key = settings.get(SettingKeys.GLIN_API_KEY, "")
+        if not api_key:
+            return {"ok": False, "msg": "未配置万米霖 API Key，请前往设置页面配置"}
+
+        if imgs:
+            model = "veo_3_1_i2v_s_fast_portrait_fl" if orientation == "portrait" else "veo_3_1_i2v_s_fast_fl"
+            content = [{"type": "text", "text": prompt}]
+            for img in imgs:
+                b64 = img.get("base64", "")
+                mime = img.get("mime", "image/jpeg")
+                if b64:
+                    content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
+            messages = [{"role": "user", "content": content}]
+        else:
+            model = "veo_3_1_t2v_fast_portrait" if orientation == "portrait" else "veo_3_1_t2v_fast_landscape"
+            messages = [{"role": "user", "content": prompt}]
+
+        url = f"{ApiUrls.GLIN}/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {"model": model, "messages": messages, "stream": True}
+
+        try:
+            resp = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
+            resp.raise_for_status()
+
+            video_url = ""
+            error_msg = ""
+
+            for line in resp.iter_lines(decode_unicode=True):
+                if not line or not line.startswith("data: "):
+                    continue
+                data_str = line[6:].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    data = json.loads(data_str)
+                    choices = data.get("choices", [])
+                    if not choices:
+                        continue
+                    delta = choices[0].get("delta", {})
+                    c = delta.get("content", "")
+                    if c:
+                        match = re.search(r"<video\s+src='([^']+)'", c)
+                        if match:
+                            video_url = match.group(1)
+                    r = delta.get("reasoning_content", "")
+                    if r and ("❌" in r or "失败" in r):
+                        error_msg = r.strip()
+                except json.JSONDecodeError:
+                    continue
+
+            if not video_url:
+                return {"ok": False, "msg": error_msg or "未获取到视频链接"}
+
+            logger.info(f"[API] glin_veo_generate -> 成功, url={video_url[:80]}...")
+
+            result = {"ok": True, "video_url": video_url}
+
+            download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+            if download_path and download_path.strip():
+                try:
+                    dl_dir = Path(download_path.strip())
+                    dl_dir.mkdir(parents=True, exist_ok=True)
+                    dl_resp = requests.get(video_url, timeout=120, stream=True)
+                    dl_resp.raise_for_status()
+                    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filename = f"glin_veo_{ts}.mp4"
+                    filepath = dl_dir / filename
+                    with open(str(filepath), "wb") as f:
+                        for chunk in dl_resp.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    result["file_path"] = str(filepath)
+                    logger.info(f"[API] glin_veo_generate -> 视频已保存: {filepath}")
+                except Exception as e:
+                    logger.warning(f"[API] glin_veo_generate -> 自动下载失败: {e}")
+
+            return result
+
+        except requests.Timeout:
+            return {"ok": False, "msg": "请求超时（600秒）"}
+        except Exception as e:
+            logger.error(f"[API] glin_veo_generate -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     def download_veo_video(self, video_url: str) -> dict:
@@ -883,7 +897,6 @@ class Api:
 
         logger.info(f"[API] download_video_task 调用, task_id={task_id}")
 
-        # 检查下载路径
         download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
         if not download_path or not download_path.strip():
             logger.warning("[API] download_video_task -> 未设置下载路径")
@@ -897,7 +910,6 @@ class Api:
                 logger.error(f"[API] download_video_task -> 创建下载目录失败: {e}")
                 return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
 
-        # 获取任务信息
         from .database import get_video_tasks, update_video_task
         try:
             tasks = get_video_tasks()
@@ -914,30 +926,18 @@ class Api:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             remote_id = task.remote_task_id or ""
 
-            # 判断是否可以走 DYY 类型的 get_video_content API 下载
             settings = get_all_settings()
-            api_mode = settings.get(SettingKeys.API_MODE, "custom")
             use_api_download = False
 
             if remote_id:
-                if api_mode == "official":
-                    provider = settings.get("guanfang_sora2_provider", "dayangyu")
-                    if provider == "dayangyu":
-                        use_api_download = True
-                else:
-                    provider = settings.get(SettingKeys.SORA2_MODEL, "dayangyu")
-                    if provider == "dayangyu":
-                        use_api_download = True
+                provider = settings.get(SettingKeys.SORA2_MODEL, "dayangyu")
+                if provider == "dayangyu":
+                    use_api_download = True
 
             if use_api_download:
-                # DYY 类型：通过 get_video_content API 下载
                 logger.info(f"[API] download_video_task -> 使用 API 下载, remote_id={remote_id}")
-                if api_mode == "official":
-                    api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
-                    service = Sora2Guanfang(api_key)
-                else:
-                    api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
-                    service = Sora2Dayangyu(api_key)
+                api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
+                service = Sora2Dayangyu(api_key)
 
                 data, content_type, err = service.get_video_content(remote_id)
                 if err or not data:
@@ -956,7 +956,6 @@ class Api:
                     update_video_task(task_id, video_path=str(filepath))
                     return {"ok": True, "path": str(filepath)}
 
-            # 其他类型 / API 下载失败回退：通过 URL 直接下载
             video_url = task.video_url
             ext = ".mp4"
             if ".webm" in video_url:
@@ -1049,13 +1048,11 @@ class Api:
 
         logger.debug("[API] get_data_status 调用")
         try:
-            # 数据库文件信息
             db_size = 0
             db_exists = DB_PATH.exists()
             if db_exists:
                 db_size = DB_PATH.stat().st_size
 
-            # 日志目录信息
             log_files = 0
             log_total_size = 0
             if LOGS_DIR.exists():

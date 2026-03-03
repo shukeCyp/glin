@@ -15,94 +15,75 @@ from .database import (
 )
 from .logger import logger
 from .thread_pool import get_pool
-from .services.sora2 import Sora2Guanfang, Sora2GuanfangXbs, Sora2Dayangyu, Sora2Yunwu, Sora2Xiaobanshou, Sora2Bandianwa
+from .services.sora2 import Sora2Dayangyu, Sora2Yunwu, Sora2Xiaobanshou, Sora2Bandianwa
 from .services.sora2.base import Sora2TaskStatus
+
+
+def _build_model_name(provider: str, orientation: str, duration: str) -> str:
+    """根据渠道、比例、时长构建模型名称"""
+    d = duration
+    o = orientation
+    if provider == ModelProviders.DAYANGYU:
+        return f"sora2-pro-{o}-hd-{d}s"
+    elif provider == ModelProviders.XIAOBANSHOU:
+        return f"sora-2-pro-{o}-hd-{d}s"
+    elif provider == ModelProviders.BANDIANWA:
+        return f"sora-2-{o}-{d}s-guanzhuan"
+    return None
 
 
 def _get_sora2_service(settings: dict):
     """根据设置获取 Sora2 服务实例"""
-    api_mode = settings.get(SettingKeys.API_MODE, "custom")
+    provider = settings.get(SettingKeys.SORA2_MODEL, ModelProviders.DAYANGYU)
+    orientation = settings.get(SettingKeys.SORA2_ORIENTATION, "portrait")
+    duration = settings.get(SettingKeys.SORA2_DURATION, "10")
 
-    if api_mode == "official":
-        api_key = settings.get(SettingKeys.GUANFANG_API_KEY, "")
+    if provider == ModelProviders.DAYANGYU:
+        api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
         if not api_key:
-            return None, "未配置官方 API Key"
-        provider = settings.get(SettingKeys.GUANFANG_SORA2_PROVIDER, ModelProviders.DAYANGYU)
-        model = settings.get(SettingKeys.GUANFANG_SORA2_MODEL, "") or "sora2-portrait-15s"
+            return None, "未配置大洋芋 API Key"
+        model = _build_model_name(provider, orientation, duration)
+        return (Sora2Dayangyu(api_key), model), None
 
-        if provider == ModelProviders.XIAOBANSHOU:
-            # 官方 API + 小扳手调用方式
-            xbs_model = settings.get(SettingKeys.XIAOBANSHOU_SORA2_MODEL, "") or "sora-2-portrait-10s"
-            return (Sora2GuanfangXbs(api_key), xbs_model), None
-        elif provider == ModelProviders.BANDIANWA:
-            # 官方 API + BDW 调用方式
-            bdw_model = settings.get(SettingKeys.BANDIANWA_SORA2_MODEL, "") or "sora-2-portrait-15s-guanzhuan"
-            return (Sora2Guanfang(api_key), bdw_model), None
-        else:
-            # 官方 API + 大洋芋调用方式（默认）
-            return (Sora2Guanfang(api_key), model), None
-    else:
-        # 自定义模式 - 按 sora2_model 选择
-        provider = settings.get(SettingKeys.SORA2_MODEL, ModelProviders.DAYANGYU)
+    elif provider == ModelProviders.YUNWU:
+        api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
+        if not api_key:
+            return None, "未配置云雾 API Key"
+        return (Sora2Yunwu(api_key), None), None
 
-        if provider == ModelProviders.DAYANGYU:
-            api_key = settings.get(SettingKeys.DAYANGYU_API_KEY, "")
-            if not api_key:
-                return None, "未配置 DYY API Key"
-            model = settings.get(SettingKeys.DAYANGYU_SORA2_MODEL, "") or "sora2-portrait-15s"
-            return (Sora2Dayangyu(api_key), model), None
+    elif provider == ModelProviders.XIAOBANSHOU:
+        api_key = settings.get(SettingKeys.XIAOBANSHOU_API_KEY, "")
+        if not api_key:
+            return None, "未配置小扳手 API Key"
+        model = _build_model_name(provider, orientation, duration)
+        return (Sora2Xiaobanshou(api_key), model), None
 
-        elif provider == ModelProviders.YUNWU:
-            api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
-            if not api_key:
-                return None, "未配置 YW API Key"
-            # 云雾不用 model 参数，用 orientation/duration
-            return (Sora2Yunwu(api_key), None), None
+    elif provider == ModelProviders.BANDIANWA:
+        api_key = settings.get(SettingKeys.BANDIANWA_API_KEY, "")
+        if not api_key:
+            return None, "未配置斑点蛙 API Key"
+        model = _build_model_name(provider, orientation, duration)
+        return (Sora2Bandianwa(api_key), model), None
 
-        elif provider == ModelProviders.XIAOBANSHOU:
-            api_key = settings.get(SettingKeys.XIAOBANSHOU_API_KEY, "")
-            if not api_key:
-                return None, "未配置 XBS API Key"
-            model = settings.get(SettingKeys.XIAOBANSHOU_SORA2_MODEL, "") or "sora-2-portrait-10s"
-            return (Sora2Xiaobanshou(api_key), model), None
-
-        elif provider == ModelProviders.BANDIANWA:
-            api_key = settings.get(SettingKeys.BANDIANWA_API_KEY, "")
-            if not api_key:
-                return None, "未配置斑点蛙 API Key"
-            model = settings.get(SettingKeys.BANDIANWA_SORA2_MODEL, "") or "sora-2-portrait-15s-guanzhuan"
-            return (Sora2Bandianwa(api_key), model), None
-
-        return None, f"未知的 Sora2 提供商: {provider}"
+    return None, f"未知的 Sora2 提供商: {provider}"
 
 
 def _create_sora2_task(service, settings, prompt, image_path, model):
-    """创建 Sora2 任务，根据 API 模式和渠道选择封装参数"""
+    """创建 Sora2 任务，根据渠道选择封装参数"""
     kwargs = {}
     if model:
         kwargs["model"] = model
     if image_path and os.path.isfile(image_path):
         kwargs["image_path"] = image_path
 
-    api_mode = settings.get(SettingKeys.API_MODE, "custom")
-
-    if api_mode == "official":
-        # 官方模式：根据 guanfang_sora2_provider 判断渠道
-        provider = settings.get(SettingKeys.GUANFANG_SORA2_PROVIDER, ModelProviders.DAYANGYU)
-        # 官方模式下 DYY / XBS 都是标准调用，无需特殊参数
-        return service.create_task(prompt, **kwargs)
+    provider = settings.get(SettingKeys.SORA2_MODEL, ModelProviders.DAYANGYU)
+    if provider == ModelProviders.YUNWU:
+        orientation = settings.get(SettingKeys.SORA2_ORIENTATION, "portrait")
+        duration = int(settings.get(SettingKeys.SORA2_DURATION, "10"))
+        kwargs["orientation"] = orientation
+        return service.create_task(prompt, duration=duration, **kwargs)
     else:
-        # 自定义模式：根据 sora2_model 判断渠道
-        provider = settings.get(SettingKeys.SORA2_MODEL, ModelProviders.DAYANGYU)
-        if provider == ModelProviders.YUNWU:
-            # 云雾需要额外的 orientation / duration 参数
-            orientation = settings.get(SettingKeys.YUNWU_SORA2_ORIENTATION, "portrait")
-            duration = int(settings.get(SettingKeys.YUNWU_SORA2_DURATION, "10"))
-            kwargs["orientation"] = orientation
-            return service.create_task(prompt, duration=duration, **kwargs)
-        else:
-            # DYY / XBS 标准调用
-            return service.create_task(prompt, **kwargs)
+        return service.create_task(prompt, **kwargs)
 
 
 def _process_task(task) -> None:
@@ -113,7 +94,6 @@ def _process_task(task) -> None:
     try:
         settings = get_all_settings()
 
-        # 读取重试配置
         auto_retry = settings.get(SettingKeys.AUTO_RETRY, "false") == "true"
         max_retry = int(settings.get(SettingKeys.VIDEO_MAX_RETRY, "3")) if auto_retry else 0
 
@@ -132,22 +112,19 @@ def _process_task(task) -> None:
             if attempt > 0:
                 logger.info(f"[Scanner] 视频任务重试 id={task_db_id} | 第 {attempt}/{max_retry} 次重试")
 
-            # 创建任务
             sora2_task = _create_sora2_task(service, settings, prompt, image_path, model)
 
             if sora2_task.status == Sora2TaskStatus.FAILED:
                 logger.error(f"[Scanner] 创建任务失败 id={task_db_id}: {sora2_task.error_message}")
                 attempt += 1
                 if attempt <= max_retry:
-                    time.sleep(5)  # 重试前等待 5 秒
+                    time.sleep(5)
                 continue
 
             remote_task_id = sora2_task.task_id
             logger.info(f"[Scanner] 任务已提交 id={task_db_id}, remote_id={remote_task_id}")
-            # 保存远程任务 ID
             update_video_task(task_db_id, remote_task_id=remote_task_id)
 
-            # 轮询等待完成 - 每 30 秒查询一次，最多 30 分钟
             max_polls = 60
             poll_interval = 30
 
@@ -166,31 +143,25 @@ def _process_task(task) -> None:
                     )
                     logger.info(f"[Scanner] 任务完成 id={task_db_id}, video_url={video_url[:80] if video_url else 'N/A'}")
 
-                    # 自动下载
                     auto_download = settings.get(SettingKeys.AUTO_DOWNLOAD, "false") == "true"
                     download_path = settings.get(SettingKeys.DOWNLOAD_PATH, "")
                     if auto_download and download_path:
                         _download_video(task_db_id, video_url, download_path, service=service, remote_task_id=remote_task_id)
 
-                    return  # 成功，退出
+                    return
 
                 elif query_result.status == Sora2TaskStatus.FAILED:
                     logger.error(f"[Scanner] 远程任务失败 id={task_db_id}: {query_result.error_message}")
-                    break  # 跳出轮询，进入重试
-
-                # 继续轮询（pending / processing）
+                    break
 
             else:
-                # 轮询超时
                 logger.warning(f"[Scanner] 轮询超时 id={task_db_id}")
 
-            # 任务失败或超时，尝试重试
             attempt += 1
             if attempt <= max_retry:
                 logger.info(f"[Scanner] 准备重试 id={task_db_id}")
                 time.sleep(5)
 
-        # 所有重试都失败
         logger.error(f"[Scanner] 视频任务最终失败 id={task_db_id} (已重试 {max_retry} 次)")
         update_video_task(task_db_id, status='failed')
 
@@ -206,7 +177,6 @@ def _download_video(task_db_id: int, video_url: str, download_dir: str, service=
         os.makedirs(download_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # 判断是否可以走 DYY 类型的 get_video_content API 下载
         if service and remote_task_id and hasattr(service, 'get_video_content'):
             logger.info(f"[Scanner] 使用 API 下载视频 id={task_db_id}, remote_id={remote_task_id}")
             data, content_type, err = service.get_video_content(remote_task_id)
@@ -226,7 +196,6 @@ def _download_video(task_db_id: int, video_url: str, download_dir: str, service=
             else:
                 logger.warning(f"[Scanner] API 下载失败 id={task_db_id}: {err}，回退到 URL 下载")
 
-        # URL 直接下载
         if not video_url:
             logger.warning(f"[Scanner] 无视频 URL，跳过下载 id={task_db_id}")
             return
@@ -280,7 +249,6 @@ def _resume_poll_task(task, service) -> None:
                 update_video_task(task_db_id, status='failed')
                 return
 
-        # 轮询超时
         logger.warning(f"[Scanner] 恢复轮询超时 id={task_db_id}")
         update_video_task(task_db_id, status='failed')
 
@@ -301,7 +269,6 @@ def _resume_processing_tasks() -> None:
         result, err = _get_sora2_service(settings)
         if err or not result:
             logger.error(f"[Scanner] 恢复任务失败，获取 Sora2 服务失败: {err}")
-            # 将所有 processing 任务重置为 pending
             for task in tasks:
                 update_video_task(task.id, status='pending')
             return
@@ -315,11 +282,9 @@ def _resume_processing_tasks() -> None:
         for task in tasks:
             remote_id = task.remote_task_id or ""
             if remote_id:
-                # 有远程 ID，直接恢复轮询
                 logger.info(f"[Scanner] 恢复轮询任务 id={task.id}, remote_id={remote_id}")
                 pool.submit(_resume_poll_task, task, service)
             else:
-                # 没有远程 ID，重置为 pending 让 scanner 重新处理
                 logger.info(f"[Scanner] 任务 id={task.id} 无 remote_task_id，重置为 pending")
                 update_video_task(task.id, status='pending')
 
@@ -330,7 +295,6 @@ def _resume_processing_tasks() -> None:
 
 def start_scanner() -> None:
     """启动后台扫描线程"""
-    # 先恢复处理中的任务
     _resume_processing_tasks()
 
     def _scan_loop():
@@ -348,12 +312,11 @@ def start_scanner() -> None:
                         pool.submit(_process_task, task)
                         logger.info(f"[Scanner] 已提交任务 id={task.id} 到线程池")
                 elif scan_count % 60 == 0:
-                    # 每 5 分钟打印一次心跳日志
                     logger.debug(f"[Scanner] 第{scan_count}轮扫描, 无待处理任务")
             except Exception as e:
                 logger.error(f"[Scanner] 扫描异常: {type(e).__name__}: {e}")
 
-            time.sleep(5)  # 每 5 秒扫描一次新任务
+            time.sleep(5)
 
     t = threading.Thread(target=_scan_loop, daemon=True, name="VideoScanner")
     t.start()

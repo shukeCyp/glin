@@ -38,7 +38,7 @@ class NanoBananaHaotian(NanoBananaBase):
 
     @property
     def base_url(self) -> str:
-        return ApiUrls.GUANFANG
+        return ApiUrls.HAOTIAN
 
     def generate(
         self,

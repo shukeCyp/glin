@@ -13,6 +13,7 @@ class NanoBananaResult:
     mime_type: Optional[str] = None       # 图片 MIME 类型（如 image/png）
     text_content: Optional[str] = None    # 文本内容（模型返回的文本）
     error_message: Optional[str] = None   # 错误信息
+    file_path: Optional[str] = None       # 自动下载后的本地文件路径
 
 
 class NanoBananaBase(ABC):

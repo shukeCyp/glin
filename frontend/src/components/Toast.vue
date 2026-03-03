@@ -55,10 +55,10 @@ defineExpose({ show })
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background: rgba(30, 34, 48, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(12px);
   cursor: pointer;
   pointer-events: auto;
@@ -66,18 +66,18 @@ defineExpose({ show })
 }
 
 .toast--success {
-  border-color: rgba(74, 222, 128, 0.4);
-  background: linear-gradient(135deg, rgba(30, 34, 48, 0.95), rgba(34, 60, 48, 0.95));
+  border-color: var(--success);
+  background: linear-gradient(135deg, var(--bg-card), rgba(240, 252, 244, 0.98));
 }
 
 .toast--error {
-  border-color: rgba(248, 113, 113, 0.4);
-  background: linear-gradient(135deg, rgba(30, 34, 48, 0.95), rgba(60, 34, 34, 0.95));
+  border-color: var(--error);
+  background: linear-gradient(135deg, var(--bg-card), rgba(254, 242, 242, 0.98));
 }
 
 .toast--info {
   border-color: rgba(96, 165, 250, 0.4);
-  background: linear-gradient(135deg, rgba(30, 34, 48, 0.95), rgba(34, 48, 60, 0.95));
+  background: linear-gradient(135deg, var(--bg-card), rgba(239, 246, 255, 0.98));
 }
 
 /* Transitions */
