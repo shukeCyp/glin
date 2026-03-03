@@ -16,6 +16,7 @@ const showAddDialog = ref(false)
 const addPrompt = ref('')
 const addOrientation = ref('landscape')
 const addImages = ref([])
+const addCount = ref(1)
 const addSubmitting = ref(false)
 const addIsDragging = ref(false)
 const addFileInput = ref(null)
@@ -31,6 +32,7 @@ onMounted(async () => {
 
 const openAddDialog = (file = null) => {
   addPrompt.value = ''
+  addCount.value = 1
   addImages.value = []
   addSubmitting.value = false
   showAddDialog.value = true
@@ -103,23 +105,58 @@ const submitAddTask = () => {
   }).catch(() => {})
 
   const images = addImages.value.map(img => ({ ...img }))
-  const task = reactive({
-    id: ++taskIdCounter,
-    prompt: addPrompt.value,
-    orientation: addOrientation.value,
-    images,
-    status: 'pending',
-    statusText: '待处理',
-    videoUrl: '',
-    filePath: '',
-  })
-  taskList.value.unshift(task)
+  const isTextToVideo = images.length === 0
+  const count = isTextToVideo ? Math.max(1, Math.min(1000, addCount.value || 1)) : 1
+
+  const tasks = []
+  for (let i = 0; i < count; i++) {
+    const task = reactive({
+      id: ++taskIdCounter,
+      prompt: addPrompt.value,
+      orientation: addOrientation.value,
+      images: isTextToVideo ? [] : images,
+      status: 'pending',
+      statusText: '待处理',
+      videoUrl: '',
+      filePath: '',
+    })
+    tasks.push(task)
+  }
+  taskList.value.unshift(...tasks)
   showAddDialog.value = false
   addSubmitting.value = false
-  generateTask(task)
+
+  if (count > 1) {
+    emit('toast', `已添加 ${count} 条任务，开始生成...`, 'success')
+  }
+  startGeneration(tasks)
 }
 
 // ==================== 生成逻辑 ====================
+const startGeneration = async (tasks) => {
+  let concurrency = 3
+  try {
+    const settings = await window.pywebview.api.get_all_settings()
+    concurrency = parseInt(settings.thread_pool_size || '3', 10)
+    if (concurrency < 1) concurrency = 1
+    if (concurrency > 50) concurrency = 50
+  } catch { /* ignore */ }
+
+  let idx = 0
+  const runNext = async () => {
+    while (idx < tasks.length) {
+      const task = tasks[idx++]
+      if (task.status === 'pending') {
+        await generateTask(task)
+      }
+    }
+  }
+  const workers = []
+  for (let i = 0; i < Math.min(concurrency, tasks.length); i++) {
+    workers.push(runNext())
+  }
+}
+
 const withTimeout = (promise, ms) =>
   Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('请求超时')), ms))])
 
@@ -338,15 +375,21 @@ const modeLabel = (task) => task.images && task.images.length ? `首尾帧(${tas
               <textarea v-model="addPrompt" placeholder="描述你想要生成的视频内容" rows="3"></textarea>
             </label>
 
-            <!-- 方向 -->
-            <div class="field" style="margin-top: 16px;">
-              <span class="field-label">画面方向</span>
-              <div class="seg-group">
-                <button
-                  v-for="opt in orientationOptions" :key="opt.value"
-                  :class="['seg-btn', { active: addOrientation === opt.value }]"
-                  @click="addOrientation = opt.value"
-                >{{ opt.label }}</button>
+            <!-- 方向 + 生成条数 -->
+            <div class="form-row" style="margin-top: 16px;">
+              <div class="field field-inline">
+                <span class="field-label">画面方向</span>
+                <div class="seg-group">
+                  <button
+                    v-for="opt in orientationOptions" :key="opt.value"
+                    :class="['seg-btn', { active: addOrientation === opt.value }]"
+                    @click="addOrientation = opt.value"
+                  >{{ opt.label }}</button>
+                </div>
+              </div>
+              <div v-if="addImages.length === 0" class="field field-inline">
+                <span class="field-label">生成条数</span>
+                <input v-model.number="addCount" type="number" min="1" max="1000" class="count-input" />
               </div>
             </div>
 
@@ -516,6 +559,12 @@ const modeLabel = (task) => task.images && task.images.length ? `首尾帧(${tas
 .dialog-body textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
 .dialog-body textarea::placeholder { color: var(--text-placeholder); }
 .dialog-body textarea:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
+
+.form-row { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.field-inline { flex: 0 0 auto; }
+.count-input { width: 90px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; -moz-appearance: textfield; }
+.count-input::-webkit-outer-spin-button, .count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.count-input:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
 
 .seg-group { display: flex; gap: 6px; flex-wrap: wrap; }
 .seg-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-tertiary); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }

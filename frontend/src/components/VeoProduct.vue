@@ -11,21 +11,6 @@ const showPromptDialog = ref(false)
 const promptDialogType = ref('image')
 const promptDialogText = ref('')
 
-onMounted(async () => {
-  try {
-    const [imgRes, vidRes, settings] = await Promise.all([
-      window.pywebview.api.get_image_process_prompt(),
-      window.pywebview.api.get_video_process_prompt(),
-      window.pywebview.api.get_all_settings(),
-    ])
-    if (imgRes.ok) defaultImagePrompt.value = imgRes.prompt
-    if (vidRes.ok) defaultVideoPrompt.value = vidRes.prompt
-    if (settings.glin_nanobanana_ratio) dialogImageRatio.value = settings.glin_nanobanana_ratio
-    if (settings.glin_nanobanana_quality) dialogImageQuality.value = settings.glin_nanobanana_quality
-    if (settings.glin_veo_orientation) dialogVideoOrientation.value = settings.glin_veo_orientation
-  } catch { /* ignore */ }
-})
-
 const openPromptDialog = (type) => {
   promptDialogType.value = type
   promptDialogText.value = type === 'image' ? defaultImagePrompt.value : defaultVideoPrompt.value
@@ -48,6 +33,21 @@ const savePromptDialog = async () => {
   } catch { emit('toast', '保存失败', 'error') }
 }
 
+onMounted(async () => {
+  try {
+    const [imgRes, vidRes, settings] = await Promise.all([
+      window.pywebview.api.get_image_process_prompt(),
+      window.pywebview.api.get_video_process_prompt(),
+      window.pywebview.api.get_all_settings(),
+    ])
+    if (imgRes.ok) defaultImagePrompt.value = imgRes.prompt
+    if (vidRes.ok) defaultVideoPrompt.value = vidRes.prompt
+    if (settings.glin_nanobanana_ratio) dialogImageRatio.value = settings.glin_nanobanana_ratio
+    if (settings.glin_nanobanana_quality) dialogImageQuality.value = settings.glin_nanobanana_quality
+    if (settings.glin_veo_orientation) dialogVideoOrientation.value = settings.glin_veo_orientation
+  } catch { /* ignore */ }
+})
+
 // ==================== 任务列表（内存中，不持久化） ====================
 const taskList = ref([])
 let taskIdCounter = 0
@@ -56,14 +56,19 @@ let taskIdCounter = 0
 const showDialog = ref(false)
 
 const dialogImages = ref([])
+const dialogImagePrompt = ref('')
+const dialogVideoPrompt = ref('')
 const dialogImageRatio = ref('9:16')
 const dialogImageQuality = ref('1K')
 const dialogVideoOrientation = ref('portrait')
+const dialogAutoVideo = ref(true)
 const dialogIsDragging = ref(false)
 const dialogFileInput = ref(null)
 
 const openAddDialog = () => {
   dialogImages.value = []
+  dialogImagePrompt.value = defaultImagePrompt.value
+  dialogVideoPrompt.value = defaultVideoPrompt.value
   showDialog.value = true
 }
 
@@ -103,6 +108,132 @@ const onDrop = (e) => {
 }
 const removeDialogImage = (idx) => { dialogImages.value.splice(idx, 1) }
 
+// ==================== 页面拖拽 → 批量添加 ====================
+const pageDragging = ref(false)
+
+const onPageDragEnter = (e) => { e.preventDefault(); pageDragging.value = true }
+const onPageDragOver  = (e) => { e.preventDefault(); pageDragging.value = true }
+const onPageDragLeave = (e) => {
+  e.preventDefault()
+  if (e.currentTarget.contains(e.relatedTarget)) return
+  pageDragging.value = false
+}
+
+const readImageFile = (file) => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) { resolve(null); return }
+    if (file.size > 10 * 1024 * 1024) { resolve(null); return }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      resolve({
+        preview: e.target.result,
+        base64: e.target.result.split(',')[1],
+        mime: file.type,
+      })
+    }
+    reader.onerror = () => resolve(null)
+    reader.readAsDataURL(file)
+  })
+}
+
+const onPageDrop = async (e) => {
+  e.preventDefault()
+  pageDragging.value = false
+  const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith('image/'))
+  if (!files.length) return
+  const imgs = (await Promise.all(files.map(readImageFile))).filter(Boolean)
+  if (!imgs.length) return
+  openBatchDialog(imgs)
+}
+
+// ==================== 批量添加弹窗 ====================
+const showBatchDialog = ref(false)
+const batchImages = ref([])
+const batchImagePrompt = ref('')
+const batchVideoPrompt = ref('')
+const batchImageRatio = ref('9:16')
+const batchImageQuality = ref('1K')
+const batchVideoOrientation = ref('portrait')
+const batchAutoVideo = ref(true)
+
+const openBatchDialog = (imgs) => {
+  batchImages.value = imgs
+  batchImagePrompt.value = defaultImagePrompt.value
+  batchVideoPrompt.value = defaultVideoPrompt.value
+  showBatchDialog.value = true
+}
+const closeBatchDialog = () => { showBatchDialog.value = false; batchImages.value = [] }
+const removeBatchImage = (idx) => {
+  batchImages.value.splice(idx, 1)
+  if (!batchImages.value.length) closeBatchDialog()
+}
+
+const submitBatchDialog = () => {
+  if (!batchImages.value.length) { emit('toast', '没有可用的图片', 'error'); return }
+  if (!batchImagePrompt.value.trim()) { emit('toast', '请输入图片提示词', 'error'); return }
+  if (!batchVideoPrompt.value.trim()) { emit('toast', '请输入视频提示词', 'error'); return }
+
+  defaultImagePrompt.value = batchImagePrompt.value.trim()
+  defaultVideoPrompt.value = batchVideoPrompt.value.trim()
+
+  window.pywebview.api.save_settings({
+    glin_nanobanana_ratio: batchImageRatio.value,
+    glin_nanobanana_quality: batchImageQuality.value,
+    glin_veo_orientation: batchVideoOrientation.value,
+  }).catch(() => {})
+  window.pywebview.api.set_image_process_prompt(defaultImagePrompt.value).catch(() => {})
+  window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
+
+  const tasks = batchImages.value.map(img => reactive({
+    id: ++taskIdCounter,
+    images: [{ ...img }],
+    imagePrompt: defaultImagePrompt.value,
+    imageRatio: batchImageRatio.value,
+    imageQuality: batchImageQuality.value,
+    videoPrompt: defaultVideoPrompt.value,
+    videoOrientation: batchVideoOrientation.value,
+    autoVideo: batchAutoVideo.value,
+    resultImageSrc: '',
+    resultImageBase64: '',
+    resultImageMime: '',
+    videoUrl: '',
+    filePath: '',
+    status: 'pending',
+    statusText: '待处理',
+  }))
+
+  taskList.value.unshift(...tasks)
+  showBatchDialog.value = false
+  batchImages.value = []
+
+  emit('toast', `已添加 ${tasks.length} 条任务，开始生成...`, 'success')
+  startBatchGeneration(tasks)
+}
+
+const startBatchGeneration = async (tasks) => {
+  let concurrency = 3
+  try {
+    const settings = await window.pywebview.api.get_all_settings()
+    concurrency = parseInt(settings.thread_pool_size || '3', 10)
+    if (concurrency < 1) concurrency = 1
+    if (concurrency > 50) concurrency = 50
+  } catch { /* ignore */ }
+
+  let idx = 0
+  const runNext = async () => {
+    while (idx < tasks.length) {
+      const task = tasks[idx++]
+      if (task.status === 'pending') {
+        await generateImage(task)
+      }
+    }
+  }
+  const workers = []
+  for (let i = 0; i < Math.min(concurrency, tasks.length); i++) {
+    workers.push(runNext())
+  }
+}
+
 // ==================== 统计信息 ====================
 const stats = computed(() => {
   const total = taskList.value.length
@@ -115,14 +246,19 @@ const stats = computed(() => {
 // ==================== 提交任务 ====================
 const submitDialog = () => {
   if (!dialogImages.value.length) { emit('toast', '请先选择图片', 'error'); return }
-  if (!defaultImagePrompt.value.trim()) { emit('toast', '请先设置图片提示词', 'error'); return }
-  if (!defaultVideoPrompt.value.trim()) { emit('toast', '请先设置视频提示词', 'error'); return }
+  if (!dialogImagePrompt.value.trim()) { emit('toast', '请输入图片提示词', 'error'); return }
+  if (!dialogVideoPrompt.value.trim()) { emit('toast', '请输入视频提示词', 'error'); return }
+
+  defaultImagePrompt.value = dialogImagePrompt.value.trim()
+  defaultVideoPrompt.value = dialogVideoPrompt.value.trim()
 
   window.pywebview.api.save_settings({
     glin_nanobanana_ratio: dialogImageRatio.value,
     glin_nanobanana_quality: dialogImageQuality.value,
     glin_veo_orientation: dialogVideoOrientation.value,
   }).catch(() => {})
+  window.pywebview.api.set_image_process_prompt(defaultImagePrompt.value).catch(() => {})
+  window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
 
   const images = dialogImages.value.map(img => ({ ...img }))
   const task = reactive({
@@ -133,6 +269,7 @@ const submitDialog = () => {
     imageQuality: dialogImageQuality.value,
     videoPrompt: defaultVideoPrompt.value,
     videoOrientation: dialogVideoOrientation.value,
+    autoVideo: dialogAutoVideo.value,
     resultImageSrc: '',
     resultImageBase64: '',
     resultImageMime: '',
@@ -181,8 +318,12 @@ const generateImage = async (task) => {
         task.resultImageBase64 = res.image_data
         task.resultImageMime = res.mime_type
         task.status = 'image_done'
-        task.statusText = '图片完成，开始生成视频...'
-        generateVideo(task)
+        if (task.autoVideo) {
+          task.statusText = '图片完成，开始生成视频...'
+          generateVideo(task)
+        } else {
+          task.statusText = '图片已完成，待手动生成视频'
+        }
         return true
       } else {
         lastError = res.msg || '图片生成失败'
@@ -311,6 +452,75 @@ const openImagePreview = (src) => { previewType.value = 'image'; previewSrc.valu
 const openVideoPreview = (url) => { previewType.value = 'video'; previewSrc.value = url; showPreview.value = true }
 const closePreview = () => { showPreview.value = false; previewSrc.value = ''; previewType.value = '' }
 
+// ==================== 一键生成视频 ====================
+const pendingVideoCount = computed(() =>
+  taskList.value.filter(t => t.status === 'image_done').length
+)
+
+const batchGenerateVideo = async () => {
+  const tasks = taskList.value.filter(t => t.status === 'image_done' && t.resultImageBase64)
+  if (!tasks.length) { emit('toast', '暂无待生成视频的任务', 'error'); return }
+
+  let concurrency = 3
+  try {
+    const settings = await window.pywebview.api.get_all_settings()
+    concurrency = parseInt(settings.thread_pool_size || '3', 10)
+    if (concurrency < 1) concurrency = 1
+    if (concurrency > 50) concurrency = 50
+  } catch { /* ignore */ }
+
+  emit('toast', `开始生成 ${tasks.length} 条视频...`, 'success')
+
+  let idx = 0
+  const runNext = async () => {
+    while (idx < tasks.length) {
+      const task = tasks[idx++]
+      if (task.status === 'image_done') {
+        await generateVideo(task)
+      }
+    }
+  }
+  const workers = []
+  for (let i = 0; i < Math.min(concurrency, tasks.length); i++) {
+    workers.push(runNext())
+  }
+}
+
+// ==================== 编辑任务 ====================
+const showEditDialog = ref(false)
+const editingTask = ref(null)
+const editImagePrompt = ref('')
+const editVideoPrompt = ref('')
+const editImageRatio = ref('9:16')
+const editImageQuality = ref('1K')
+const editVideoOrientation = ref('portrait')
+
+const openEditDialog = (task) => {
+  if (isTaskBusy(task)) return
+  editingTask.value = task
+  editImagePrompt.value = task.imagePrompt
+  editVideoPrompt.value = task.videoPrompt
+  editImageRatio.value = task.imageRatio
+  editImageQuality.value = task.imageQuality
+  editVideoOrientation.value = task.videoOrientation
+  showEditDialog.value = true
+}
+const closeEditDialog = () => { showEditDialog.value = false; editingTask.value = null }
+const saveEditDialog = () => {
+  if (!editImagePrompt.value.trim()) { emit('toast', '请输入图片提示词', 'error'); return }
+  if (!editVideoPrompt.value.trim()) { emit('toast', '请输入视频提示词', 'error'); return }
+  const task = editingTask.value
+  if (!task) return
+  task.imagePrompt = editImagePrompt.value.trim()
+  task.videoPrompt = editVideoPrompt.value.trim()
+  task.imageRatio = editImageRatio.value
+  task.imageQuality = editImageQuality.value
+  task.videoOrientation = editVideoOrientation.value
+  showEditDialog.value = false
+  editingTask.value = null
+  emit('toast', '任务参数已更新', 'success')
+}
+
 // 状态标签样式类
 const statusClass = (status) => {
   if (status === 'pending') return 'pending'
@@ -345,6 +555,12 @@ const statusClass = (status) => {
           </svg>
           <span>视频提示词</span>
         </button>
+        <button v-if="pendingVideoCount > 0" class="tool-btn batch-video-btn" @click="batchGenerateVideo">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span>一键生成视频 ({{ pendingVideoCount }})</span>
+        </button>
         <button v-if="taskList.length > 0" class="tool-btn delete-all-btn" @click="deleteAllTasks">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -361,20 +577,37 @@ const statusClass = (status) => {
     </div>
 
     <!-- 内容区 -->
-    <div class="page-body">
+    <div
+      class="page-body"
+      :class="{ 'drag-active': pageDragging }"
+      @dragenter="onPageDragEnter"
+      @dragover="onPageDragOver"
+      @dragleave="onPageDragLeave"
+      @drop="onPageDrop"
+    >
+      <div v-if="pageDragging" class="drag-overlay">
+        <svg class="drag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p class="drag-text">松开鼠标批量添加商品图</p>
+        <p class="drag-hint">每张图片将创建一条独立任务</p>
+      </div>
+
       <!-- 空状态 -->
-      <div v-if="taskList.length === 0" class="empty-state">
+      <div v-if="taskList.length === 0 && !pageDragging" class="empty-state">
         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         <p class="empty-text">暂无带货任务</p>
-        <p class="empty-hint">点击"添加任务"上传商品图生成图片，确认后再生成视频</p>
+        <p class="empty-hint">点击"添加任务"或拖拽商品图到此处</p>
       </div>
 
       <!-- 列表 -->
-      <div v-else class="list-wrap">
+      <div v-else-if="!pageDragging" class="list-wrap">
         <div class="list-header">
           <div class="col col-index">#</div>
           <div class="col col-origin">原图</div>
@@ -467,6 +700,17 @@ const statusClass = (status) => {
                 <polygon points="5 3 19 12 5 21 5 3"/>
               </svg>
             </button>
+            <!-- 编辑 -->
+            <button
+              class="action-btn edit-btn"
+              @click="openEditDialog(task)"
+              :disabled="isTaskBusy(task)"
+              title="编辑参数"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
             <!-- 删除 -->
             <button
               class="action-btn delete-btn"
@@ -482,6 +726,100 @@ const statusClass = (status) => {
         </div>
       </div>
     </div>
+
+    <!-- 批量添加弹窗 -->
+    <Teleport to="body">
+      <div v-if="showBatchDialog" class="dialog-overlay" @click.self="closeBatchDialog">
+        <div class="dialog dialog--image">
+          <div class="dialog-header">
+            <h3 class="dialog-title">批量添加带货任务（{{ batchImages.length }} 张图 = {{ batchImages.length }} 条任务）</h3>
+            <button class="dialog-close" @click="closeBatchDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="dialog-body dialog-body--split">
+            <!-- 左侧：图片预览 -->
+            <div class="dialog-left">
+              <div class="field">
+                <span class="field-label">商品图片（每张图片 = 一条任务）</span>
+                <div class="ref-images-grid" v-if="batchImages.length">
+                  <div v-for="(img, idx) in batchImages" :key="idx" class="ref-image-preview">
+                    <img :src="img.preview" alt="商品图片" />
+                    <button class="remove-btn" @click="removeBatchImage(idx)" title="移除">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- 右侧：参数 -->
+            <div class="dialog-right">
+              <div class="field">
+                <span class="field-label">图片提示词（必填）</span>
+                <textarea v-model="batchImagePrompt" placeholder="描述图片生成效果" rows="3"></textarea>
+              </div>
+              <div class="field" style="margin-top: 12px;">
+                <span class="field-label">视频提示词（必填）</span>
+                <textarea v-model="batchVideoPrompt" placeholder="描述视频生成效果" rows="3"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">图片比例</span>
+                  <div class="toggle-group">
+                    <button :class="['toggle-btn', { active: batchImageRatio === '9:16' }]" @click="batchImageRatio = '9:16'">9:16 竖屏</button>
+                    <button :class="['toggle-btn', { active: batchImageRatio === '16:9' }]" @click="batchImageRatio = '16:9'">16:9 横屏</button>
+                    <button :class="['toggle-btn', { active: batchImageRatio === '1:1' }]" @click="batchImageRatio = '1:1'">1:1 方图</button>
+                    <button :class="['toggle-btn', { active: batchImageRatio === '4:3' }]" @click="batchImageRatio = '4:3'">4:3</button>
+                    <button :class="['toggle-btn', { active: batchImageRatio === '3:4' }]" @click="batchImageRatio = '3:4'">3:4</button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">图片清晰度</span>
+                  <div class="toggle-group">
+                    <button :class="['toggle-btn', { active: batchImageQuality === '1K' }]" @click="batchImageQuality = '1K'">1K</button>
+                    <button :class="['toggle-btn', { active: batchImageQuality === '2K' }]" @click="batchImageQuality = '2K'">2K</button>
+                    <button :class="['toggle-btn', { active: batchImageQuality === '4K' }]" @click="batchImageQuality = '4K'">4K</button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">视频方向</span>
+                  <div class="toggle-group">
+                    <button :class="['toggle-btn', { active: batchVideoOrientation === 'portrait' }]" @click="batchVideoOrientation = 'portrait'">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                      竖屏
+                    </button>
+                    <button :class="['toggle-btn', { active: batchVideoOrientation === 'landscape' }]" @click="batchVideoOrientation = 'landscape'">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
+                      横屏
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row" style="margin-top: 16px;">
+                <label class="switch-field">
+                  <span class="switch-label">自动生成视频</span>
+                  <button
+                    :class="['switch-track', { active: batchAutoVideo }]"
+                    @click="batchAutoVideo = !batchAutoVideo"
+                  >
+                    <span class="switch-thumb" />
+                  </button>
+                  <span class="switch-hint">{{ batchAutoVideo ? '图片完成后自动生成视频' : '图片完成后暂停，手动确认再生成' }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="dialog-footer">
+            <button class="cancel-btn" @click="closeBatchDialog">取消</button>
+            <button class="primary-btn save-btn" @click="submitBatchDialog">添加 {{ batchImages.length }} 条任务并开始生成</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- 添加任务弹窗 -->
     <Teleport to="body">
@@ -525,8 +863,16 @@ const statusClass = (status) => {
               </div>
             </div>
 
-            <!-- 右侧：参数 -->
+            <!-- 右侧：提示词 + 参数 -->
             <div class="dialog-right">
+              <div class="field">
+                <span class="field-label">图片提示词（必填）</span>
+                <textarea v-model="dialogImagePrompt" placeholder="描述图片生成效果" rows="3"></textarea>
+              </div>
+              <div class="field" style="margin-top: 12px;">
+                <span class="field-label">视频提示词（必填）</span>
+                <textarea v-model="dialogVideoPrompt" placeholder="描述视频生成效果" rows="3"></textarea>
+              </div>
               <div class="form-row">
                 <div class="field field-inline">
                   <span class="field-label">图片比例</span>
@@ -564,6 +910,18 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
+              <div class="form-row" style="margin-top: 16px;">
+                <label class="switch-field">
+                  <span class="switch-label">自动生成视频</span>
+                  <button
+                    :class="['switch-track', { active: dialogAutoVideo }]"
+                    @click="dialogAutoVideo = !dialogAutoVideo"
+                  >
+                    <span class="switch-thumb" />
+                  </button>
+                  <span class="switch-hint">{{ dialogAutoVideo ? '图片完成后自动生成视频' : '图片完成后暂停，手动确认再生成' }}</span>
+                </label>
+              </div>
             </div>
           </div>
           <div class="dialog-footer">
@@ -574,10 +932,75 @@ const statusClass = (status) => {
       </div>
     </Teleport>
 
+    <!-- 编辑任务弹窗 -->
+    <Teleport to="body">
+      <div v-if="showEditDialog" class="dialog-overlay" @click.self="closeEditDialog">
+        <div class="dialog dialog--prompt">
+          <div class="dialog-header">
+            <h3 class="dialog-title">编辑任务参数</h3>
+            <button class="dialog-close" @click="closeEditDialog">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="dialog-body">
+            <div class="field">
+              <span class="field-label">图片提示词</span>
+              <textarea v-model="editImagePrompt" placeholder="描述图片生成效果" rows="3"></textarea>
+            </div>
+            <div class="field" style="margin-top: 12px;">
+              <span class="field-label">视频提示词</span>
+              <textarea v-model="editVideoPrompt" placeholder="描述视频生成效果" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">图片比例</span>
+                <div class="toggle-group">
+                  <button :class="['toggle-btn', { active: editImageRatio === '9:16' }]" @click="editImageRatio = '9:16'">9:16 竖屏</button>
+                  <button :class="['toggle-btn', { active: editImageRatio === '16:9' }]" @click="editImageRatio = '16:9'">16:9 横屏</button>
+                  <button :class="['toggle-btn', { active: editImageRatio === '1:1' }]" @click="editImageRatio = '1:1'">1:1 方图</button>
+                  <button :class="['toggle-btn', { active: editImageRatio === '4:3' }]" @click="editImageRatio = '4:3'">4:3</button>
+                  <button :class="['toggle-btn', { active: editImageRatio === '3:4' }]" @click="editImageRatio = '3:4'">3:4</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">图片清晰度</span>
+                <div class="toggle-group">
+                  <button :class="['toggle-btn', { active: editImageQuality === '1K' }]" @click="editImageQuality = '1K'">1K</button>
+                  <button :class="['toggle-btn', { active: editImageQuality === '2K' }]" @click="editImageQuality = '2K'">2K</button>
+                  <button :class="['toggle-btn', { active: editImageQuality === '4K' }]" @click="editImageQuality = '4K'">4K</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">视频方向</span>
+                <div class="toggle-group">
+                  <button :class="['toggle-btn', { active: editVideoOrientation === 'portrait' }]" @click="editVideoOrientation = 'portrait'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="5" y="2" width="14" height="20" rx="2"/></svg>
+                    竖屏
+                  </button>
+                  <button :class="['toggle-btn', { active: editVideoOrientation === 'landscape' }]" @click="editVideoOrientation = 'landscape'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="toggle-icon"><rect x="2" y="5" width="20" height="14" rx="2"/></svg>
+                    横屏
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dialog-footer">
+            <button class="cancel-btn" @click="closeEditDialog">取消</button>
+            <button class="primary-btn save-btn" @click="saveEditDialog">保存</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- 提示词编辑弹窗 -->
     <Teleport to="body">
       <div v-if="showPromptDialog" class="dialog-overlay" @click.self="closePromptDialog">
-        <div class="dialog dialog--video">
+        <div class="dialog dialog--prompt">
           <div class="dialog-header">
             <h3 class="dialog-title">{{ promptDialogType === 'image' ? '图片提示词' : '视频提示词' }}</h3>
             <button class="dialog-close" @click="closePromptDialog">
@@ -634,12 +1057,21 @@ const statusClass = (status) => {
 .add-btn:hover { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); color: var(--success); }
 .prompt-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
 .prompt-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
+.batch-video-btn { border-color: rgba(175,82,222,0.3); background: rgba(175,82,222,0.08); color: #bf5af2; }
+.batch-video-btn:hover { background: rgba(175,82,222,0.18); border-color: rgba(175,82,222,0.5); color: #bf5af2; }
 .delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: var(--error); }
 .delete-all-btn:hover { background: rgba(255,69,58,0.18); border-color: rgba(255,69,58,0.5); color: var(--error); }
 .tool-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ============ 内容区 ============ */
-.page-body { flex: 1; padding: 24px 32px; overflow-y: auto; position: relative; }
+.page-body { flex: 1; padding: 24px 32px; overflow-y: auto; position: relative; transition: background 0.2s ease; }
+.page-body.drag-active { background: var(--accent-bg-subtle); }
+
+/* ============ 拖拽 ============ */
+.drag-overlay { position: absolute; inset: 16px; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; border: 2px dashed var(--accent-focus); background: var(--accent-bg); pointer-events: none; }
+.drag-icon { width: 48px; height: 48px; color: rgba(200,96,122,0.7); }
+.drag-text { margin: 0; font-size: 16px; font-weight: 500; color: rgba(200,96,122,0.8); }
+.drag-hint { margin: 0; font-size: 12px; color: var(--text-hint); }
 
 /* ============ 空状态 ============ */
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; }
@@ -691,13 +1123,14 @@ const statusClass = (status) => {
 .download-overlay-icon { position: absolute; width: 10px !important; height: 10px !important; bottom: 2px; right: 2px; }
 .download-vid-btn:hover:not(:disabled) { background: rgba(52,199,89,0.15); border-color: rgba(52,199,89,0.4); color: var(--success); }
 .view-btn:hover:not(:disabled) { background: var(--accent-bg-strong); border-color: rgba(200,96,122,0.4); color: var(--accent); }
+.edit-btn:hover:not(:disabled) { background: rgba(255,214,10,0.15); border-color: rgba(255,214,10,0.4); color: #ffd60a; }
 .delete-btn:hover:not(:disabled) { background: rgba(255,69,58,0.15); border-color: rgba(255,69,58,0.4); color: var(--error); }
 
 /* ============ 弹窗通用 ============ */
 .dialog-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
 .dialog { max-height: calc(100vh - 60px); border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-medium); box-shadow: var(--shadow-dialog); overflow: hidden; display: flex; flex-direction: column; }
 .dialog--image { width: min(860px, calc(100% - 40px)); }
-.dialog--video { width: min(520px, calc(100% - 40px)); }
+.dialog--prompt { width: min(520px, calc(100% - 40px)); }
 .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .dialog-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-primary); }
 .dialog-close { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
@@ -732,6 +1165,15 @@ const statusClass = (status) => {
 .toggle-btn:hover { background: var(--accent-bg); border-color: rgba(200,96,122,0.2); color: var(--text-secondary); }
 .toggle-btn.active { background: var(--accent-bg-strong); border-color: rgba(200,96,122,0.4); color: var(--accent); }
 .toggle-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* 开关 */
+.switch-field { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.switch-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.switch-track { position: relative; width: 40px; height: 22px; border-radius: 11px; border: none; background: var(--border-strong); cursor: pointer; transition: background 0.2s ease; padding: 0; flex-shrink: 0; }
+.switch-track.active { background: var(--success, #34c759); }
+.switch-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s ease; }
+.switch-track.active .switch-thumb { transform: translateX(18px); }
+.switch-hint { font-size: 11px; color: var(--text-hint); }
 
 /* 上传区 */
 .upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 28px 20px; border-radius: 12px; border: 2px dashed var(--border-strong); background: var(--bg-surface); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
