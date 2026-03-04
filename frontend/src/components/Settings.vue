@@ -227,67 +227,6 @@ onMounted(() => {
           </div>
         </section>
 
-        <!-- ====== API Keys ====== -->
-        <section class="settings-section-block">
-          <h2 class="section-heading">API Keys</h2>
-          <div class="settings-grid">
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">DYY</h3></div>
-              <div class="card-body">
-                <label class="field">
-                  <span class="field-label">API Key</span>
-                  <input v-model="dayangyu_api_key" type="password" placeholder="请输入 DYY API Key" autocomplete="off" />
-                </label>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">YW</h3></div>
-              <div class="card-body">
-                <label class="field">
-                  <span class="field-label">API Key</span>
-                  <input v-model="yunwu_api_key" type="password" placeholder="请输入 YW API Key" autocomplete="off" />
-                </label>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">XBS</h3></div>
-              <div class="card-body">
-                <label class="field">
-                  <span class="field-label">API Key</span>
-                  <input v-model="xiaobanshou_api_key" type="password" placeholder="请输入 XBS API Key" autocomplete="off" />
-                </label>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">BDW</h3></div>
-              <div class="card-body">
-                <label class="field">
-                  <span class="field-label">API Key</span>
-                  <input v-model="bandianwa_api_key" type="password" placeholder="请输入 BDW API Key" autocomplete="off" />
-                </label>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">HT</h3></div>
-              <div class="card-body">
-                <label class="field">
-                  <span class="field-label">API Key</span>
-                  <input v-model="haotian_api_key" type="password" placeholder="请输入 HT API Key" autocomplete="off" />
-                </label>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">Glin</h3></div>
-              <div class="card-body">
-                <label class="field">
-                  <span class="field-label">API Key</span>
-                  <input v-model="glin_api_key" type="password" placeholder="请输入 Glin API Key" autocomplete="off" />
-                </label>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <!-- ====== 渠道与重试 ====== -->
         <section class="settings-section-block">
           <h2 class="section-heading">渠道与重试</h2>
@@ -347,6 +286,67 @@ onMounted(() => {
                     <button class="select-folder-btn" @click="selectDownloadFolder">选择文件夹</button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== API Keys ====== -->
+        <section class="settings-section-block">
+          <h2 class="section-heading">API Keys</h2>
+          <div class="settings-grid">
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">DYY</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="dayangyu_api_key" type="password" placeholder="请输入 DYY API Key" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">YW</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="yunwu_api_key" type="password" placeholder="请输入 YW API Key" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">XBS</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="xiaobanshou_api_key" type="password" placeholder="请输入 XBS API Key" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">BDW</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="bandianwa_api_key" type="password" placeholder="请输入 BDW API Key" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">HT</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="haotian_api_key" type="password" placeholder="请输入 HT API Key" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">Glin</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="glin_api_key" type="password" placeholder="请输入 Glin API Key" autocomplete="off" />
+                </label>
               </div>
             </div>
           </div>
