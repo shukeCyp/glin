@@ -486,6 +486,17 @@ const batchGenerateVideo = async () => {
   }
 }
 
+// ==================== 一键下载 ====================
+const exportAll = async () => {
+  const paths = taskList.value.filter(t => t.filePath).map(t => t.filePath)
+  if (!paths.length) { emit('toast', '暂无已下载的文件', 'error'); return }
+  try {
+    const res = await window.pywebview.api.batch_export_files(paths)
+    if (res.ok) emit('toast', res.msg, 'success')
+    else emit('toast', res.msg || '导出取消', 'error')
+  } catch { emit('toast', '导出异常', 'error') }
+}
+
 // ==================== 编辑任务 ====================
 const showEditDialog = ref(false)
 const editingTask = ref(null)
@@ -554,6 +565,12 @@ const statusClass = (status) => {
             <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
           </svg>
           <span>视频提示词</span>
+        </button>
+        <button v-if="taskList.some(t => t.filePath)" class="tool-btn export-btn" @click="exportAll">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>一键下载</span>
         </button>
         <button v-if="pendingVideoCount > 0" class="tool-btn batch-video-btn" @click="batchGenerateVideo">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1057,6 +1074,8 @@ const statusClass = (status) => {
 .add-btn:hover { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); color: var(--success); }
 .prompt-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
 .prompt-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
+.export-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
+.export-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
 .batch-video-btn { border-color: rgba(175,82,222,0.3); background: rgba(175,82,222,0.08); color: #bf5af2; }
 .batch-video-btn:hover { background: rgba(175,82,222,0.18); border-color: rgba(175,82,222,0.5); color: #bf5af2; }
 .delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: var(--error); }

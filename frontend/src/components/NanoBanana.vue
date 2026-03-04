@@ -236,6 +236,17 @@ const showPreview = ref(false)
 const openPreview = (src) => { previewSrc.value = src; showPreview.value = true }
 const closePreview = () => { showPreview.value = false; previewSrc.value = '' }
 
+// ==================== 一键下载 ====================
+const exportAll = async () => {
+  const paths = taskList.value.filter(t => t.filePath).map(t => t.filePath)
+  if (!paths.length) { emit('toast', '暂无已下载的文件', 'error'); return }
+  try {
+    const res = await window.pywebview.api.batch_export_files(paths)
+    if (res.ok) emit('toast', res.msg, 'success')
+    else emit('toast', res.msg || '导出取消', 'error')
+  } catch { emit('toast', '导出异常', 'error') }
+}
+
 // ==================== 格式化 ====================
 const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || val
 </script>
@@ -246,6 +257,12 @@ const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || va
     <div class="page-toolbar">
       <h2 class="page-title">香蕉生图</h2>
       <div class="toolbar-actions">
+        <button v-if="taskList.some(t => t.filePath)" class="tool-btn export-btn" @click="exportAll">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>一键下载</span>
+        </button>
         <button class="tool-btn add-btn" @click="openAddDialog()">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -462,6 +479,8 @@ const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || va
 .toolbar-actions { display: flex; gap: 10px; align-items: center; }
 .tool-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--border-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
 .tool-btn:hover { background: var(--accent-bg-strong); border-color: var(--accent-border); color: var(--accent); }
+.export-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
+.export-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
 .add-btn { border-color: rgba(52,199,89,0.3); background: rgba(52,199,89,0.08); color: var(--success); }
 .add-btn:hover { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); color: var(--success); }
 .tool-icon { width: 16px; height: 16px; flex-shrink: 0; }

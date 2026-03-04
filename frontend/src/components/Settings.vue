@@ -32,29 +32,9 @@ const glin_api_key = ref('')
 const sora2_model = ref('dayangyu')
 const nanobanana_model = ref('yunwu')
 
-// Sora2 通用配置
-const sora2_orientation = ref('portrait')
-const sora2_duration = ref('10')
 
-// NanoBanana image settings
-const nanobanana_ratio = ref('9:16')
-const nanobanana_quality = ref('1K')
-
-// 下载配置
-const auto_download = ref(false)
+// 下载路径（单条下载用）
 const download_path = ref('')
-
-// 重试配置
-const auto_retry = ref(false)
-const image_max_retry = ref('3')
-const video_max_retry = ref('3')
-
-// 线程池配置
-const thread_pool_size = ref('10')
-
-// 数据文件状态
-const dataStatus = ref(null)
-
 
 const selectDownloadFolder = async () => {
   try {
@@ -68,6 +48,54 @@ const selectDownloadFolder = async () => {
   }
 }
 
+// 重试配置
+const auto_retry = ref(false)
+const image_max_retry = ref('3')
+const video_max_retry = ref('3')
+
+// 线程池配置
+const thread_pool_size = ref('10')
+
+// 数据文件状态
+const dataStatus = ref(null)
+
+// 下载文件夹状态
+const downloadStatus = ref(null)
+const cleaningDownloads = ref(false)
+
+const loadDownloadStatus = async () => {
+  try {
+    const res = await window.pywebview.api.get_download_status()
+    if (res.ok) downloadStatus.value = res
+  } catch { /* ignore */ }
+}
+
+const cleanDownloads = async () => {
+  cleaningDownloads.value = true
+  try {
+    const res = await window.pywebview.api.clean_downloads()
+    if (res.ok) {
+      emit('toast', `已清理 ${res.count} 个文件`, 'success')
+      await loadDownloadStatus()
+    } else {
+      emit('toast', res.msg || '清理失败', 'error')
+    }
+  } catch {
+    emit('toast', '清理失败', 'error')
+  } finally {
+    cleaningDownloads.value = false
+  }
+}
+
+const openDownloadDirectory = async () => {
+  try {
+    const res = await window.pywebview.api.open_download_directory()
+    if (res.ok) emit('toast', '已打开下载文件夹', 'success')
+    else emit('toast', res.msg || '打开失败', 'error')
+  } catch { emit('toast', '打开失败', 'error') }
+}
+
+
 const saveSettings = async () => {
   try {
     await window.pywebview.api.save_settings({
@@ -79,12 +107,7 @@ const saveSettings = async () => {
       haotian_api_key: haotian_api_key.value,
       glin_api_key: glin_api_key.value,
       sora2_model: sora2_model.value,
-      sora2_orientation: sora2_orientation.value,
-      sora2_duration: sora2_duration.value,
       nanobanana_model: nanobanana_model.value,
-      nanobanana_ratio: nanobanana_ratio.value,
-      nanobanana_quality: nanobanana_quality.value,
-      auto_download: auto_download.value ? 'true' : 'false',
       download_path: download_path.value,
       auto_retry: auto_retry.value ? 'true' : 'false',
       image_max_retry: image_max_retry.value,
@@ -159,11 +182,6 @@ const loadSettings = async () => {
     if (settings.glin_api_key) glin_api_key.value = settings.glin_api_key
     if (settings.sora2_model) sora2_model.value = settings.sora2_model
     if (settings.nanobanana_model) nanobanana_model.value = settings.nanobanana_model
-    if (settings.nanobanana_ratio) nanobanana_ratio.value = settings.nanobanana_ratio
-    if (settings.nanobanana_quality) nanobanana_quality.value = settings.nanobanana_quality
-    if (settings.sora2_orientation) sora2_orientation.value = settings.sora2_orientation
-    if (settings.sora2_duration) sora2_duration.value = settings.sora2_duration
-    if (settings.auto_download) auto_download.value = settings.auto_download === 'true'
     if (settings.download_path) download_path.value = settings.download_path
     if (settings.auto_retry) auto_retry.value = settings.auto_retry === 'true'
     if (settings.image_max_retry) image_max_retry.value = settings.image_max_retry
@@ -177,6 +195,7 @@ const loadSettings = async () => {
 onMounted(() => {
   loadSettings()
   loadDataStatus()
+  loadDownloadStatus()
 })
 </script>
 
@@ -269,12 +288,12 @@ onMounted(() => {
           </div>
         </section>
 
-        <!-- ====== Sora2 配置 ====== -->
+        <!-- ====== 渠道与重试 ====== -->
         <section class="settings-section-block">
-          <h2 class="section-heading">Sora2 视频生成</h2>
+          <h2 class="section-heading">渠道与重试</h2>
           <div class="settings-grid">
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">渠道选择</h3></div>
+              <div class="card-header"><h3 class="card-title">Sora2 视频渠道</h3></div>
               <div class="card-body">
                 <div class="radio-group">
                   <label class="radio-item"><input type="radio" v-model="sora2_model" value="dayangyu" /><span class="radio-label">DYY</span></label>
@@ -285,78 +304,12 @@ onMounted(() => {
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">视频参数</h3></div>
+              <div class="card-header"><h3 class="card-title">NanoBanana 生图渠道</h3></div>
               <div class="card-body">
-                <div class="settings-sub-section">
-                  <span class="sub-section-label">比例</span>
-                  <div class="radio-group horizontal">
-                    <label class="radio-item"><input type="radio" v-model="sora2_orientation" value="portrait" /><span class="radio-label">竖屏 9:16</span></label>
-                    <label class="radio-item"><input type="radio" v-model="sora2_orientation" value="landscape" /><span class="radio-label">横屏 16:9</span></label>
-                  </div>
-                </div>
-                <div class="settings-sub-section">
-                  <span class="sub-section-label">时长</span>
-                  <div class="radio-group horizontal">
-                    <label class="radio-item"><input type="radio" v-model="sora2_duration" value="10" /><span class="radio-label">10秒</span></label>
-                    <label class="radio-item"><input type="radio" v-model="sora2_duration" value="15" /><span class="radio-label">15秒</span></label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ====== NanoBanana 配置 ====== -->
-        <section class="settings-section-block">
-          <h2 class="section-heading">NanoBanana 图片生成</h2>
-          <div class="settings-grid">
-            <div class="settings-card wide-card">
-              <div class="card-body">
-                <div class="settings-sub-section">
-                  <span class="sub-section-label">生图渠道</span>
-                  <div class="radio-group horizontal">
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW 渠道</span></label>
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="haotian" /><span class="radio-label">HT 渠道</span></label>
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="glin" /><span class="radio-label">Glin 渠道</span></label>
-                  </div>
-                </div>
-                <div class="settings-sub-section">
-                  <span class="sub-section-label">图片比例</span>
-                  <div class="radio-group horizontal">
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_ratio" value="9:16" /><span class="radio-label">9:16</span></label>
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_ratio" value="16:9" /><span class="radio-label">16:9</span></label>
-                  </div>
-                </div>
-                <div class="settings-sub-section">
-                  <span class="sub-section-label">图片清晰度</span>
-                  <div class="radio-group horizontal">
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_quality" value="1K" /><span class="radio-label">1K</span></label>
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_quality" value="2K" /><span class="radio-label">2K</span></label>
-                    <label class="radio-item"><input type="radio" v-model="nanobanana_quality" value="4K" /><span class="radio-label">4K</span></label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ====== 下载与重试 ====== -->
-        <section class="settings-section-block">
-          <h2 class="section-heading">下载与重试</h2>
-          <div class="settings-grid">
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">下载配置</h3></div>
-              <div class="card-body">
-                <label class="checkbox-item">
-                  <input type="checkbox" v-model="auto_download" />
-                  <span class="checkbox-label">自动下载生成结果</span>
-                </label>
-                <div class="field" style="margin-top: 16px;">
-                  <span class="field-label">下载路径</span>
-                  <div class="path-row">
-                    <input v-model="download_path" type="text" placeholder="请选择下载目录" readonly class="path-input" />
-                    <button class="select-folder-btn" @click="selectDownloadFolder">选择文件夹</button>
-                  </div>
+                <div class="radio-group">
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW 渠道</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="haotian" /><span class="radio-label">HT 渠道</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="glin" /><span class="radio-label">Glin 渠道</span></label>
                 </div>
               </div>
             </div>
@@ -375,6 +328,25 @@ onMounted(() => {
                   <span class="field-label">视频最大重试次数</span>
                   <input v-model="video_max_retry" type="number" min="0" max="10" placeholder="3" />
                 </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 下载配置 ====== -->
+        <section class="settings-section-block">
+          <h2 class="section-heading">下载配置</h2>
+          <div class="settings-grid">
+            <div class="settings-card wide-card">
+              <div class="card-header"><h3 class="card-title">单条下载路径</h3></div>
+              <div class="card-body">
+                <div class="field">
+                  <span class="field-label">点击列表中的下载按钮时，文件将保存到此目录</span>
+                  <div class="path-row">
+                    <input v-model="download_path" type="text" placeholder="请选择下载目录" readonly class="path-input" />
+                    <button class="select-folder-btn" @click="selectDownloadFolder">选择文件夹</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -424,6 +396,33 @@ onMounted(() => {
                   <button class="action-btn danger-btn" @click="cleanLogs" :disabled="cleaningLogs || (dataStatus && dataStatus.log_files <= 1)">
                     <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     <span>{{ cleaningLogs ? '清理中...' : '清理日志' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-card" v-if="downloadStatus">
+              <div class="card-header"><h3 class="card-title">下载文件</h3></div>
+              <div class="card-body">
+                <div class="data-status-grid">
+                  <div class="data-status-item">
+                    <div class="data-status-icon dl-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </div>
+                    <div class="data-status-info">
+                      <span class="data-status-label">缓存文件</span>
+                      <span class="data-status-value">{{ downloadStatus.file_count }} 个，{{ formatFileSize(downloadStatus.total_size) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="data-status-path">{{ downloadStatus.path }}</div>
+                <div style="margin-top: 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <button class="action-btn" @click="openDownloadDirectory">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>打开文件夹</span>
+                  </button>
+                  <button class="action-btn danger-btn" @click="cleanDownloads" :disabled="cleaningDownloads || (downloadStatus && downloadStatus.file_count === 0)">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <span>{{ cleaningDownloads ? '清理中...' : '清理缓存' }}</span>
                   </button>
                 </div>
               </div>
@@ -502,6 +501,8 @@ select option { background: var(--bg-card); color: var(--text-primary); }
 .data-status-icon svg { width: 18px; height: 18px; }
 .db-icon { background: var(--accent-bg); color: var(--accent); }
 .log-icon { background: var(--success-bg); color: var(--success); }
+.dl-icon { background: rgba(100,210,255,0.12); color: #64d2ff; }
+.data-status-path { margin-top: 10px; font-size: 11px; color: var(--text-hint); word-break: break-all; }
 .data-status-info { display: flex; flex-direction: column; gap: 2px; }
 .data-status-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .data-status-value { font-size: 12px; color: var(--text-muted); }

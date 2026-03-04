@@ -1,4 +1,6 @@
+import shutil
 import sys
+from pathlib import Path
 
 from .activation import get_device_id, verify_activation
 from .constants import SettingKeys, ApiUrls
@@ -6,6 +8,11 @@ from .database import get_setting, set_setting, get_all_settings
 from .logger import logger
 from .services.nanobanana import NanoBananaYunwu, NanoBananaHaotian, NanoBananaGlin
 from .services.sora2 import Sora2Yunwu, Sora2Dayangyu, Sora2Xiaobanshou, Sora2Bandianwa
+
+
+def get_default_download_dir() -> Path:
+    """~/Downloads/Glin"""
+    return Path.home() / "Downloads" / "Glin"
 
 
 class Api:
@@ -446,9 +453,9 @@ class Api:
             else:
                 logger.info(f"NanoBanana 调试 ({provider_label}): 文生图模式")
 
-            download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-            if download_path and download_path.strip():
-                kwargs["download_dir"] = download_path.strip()
+            dl_dir = get_default_download_dir()
+            dl_dir.mkdir(parents=True, exist_ok=True)
+            kwargs["download_dir"] = str(dl_dir)
 
             result = service.generate(
                 prompt=prompt,
@@ -715,23 +722,21 @@ class Api:
 
             result = {"ok": True, "video_url": video_url}
 
-            download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-            if download_path and download_path.strip():
-                try:
-                    dl_dir = Path(download_path.strip())
-                    dl_dir.mkdir(parents=True, exist_ok=True)
-                    dl_resp = requests.get(video_url, timeout=120, stream=True)
-                    dl_resp.raise_for_status()
-                    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filename = f"glin_veo_{ts}.mp4"
-                    filepath = dl_dir / filename
-                    with open(str(filepath), "wb") as f:
-                        for chunk in dl_resp.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                    result["file_path"] = str(filepath)
-                    logger.info(f"[API] glin_veo_generate -> 视频已保存: {filepath}")
-                except Exception as e:
-                    logger.warning(f"[API] glin_veo_generate -> 自动下载失败: {e}")
+            try:
+                dl_dir = get_default_download_dir()
+                dl_dir.mkdir(parents=True, exist_ok=True)
+                dl_resp = requests.get(video_url, timeout=120, stream=True)
+                dl_resp.raise_for_status()
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"glin_veo_{ts}.mp4"
+                filepath = dl_dir / filename
+                with open(str(filepath), "wb") as f:
+                    for chunk in dl_resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                result["file_path"] = str(filepath)
+                logger.info(f"[API] glin_veo_generate -> 视频已保存: {filepath}")
+            except Exception as e:
+                logger.warning(f"[API] glin_veo_generate -> 自动下载失败: {e}")
 
             return result
 
@@ -742,23 +747,18 @@ class Api:
             return {"ok": False, "msg": str(e)}
 
     def download_veo_video(self, video_url: str) -> dict:
-        """下载 VEO 视频到下载目录"""
+        """下载 VEO 视频（优先用设置的下载路径，否则用默认 Glin 文件夹）"""
         import requests
         from datetime import datetime
-        from pathlib import Path
 
         logger.info(f"[API] download_veo_video 调用, url={video_url[:80]}...")
 
-        download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-        if not download_path or not download_path.strip():
-            return {"ok": False, "msg": "未设置下载路径，请先在设置中选择下载文件夹"}
-
-        download_dir = Path(download_path)
-        if not download_dir.exists():
-            try:
-                download_dir.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
+        custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+        download_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
+        try:
+            download_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            return {"ok": False, "msg": f"下载目录无法创建: {download_dir}"}
 
         try:
             resp = requests.get(video_url, timeout=120, stream=True)
@@ -890,25 +890,19 @@ class Api:
             return {"ok": False, "msg": str(e)}
 
     def download_video_task(self, task_id: int) -> dict:
-        """下载视频到设置的下载目录（DYY 类型走 get_video_content API，其他走 URL 直接下载）"""
+        """下载视频（优先用设置的下载路径，否则用默认 Glin 文件夹）"""
         import requests
         from datetime import datetime
-        from pathlib import Path
 
         logger.info(f"[API] download_video_task 调用, task_id={task_id}")
 
-        download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-        if not download_path or not download_path.strip():
-            logger.warning("[API] download_video_task -> 未设置下载路径")
-            return {"ok": False, "msg": "未设置下载路径，请先在设置中选择下载文件夹"}
-
-        download_dir = Path(download_path)
-        if not download_dir.exists():
-            try:
-                download_dir.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                logger.error(f"[API] download_video_task -> 创建下载目录失败: {e}")
-                return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
+        custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+        download_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
+        try:
+            download_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"[API] download_video_task -> 创建下载目录失败: {e}")
+            return {"ok": False, "msg": f"下载目录无法创建: {download_dir}"}
 
         from .database import get_video_tasks, update_video_task
         try:
@@ -1006,23 +1000,18 @@ class Api:
     # ==================== 图片下载 ====================
 
     def download_image(self, image_base64: str, mime_type: str, filename_prefix: str = "image") -> dict:
-        """将 base64 图片保存到下载目录"""
+        """将 base64 图片保存（优先用设置的下载路径，否则用默认 Glin 文件夹）"""
         import base64
         from datetime import datetime
-        from pathlib import Path
 
         logger.info(f"[API] download_image 调用, prefix={filename_prefix}")
 
-        download_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-        if not download_path or not download_path.strip():
-            return {"ok": False, "msg": "未设置下载路径，请先在设置中选择下载文件夹"}
-
-        download_dir = Path(download_path)
-        if not download_dir.exists():
-            try:
-                download_dir.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                return {"ok": False, "msg": f"下载目录不存在且无法创建: {download_path}"}
+        custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+        download_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
+        try:
+            download_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            return {"ok": False, "msg": f"下载目录无法创建: {download_dir}"}
 
         try:
             ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
@@ -1120,4 +1109,101 @@ class Api:
             return {"ok": True}
         except Exception as e:
             logger.error(f"[API] open_root_directory -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def batch_export_files(self, file_paths: list) -> dict:
+        """让用户选择目标文件夹，将文件从 Glin 下载目录复制过去"""
+        import webview
+
+        if not file_paths:
+            return {"ok": False, "msg": "没有可导出的文件"}
+
+        window = webview.windows[0] if webview.windows else None
+        if not window:
+            return {"ok": False, "msg": "无法获取窗口实例"}
+
+        result = window.create_file_dialog(webview.FOLDER_DIALOG)
+        if not result or len(result) == 0:
+            return {"ok": False, "msg": "未选择文件夹"}
+
+        dest_dir = Path(result[0])
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        copied = 0
+        errors = []
+        for fp in file_paths:
+            src = Path(fp)
+            if not src.exists():
+                errors.append(f"文件不存在: {src.name}")
+                continue
+            try:
+                shutil.copy2(str(src), str(dest_dir / src.name))
+                copied += 1
+            except Exception as e:
+                errors.append(f"{src.name}: {e}")
+
+        logger.info(f"[API] batch_export_files -> 导出 {copied}/{len(file_paths)} 到 {dest_dir}")
+        msg = f"已导出 {copied} 个文件到 {dest_dir}"
+        if errors:
+            msg += f"，{len(errors)} 个失败"
+        return {"ok": True, "msg": msg, "copied": copied, "total": len(file_paths)}
+
+    def get_download_status(self) -> dict:
+        """获取默认下载文件夹（~/Downloads/Glin）的状态"""
+        dl_dir = get_default_download_dir()
+        if not dl_dir.exists():
+            return {"ok": True, "path": str(dl_dir), "file_count": 0, "total_size": 0}
+        try:
+            file_count = 0
+            total_size = 0
+            for f in dl_dir.iterdir():
+                if f.is_file():
+                    file_count += 1
+                    total_size += f.stat().st_size
+            return {
+                "ok": True,
+                "path": str(dl_dir),
+                "file_count": file_count,
+                "total_size": total_size,
+            }
+        except Exception as e:
+            logger.error(f"[API] get_download_status -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def clean_downloads(self) -> dict:
+        """清理默认下载文件夹（~/Downloads/Glin）中的所有文件"""
+        dl_dir = get_default_download_dir()
+        if not dl_dir.exists():
+            return {"ok": True, "count": 0, "msg": "下载文件夹不存在"}
+        try:
+            count = 0
+            for f in dl_dir.iterdir():
+                if f.is_file():
+                    f.unlink()
+                    count += 1
+            logger.info(f"[API] clean_downloads -> 已清理 {count} 个文件")
+            return {"ok": True, "count": count}
+        except Exception as e:
+            logger.error(f"[API] clean_downloads -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
+    def open_download_directory(self) -> dict:
+        """在文件管理器中打开下载文件夹"""
+        import platform
+        import subprocess
+
+        dl_dir = get_default_download_dir()
+        dl_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            system = platform.system()
+            if system == "Windows":
+                import os
+                os.startfile(str(dl_dir))
+            elif system == "Darwin":
+                subprocess.Popen(["open", str(dl_dir)])
+            else:
+                subprocess.Popen(["xdg-open", str(dl_dir)])
+            return {"ok": True}
+        except Exception as e:
+            logger.error(f"[API] open_download_directory -> 异常: {e}")
             return {"ok": False, "msg": str(e)}

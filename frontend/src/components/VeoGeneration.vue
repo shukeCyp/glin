@@ -117,13 +117,7 @@ const generateTask = async (task) => {
         task.videoUrl = res.video_url
         task.status = 'completed'
         task.statusText = '已完成'
-        // 检查自动下载
-        try {
-          const settings = await window.pywebview.api.get_all_settings()
-          if (settings.auto_download === 'true') {
-            downloadVideo(task, true)
-          }
-        } catch { /* ignore */ }
+        downloadVideo(task, true)
         return
       } else {
         lastError = res.msg || '生成失败'

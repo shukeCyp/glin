@@ -5,6 +5,7 @@ import threading
 import time
 import requests
 
+from .api import get_default_download_dir
 from .constants import SettingKeys, ModelProviders
 from .database import (
     get_pending_video_tasks,
@@ -143,10 +144,8 @@ def _process_task(task) -> None:
                     )
                     logger.info(f"[Scanner] 任务完成 id={task_db_id}, video_url={video_url[:80] if video_url else 'N/A'}")
 
-                    auto_download = settings.get(SettingKeys.AUTO_DOWNLOAD, "false") == "true"
-                    download_path = settings.get(SettingKeys.DOWNLOAD_PATH, "")
-                    if auto_download and download_path:
-                        _download_video(task_db_id, video_url, download_path, service=service, remote_task_id=remote_task_id)
+                    dl_dir = str(get_default_download_dir())
+                    _download_video(task_db_id, video_url, dl_dir, service=service, remote_task_id=remote_task_id)
 
                     return
 
@@ -238,10 +237,8 @@ def _resume_poll_task(task, service) -> None:
                 update_video_task(task_db_id, status='completed', video_url=video_url)
                 logger.info(f"[Scanner] 恢复任务完成 id={task_db_id}, video_url={video_url[:80] if video_url else 'N/A'}")
 
-                auto_download = settings.get(SettingKeys.AUTO_DOWNLOAD, "false") == "true"
-                download_path = settings.get(SettingKeys.DOWNLOAD_PATH, "")
-                if auto_download and download_path:
-                    _download_video(task_db_id, video_url, download_path, service=service, remote_task_id=remote_task_id)
+                dl_dir = str(get_default_download_dir())
+                _download_video(task_db_id, video_url, dl_dir, service=service, remote_task_id=remote_task_id)
                 return
 
             elif query_result.status == Sora2TaskStatus.FAILED:
