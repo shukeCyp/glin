@@ -197,6 +197,14 @@ const generateTask = async (task) => {
 // ==================== 操作 ====================
 const deleteTask = (idx) => { taskList.value.splice(idx, 1) }
 
+const deleteAllTasks = () => {
+  if (taskList.value.some(t => t.status === 'processing')) {
+    emit('toast', '有任务正在处理中，无法全部删除', 'error')
+    return
+  }
+  taskList.value = []
+}
+
 const copyPrompt = async (text) => {
   if (!text) return
   try {
@@ -262,6 +270,12 @@ const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || va
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
           <span>一键下载</span>
+        </button>
+        <button v-if="taskList.length > 0" class="tool-btn delete-all-btn" @click="deleteAllTasks">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          <span>全部删除</span>
         </button>
         <button class="tool-btn add-btn" @click="openAddDialog()">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -481,6 +495,8 @@ const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || va
 .tool-btn:hover { background: var(--accent-bg-strong); border-color: var(--accent-border); color: var(--accent); }
 .export-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
 .export-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
+.delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: var(--error); }
+.delete-all-btn:hover { background: rgba(255,69,58,0.18); border-color: rgba(255,69,58,0.5); color: var(--error); }
 .add-btn { border-color: rgba(52,199,89,0.3); background: rgba(52,199,89,0.08); color: var(--success); }
 .add-btn:hover { background: rgba(52,199,89,0.18); border-color: rgba(52,199,89,0.5); color: var(--success); }
 .tool-icon { width: 16px; height: 16px; flex-shrink: 0; }

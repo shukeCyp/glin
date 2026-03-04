@@ -1,4 +1,4 @@
-"""万米霖渠道 NanoBanana 图片生成（gemini-3.1-flash-image 系列 + 自动下载）"""
+"""万米霖渠道 NanoBanana 图片生成（gemini-3.0-pro-image 系列 + 自动下载）"""
 
 import base64
 import json
@@ -57,7 +57,7 @@ class NanoBananaGlin(NanoBananaBase):
 
         orientation = _RATIO_TO_ORIENTATION.get(aspect_ratio, "portrait")
         suffix = _SIZE_TO_SUFFIX.get(image_size, "")
-        model = f"gemini-3.1-flash-image-{orientation}{suffix}"
+        model = f"gemini-3.0-pro-image-{orientation}{suffix}"
 
         url = f"{self.base_url.rstrip('/')}/v1/chat/completions"
         headers = {
