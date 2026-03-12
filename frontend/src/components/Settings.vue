@@ -433,10 +433,18 @@ onMounted(() => {
       </div>
     </div>
 
-    <button class="floating-save-btn" @click="saveSettings">
-      <svg class="floating-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      <span>保存设置</span>
-    </button>
+    <div class="floating-actions">
+      <button class="floating-refresh-btn" @click="() => window.location.reload()">
+        <svg class="floating-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+        <span>刷新</span>
+      </button>
+      <button class="floating-save-btn" @click="saveSettings">
+        <svg class="floating-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span>保存设置</span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -458,9 +466,12 @@ onMounted(() => {
 .theme-check svg { width: 100%; height: 100%; }
 
 /* Floating save */
-.floating-save-btn { position: fixed; bottom: 28px; right: 28px; z-index: 100; display: flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: var(--btn-text); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-float); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.floating-actions { position: fixed; bottom: 28px; right: 28px; z-index: 100; display: flex; gap: 10px; align-items: center; }
+.floating-save-btn { display: flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent), var(--accent-hover)); color: var(--btn-text); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-float); transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .floating-save-btn:hover { transform: translateY(-2px); }
 .floating-save-btn:active { transform: translateY(0); }
+.floating-refresh-btn { display: flex; align-items: center; gap: 8px; padding: 14px 20px; border-radius: 14px; border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-secondary); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-float); transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease; }
+.floating-refresh-btn:hover { transform: translateY(-2px); background: var(--accent-bg-strong); color: var(--accent); border-color: var(--accent-border); }
 .floating-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
 /* Cards grid */

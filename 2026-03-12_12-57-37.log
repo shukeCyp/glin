@@ -1,0 +1,556 @@
+2026-03-12 12:57:37 [INFO] [glin] [DB] 连接数据库: C:\Users\Administrator\AppData\Roaming\Glin\data\glin.db
+2026-03-12 12:57:37 [INFO] [glin] [DB] 数据库初始化完成, 表: Settings, VideoTask
+2026-03-12 12:57:37 [INFO] [glin] ==================================================
+2026-03-12 12:57:37 [INFO] [glin] 万米霖-带货神器 启动
+2026-03-12 12:57:37 [INFO] [glin] Python: 3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]
+2026-03-12 12:57:37 [INFO] [glin] OS: Windows 10 (AMD64)
+2026-03-12 12:57:37 [INFO] [glin] 数据库: C:\Users\Administrator\AppData\Roaming\Glin\data\glin.db
+2026-03-12 12:57:37 [INFO] [glin] 日志目录: C:\Users\Administrator\AppData\Roaming\Glin\logs
+2026-03-12 12:57:37 [DEBUG] [glin] [DB] get_setting: key=device_id, value=BDF95FBF62A9A81D
+2026-03-12 12:57:37 [DEBUG] [glin] [Activation] 读取已有设备ID: BDF95FBF62A9A81D
+2026-03-12 12:57:37 [INFO] [glin] 设备ID: BDF95FBF62A9A81D
+2026-03-12 12:57:37 [INFO] [glin] ==================================================
+2026-03-12 12:57:37 [DEBUG] [glin] [DB] get_setting: key=thread_pool_size, value=10
+2026-03-12 12:57:37 [INFO] [glin] 线程池大小配置: 10
+2026-03-12 12:57:37 [INFO] [glin] [ThreadPool] 线程池已初始化, max_workers=10
+2026-03-12 12:57:37 [INFO] [glin] 启动视频任务扫描器...
+2026-03-12 12:57:37 [INFO] [glin] [Scanner] 无需恢复的处理中任务
+2026-03-12 12:57:37 [INFO] [glin] [Scanner] 视频任务扫描器已启动, 扫描间隔: 5秒
+2026-03-12 12:57:37 [INFO] [glin] [Scanner] 扫描线程已启动
+2026-03-12 12:57:37 [INFO] [glin] 加载前端页面: C:\Users\ADMINI~1\AppData\Local\Temp\_MEI161322\static\index.html
+2026-03-12 12:57:37 [INFO] [glin] 窗口已创建, 启动 webview...
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_status 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_setting: key=device_id, value=BDF95FBF62A9A81D
+2026-03-12 12:57:40 [DEBUG] [glin] [Activation] 读取已有设备ID: BDF95FBF62A9A81D
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_setting: key=activation_code, value=60BA1DE9D3E2
+2026-03-12 12:57:40 [DEBUG] [glin] [Activation] 生成激活码: device_id=BDF95FBF62A9A81D, code=60BA1DE9D3E2
+2026-03-12 12:57:40 [INFO] [glin] [Activation] 激活码验证通过: device_id=BDF95FBF62A9A81D
+2026-03-12 12:57:40 [INFO] [glin] [API] get_status -> 设备已激活: BDF95FBF62A9A81D
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_app_info -> is_dev=False
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_image_process_prompt 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_video_process_prompt 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_data_status 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_setting: key=image_process_prompt, value=精准识别图片中的产品，把图片中产品放到合适的场景中，产品的外观和数量不要发生改变。产品高清处理，要求
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_setting: key=video_process_prompt, value=Strict first-person POV, 4K, energetic handheld vl
+2026-03-12 12:57:40 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:57:40 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [INFO] [glin] [API] save_settings 调用, keys=['glin_nanobanana_ratio', 'glin_nanobanana_quality', 'glin_veo_orientation']
+2026-03-12 12:58:06 [INFO] [glin] [API] set_image_process_prompt 调用, prompt=精准识别图片中的产品，把图片中产品放到合适的场景中，产品的外观和数量不要发生改变。产品高清处理，要求...
+2026-03-12 12:58:06 [INFO] [glin] [API] set_video_process_prompt 调用, prompt=Strict first-person POV, 4K, energetic handheld vl...
+2026-03-12 12:58:06 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] set_setting: key=glin_nanobanana_ratio, value=9:16
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] set_setting: key=glin_nanobanana_quality, value=2K
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] set_setting: key=glin_veo_orientation, value=portrait
+2026-03-12 12:58:06 [INFO] [glin] [API] save_settings -> 保存成功, 共 3 项
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] set_setting: key=video_process_prompt, value=Strict first-person POV, 4K, energetic handheld vl
+2026-03-12 12:58:06 [INFO] [glin] [API] set_video_process_prompt -> 保存成功
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] set_setting: key=image_process_prompt, value=精准识别图片中的产品，把图片中产品放到合适的场景中，产品的外观和数量不要发生改变。产品高清处理，要求
+2026-03-12 12:58:06 [INFO] [glin] [API] set_image_process_prompt -> 保存成功
+2026-03-12 12:58:06 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:58:06 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:58:06 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:58:06 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 12:58:06 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 12:58:06 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 12:58:06 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 12:58:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:58:06 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 12:58:06 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 12:58:12 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 12:58:12 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 12:58:13 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 12:58:13 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 12:59:17 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 2438075
+2026-03-12 12:59:17 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 12:59:17 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_125917_fc754c.jpg (1828523 bytes)
+2026-03-12 12:59:28 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 2910015
+2026-03-12 12:59:28 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 12:59:28 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_125928_5d4ef1.jpg (2182479 bytes)
+2026-03-12 12:59:30 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 595
+2026-03-12 12:59:30 [INFO] [glin] [万米霖 API] 提取到图片 URL，下载中: https://storage.googleapis.com/ai-sandbox-videofx/image/8a175232-f188-44f5-a8e6-
+2026-03-12 12:59:30 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 591
+2026-03-12 12:59:30 [INFO] [glin] [万米霖 API] 提取到图片 URL，下载中: https://storage.googleapis.com/ai-sandbox-videofx/image/db0647c8-93da-491a-95ed-
+2026-03-12 12:59:32 [INFO] [glin] [万米霖 API] 图片下载成功 | mime=image/jpeg, size=466581 bytes
+2026-03-12 12:59:32 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_125932_a075ae.jpg (466581 bytes)
+2026-03-12 12:59:35 [ERROR] [glin] [万米霖 API] 图片下载失败: ('Connection aborted.', ConnectionResetError(10054, '远程主机强迫关闭了一个现有的连接。', None, 10054, None))
+2026-03-12 12:59:35 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:59:35 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 12:59:35 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 12:59:36 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:59:36 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:59:36 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:59:36 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 12:59:36 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 12:59:40 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 12:59:40 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 12:59:50 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 12:59:50 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:59:50 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 12:59:50 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 12:59:50 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 12:59:54 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 13:00:58 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 3566103
+2026-03-12 13:00:58 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 13:00:58 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_130058_ca82f9.jpg (2674544 bytes)
+2026-03-12 13:00:58 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 2868615
+2026-03-12 13:00:58 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 13:00:58 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_130058_8d49bd.jpg (2151428 bytes)
+2026-03-12 13:01:11 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 3080559
+2026-03-12 13:01:11 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 13:01:11 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_130111_0676ea.jpg (2310387 bytes)
+2026-03-12 13:02:33 [DEBUG] [glin] [Scanner] 第60轮扫描, 无待处理任务
+2026-03-12 13:03:14 [INFO] [glin] [API] set_image_process_prompt 调用, prompt=精准识别图片中的产品，把图片中产品放到合适的场景中，产品的外观、角度和数量不要发生改变。产品高清处理...
+2026-03-12 13:03:14 [DEBUG] [glin] [DB] set_setting: key=image_process_prompt, value=精准识别图片中的产品，把图片中产品放到合适的场景中，产品的外观、角度和数量不要发生改变。产品高清处理
+2026-03-12 13:03:14 [INFO] [glin] [API] set_image_process_prompt -> 保存成功
+2026-03-12 13:03:15 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:03:15 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:15 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:15 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 13:03:15 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 13:03:19 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 13:03:32 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:03:32 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:32 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:32 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 13:03:32 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 13:03:35 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 13:03:48 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:03:48 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:48 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:48 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 13:03:48 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 13:03:48 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:03:48 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:48 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:03:48 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 13:03:48 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 13:03:52 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 13:03:53 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 13:04:24 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 3072639
+2026-03-12 13:04:24 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 13:04:24 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_130424_0bfbb3.jpg (2304445 bytes)
+2026-03-12 13:04:32 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 2946983
+2026-03-12 13:04:32 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 13:04:32 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_130432_d78467.jpg (2210205 bytes)
+2026-03-12 13:04:49 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 2631607
+2026-03-12 13:04:49 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 13:04:49 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_130449_230b1d.jpg (1973671 bytes)
+2026-03-12 13:05:07 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 587
+2026-03-12 13:05:07 [INFO] [glin] [万米霖 API] 提取到图片 URL，下载中: https://storage.googleapis.com/ai-sandbox-videofx/image/5a3c836c-19ab-4c45-8dda-
+2026-03-12 13:05:09 [INFO] [glin] [万米霖 API] 图片下载成功 | mime=image/jpeg, size=656871 bytes
+2026-03-12 13:05:09 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_130509_af8de9.jpg (656871 bytes)
+2026-03-12 13:05:24 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:05:24 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:05:24 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:05:24 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=首尾帧(1张)
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=首尾帧(1张)
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=首尾帧(1张)
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:05:24 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=首尾帧(1张)
+2026-03-12 13:05:24 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:06:15 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=首尾帧(1张)
+2026-03-12 13:06:15 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:06:52 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/d195695f-b170-4af5-9a46-...
+2026-03-12 13:06:54 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_130653.mp4
+2026-03-12 13:06:55 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/d39e8021-3f65-42e4-9596-...
+2026-03-12 13:06:59 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/382ee909-c5f1-49a6-b0ee-...
+2026-03-12 13:07:00 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_130659.mp4
+2026-03-12 13:07:01 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_130700.mp4
+2026-03-12 13:07:33 [DEBUG] [glin] [Scanner] 第120轮扫描, 无待处理任务
+2026-03-12 13:07:36 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/52e78381-2034-45dd-9565-...
+2026-03-12 13:07:38 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_130737.mp4
+2026-03-12 13:09:17 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 13:09:17 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:09:17 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 13:09:17 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 13:09:17 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 13:09:22 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 13:10:33 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 581
+2026-03-12 13:10:33 [INFO] [glin] [万米霖 API] 提取到图片 URL，下载中: https://storage.googleapis.com/ai-sandbox-videofx/image/3676625e-b3e9-4e14-a784-
+2026-03-12 13:10:35 [INFO] [glin] [万米霖 API] 图片下载成功 | mime=image/jpeg, size=697676 bytes
+2026-03-12 13:10:35 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_131035_651acc.jpg (697676 bytes)
+2026-03-12 13:12:33 [DEBUG] [glin] [Scanner] 第180轮扫描, 无待处理任务
+2026-03-12 13:17:33 [DEBUG] [glin] [Scanner] 第240轮扫描, 无待处理任务
+2026-03-12 13:22:33 [DEBUG] [glin] [Scanner] 第300轮扫描, 无待处理任务
+2026-03-12 13:27:33 [DEBUG] [glin] [Scanner] 第360轮扫描, 无待处理任务
+2026-03-12 13:32:33 [DEBUG] [glin] [Scanner] 第420轮扫描, 无待处理任务
+2026-03-12 13:37:33 [DEBUG] [glin] [Scanner] 第480轮扫描, 无待处理任务
+2026-03-12 13:42:33 [DEBUG] [glin] [Scanner] 第540轮扫描, 无待处理任务
+2026-03-12 13:47:33 [DEBUG] [glin] [Scanner] 第600轮扫描, 无待处理任务
+2026-03-12 13:52:33 [DEBUG] [glin] [Scanner] 第660轮扫描, 无待处理任务
+2026-03-12 13:57:33 [DEBUG] [glin] [Scanner] 第720轮扫描, 无待处理任务
+2026-03-12 14:02:33 [DEBUG] [glin] [Scanner] 第780轮扫描, 无待处理任务
+2026-03-12 14:07:33 [DEBUG] [glin] [Scanner] 第840轮扫描, 无待处理任务
+2026-03-12 14:12:33 [DEBUG] [glin] [Scanner] 第900轮扫描, 无待处理任务
+2026-03-12 14:17:33 [DEBUG] [glin] [Scanner] 第960轮扫描, 无待处理任务
+2026-03-12 14:22:34 [DEBUG] [glin] [Scanner] 第1020轮扫描, 无待处理任务
+2026-03-12 14:26:52 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:26:52 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:26:52 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:26:52 [INFO] [glin] NanoBanana 调试 (万米霖): 图生图模式, 1 张图片
+2026-03-12 14:26:52 [INFO] [glin] [万米霖 API] 生成请求 | model=gemini-3.0-pro-image-portrait-2k | 比例=9:16 清晰度=2K 模式=图生图(1张)
+2026-03-12 14:26:56 [INFO] [glin] [万米霖 API] 响应状态码: 200
+2026-03-12 14:27:34 [DEBUG] [glin] [Scanner] 第1080轮扫描, 无待处理任务
+2026-03-12 14:28:03 [INFO] [glin] [万米霖 API] SSE 完成, content 长度: 2757731
+2026-03-12 14:28:03 [INFO] [glin] [万米霖 API] 提取到 base64 图片 | mime=image/jpeg
+2026-03-12 14:28:03 [INFO] [glin] [万米霖 API] 图片已保存: C:\Users\Administrator\Downloads\Glin\nanobanana_20260312_142803_145a3c.jpg (2068266 bytes)
+2026-03-12 14:28:19 [INFO] [glin] [API] batch_export_files -> 导出 3/3 到 C:\Users\Administrator\Desktop\sora\万米霖
+2026-03-12 14:28:35 [INFO] [glin] [API] clean_logs 调用
+2026-03-12 14:28:35 [INFO] [glin] [API] clean_logs -> 已删除 79 个日志文件
+2026-03-12 14:28:35 [DEBUG] [glin] [API] get_data_status 调用
+2026-03-12 14:28:37 [INFO] [glin] [API] open_root_directory 调用, path=C:\Users\Administrator\AppData\Roaming\Glin
+2026-03-12 14:29:42 [INFO] [glin] [API] save_settings 调用, keys=['glin_veo_orientation']
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] set_setting: key=glin_veo_orientation, value=portrait
+2026-03-12 14:29:42 [INFO] [glin] [API] save_settings -> 保存成功, 共 1 项
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:42 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:43 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:43 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:43 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:29:43 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:18 [ERROR] [glin] [API] glin_veo_generate -> 异常: Response ended prematurely
+2026-03-12 14:30:18 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:30:18 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:47 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/e1e3e7ac-d4e0-4b9b-8640-...
+2026-03-12 14:30:50 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143048.mp4
+2026-03-12 14:30:50 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:30:50 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:50 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:30:50 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:52 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/54e94442-6fd0-47df-ab0c-...
+2026-03-12 14:30:53 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143052.mp4
+2026-03-12 14:30:53 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:30:53 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:53 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:30:53 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:56 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/38906b37-10d5-4789-b04c-...
+2026-03-12 14:30:58 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143057.mp4
+2026-03-12 14:30:58 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:30:58 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:58 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:30:58 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:30:59 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/b5f2360a-10e6-4116-9dbb-...
+2026-03-12 14:30:59 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/287f6136-6a5e-40f2-acf1-...
+2026-03-12 14:31:01 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143100.mp4
+2026-03-12 14:31:01 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:31:01 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:01 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:01 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:01 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143100.mp4
+2026-03-12 14:31:01 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:31:01 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:01 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:01 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:03 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/cbcba78d-68d5-4994-a9ab-...
+2026-03-12 14:31:05 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143104.mp4
+2026-03-12 14:31:05 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:31:05 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:05 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:05 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:15 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/eb1e63f7-ad03-453b-93b5-...
+2026-03-12 14:31:17 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143116.mp4
+2026-03-12 14:31:17 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:31:17 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:17 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:17 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:18 [ERROR] [glin] [API] glin_veo_generate -> 异常: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-03-12 14:31:18 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:18 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:18 [ERROR] [glin] [API] glin_veo_generate -> 异常: Response ended prematurely
+2026-03-12 14:31:18 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:18 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:21 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/9789ddff-b86d-48f5-b373-...
+2026-03-12 14:31:22 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143121.mp4
+2026-03-12 14:31:22 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:31:22 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:22 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:22 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:35 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/3ec80334-d288-4463-bbc4-...
+2026-03-12 14:31:37 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143136.mp4
+2026-03-12 14:31:37 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:31:37 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:31:37 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:31:37 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:01 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/10388787-5e39-4758-a26e-...
+2026-03-12 14:32:03 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143202.mp4
+2026-03-12 14:32:03 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:03 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:03 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:03 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:04 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/b63ea870-afd9-4c70-b1c9-...
+2026-03-12 14:32:05 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143204.mp4
+2026-03-12 14:32:05 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:05 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:05 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:05 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:12 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/a2dece51-12df-40f9-9dac-...
+2026-03-12 14:32:14 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143213.mp4
+2026-03-12 14:32:14 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:14 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:14 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:14 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:20 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/f05ff2c0-49f8-4468-9780-...
+2026-03-12 14:32:21 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143220.mp4
+2026-03-12 14:32:21 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:21 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:21 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:21 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:31 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/9367b1db-769e-4c6b-8a29-...
+2026-03-12 14:32:33 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143232.mp4
+2026-03-12 14:32:33 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:33 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:33 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:33 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:34 [DEBUG] [glin] [Scanner] 第1140轮扫描, 无待处理任务
+2026-03-12 14:32:35 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/72050f20-e459-4d4c-a8e4-...
+2026-03-12 14:32:36 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/ca4d28ef-3ae6-45d3-a273-...
+2026-03-12 14:32:37 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143236.mp4
+2026-03-12 14:32:37 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:37 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:37 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:37 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:38 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143237.mp4
+2026-03-12 14:32:38 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:38 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:38 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:38 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:39 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/81eebb2c-731a-4abc-9422-...
+2026-03-12 14:32:39 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/653bc41b-9141-4549-9f63-...
+2026-03-12 14:32:41 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143240.mp4
+2026-03-12 14:32:41 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:41 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:41 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:41 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:41 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143240.mp4
+2026-03-12 14:32:41 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:41 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:41 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:41 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:53 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/c64ddb36-5953-4233-af1b-...
+2026-03-12 14:32:55 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143254.mp4
+2026-03-12 14:32:55 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:32:55 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:32:55 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:32:55 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:16 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/d3116316-e494-4e08-ab7b-...
+2026-03-12 14:33:18 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143317.mp4
+2026-03-12 14:33:18 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:33:18 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:18 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:33:18 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:28 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/e3e2a4ae-dc04-4284-85d1-...
+2026-03-12 14:33:29 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143328.mp4
+2026-03-12 14:33:29 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:33:29 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:29 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:33:29 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:43 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/3b3a8de7-b3c1-4bba-8817-...
+2026-03-12 14:33:45 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143344.mp4
+2026-03-12 14:33:45 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:33:45 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:45 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:33:45 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:51 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/821b3e25-ccd5-4b9c-b60b-...
+2026-03-12 14:33:52 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/61d3ffb0-1134-4550-bfa2-...
+2026-03-12 14:33:53 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143352.mp4
+2026-03-12 14:33:53 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:33:53 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:53 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:33:53 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:54 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143353.mp4
+2026-03-12 14:33:54 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:33:54 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:54 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:33:54 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:55 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/1f802b6a-7219-4304-b885-...
+2026-03-12 14:33:56 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/2688bc06-475f-4db0-be95-...
+2026-03-12 14:33:57 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143356.mp4
+2026-03-12 14:33:57 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:33:57 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:57 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:33:57 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:58 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143357.mp4
+2026-03-12 14:33:58 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:33:58 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:33:58 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:33:58 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:08 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/2c94e05e-624e-4be7-ac01-...
+2026-03-12 14:34:10 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143409.mp4
+2026-03-12 14:34:10 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:34:10 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:10 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:34:10 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:28 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/a7a54755-2d89-4b53-b65b-...
+2026-03-12 14:34:30 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143429.mp4
+2026-03-12 14:34:30 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:34:30 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:30 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:34:30 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:34 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/4c69e05d-a350-4a38-990c-...
+2026-03-12 14:34:36 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143435.mp4
+2026-03-12 14:34:36 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:34:36 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:36 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:34:36 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:45 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/47a8d590-9862-4ce8-a074-...
+2026-03-12 14:34:46 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143445.mp4
+2026-03-12 14:34:46 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:34:46 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:46 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:34:46 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:48 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/714eba01-df68-4c87-b3fe-...
+2026-03-12 14:34:49 [ERROR] [glin] [API] glin_veo_generate -> 异常: Response ended prematurely
+2026-03-12 14:34:49 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:34:49 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:54 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143450.mp4
+2026-03-12 14:34:54 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:34:54 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:34:54 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:34:54 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:05 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/0ae002e2-2b50-46c4-ac99-...
+2026-03-12 14:35:06 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143506.mp4
+2026-03-12 14:35:06 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:06 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:06 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:12 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/75961ef8-8de2-4ff0-9711-...
+2026-03-12 14:35:14 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/f57450c2-561a-4a77-b5d5-...
+2026-03-12 14:35:14 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143513.mp4
+2026-03-12 14:35:14 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:14 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:14 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:14 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:16 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143515.mp4
+2026-03-12 14:35:16 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:16 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:16 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:16 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:26 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/8d914e5b-62c6-463f-a0b9-...
+2026-03-12 14:35:28 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143527.mp4
+2026-03-12 14:35:28 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:28 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:28 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:28 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:30 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/1b7d85ff-0566-4691-b464-...
+2026-03-12 14:35:31 [ERROR] [glin] [API] glin_veo_generate -> 异常: Response ended prematurely
+2026-03-12 14:35:31 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:31 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:33 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143532.mp4
+2026-03-12 14:35:33 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:33 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:33 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:33 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:43 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/2d1604d0-1222-4a6b-89fe-...
+2026-03-12 14:35:48 [WARNING] [glin] [API] glin_veo_generate -> 自动下载失败: ('Connection aborted.', ConnectionResetError(10054, '远程主机强迫关闭了一个现有的连接。', None, 10054, None))
+2026-03-12 14:35:48 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:48 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:48 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:48 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:49 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/504fa5d5-867a-4495-8cd1-...
+2026-03-12 14:35:51 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143550.mp4
+2026-03-12 14:35:51 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:51 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:51 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:51 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:56 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/0aef9b78-db22-436e-bb36-...
+2026-03-12 14:35:59 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143557.mp4
+2026-03-12 14:35:59 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:35:59 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:35:59 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:35:59 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:36:07 [ERROR] [glin] [API] glin_veo_generate -> 异常: Response ended prematurely
+2026-03-12 14:36:07 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:36:07 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:36:07 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/559ee596-dfae-4690-941a-...
+2026-03-12 14:36:09 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143608.mp4
+2026-03-12 14:36:09 [DEBUG] [glin] [API] get_all_settings 调用
+2026-03-12 14:36:09 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:36:09 [INFO] [glin] [API] glin_veo_generate 调用, orientation=portrait, 模式=文生视频
+2026-03-12 14:36:09 [DEBUG] [glin] [DB] get_all_settings: 共 35 项
+2026-03-12 14:36:19 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/b0214a5c-4ffa-4e79-936d-...
+2026-03-12 14:36:20 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/a9f9551c-c0b2-4844-aa1b-...
+2026-03-12 14:36:21 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143620.mp4
+2026-03-12 14:36:22 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143621.mp4
+2026-03-12 14:36:27 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/f591d612-dedb-46aa-ac03-...
+2026-03-12 14:36:29 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143628.mp4
+2026-03-12 14:36:38 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/89457f05-7e5a-418d-927a-...
+2026-03-12 14:36:40 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143639.mp4
+2026-03-12 14:36:57 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/a71dfc15-1a3b-43de-8cca-...
+2026-03-12 14:37:00 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143659.mp4
+2026-03-12 14:37:05 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/b411c5c1-e6c6-400f-a664-...
+2026-03-12 14:37:08 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143706.mp4
+2026-03-12 14:37:17 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/dac8f01b-5f06-4b8a-b813-...
+2026-03-12 14:37:18 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/4a90002c-9f94-4704-99fe-...
+2026-03-12 14:37:18 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/0b65dffa-f85a-4301-b094-...
+2026-03-12 14:37:19 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143718.mp4
+2026-03-12 14:37:20 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143719.mp4
+2026-03-12 14:37:21 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143719.mp4
+2026-03-12 14:37:31 [INFO] [glin] [API] glin_veo_generate -> 成功, url=https://storage.googleapis.com/ai-sandbox-videofx/video/d088492e-436b-4f5a-9473-...
+2026-03-12 14:37:33 [INFO] [glin] [API] glin_veo_generate -> 视频已保存: C:\Users\Administrator\Downloads\Glin\glin_veo_20260312_143732.mp4
+2026-03-12 14:37:34 [DEBUG] [glin] [Scanner] 第1200轮扫描, 无待处理任务
+2026-03-12 14:40:42 [INFO] [glin] [API] batch_export_files -> 导出 49/49 到 C:\Users\Administrator\Desktop\sora\万米霖\吸粉
+2026-03-12 14:41:11 [INFO] [glin] [API] open_root_directory 调用, path=C:\Users\Administrator\AppData\Roaming\Glin

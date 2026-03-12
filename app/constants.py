@@ -52,6 +52,10 @@ class SettingKeys:
     IMAGE_PROCESS_PROMPT = "image_process_prompt"
     # 视频处理提示词
     VIDEO_PROCESS_PROMPT = "video_process_prompt"
+    # 起号图片提示词
+    QIHAO_IMAGE_PROMPT = "qihao_image_prompt"
+    # 起号视频提示词
+    QIHAO_VIDEO_PROMPT = "qihao_video_prompt"
     # 线程池大小
     THREAD_POOL_SIZE = "thread_pool_size"
     # 主题

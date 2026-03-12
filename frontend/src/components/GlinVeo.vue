@@ -266,6 +266,24 @@ const closePreview = () => { showPreview.value = false; previewSrc.value = '' }
 
 const orientationLabel = (val) => orientationOptions.find(o => o.value === val)?.label || val
 const modeLabel = (task) => task.images && task.images.length ? `首尾帧(${task.images.length}张)` : '文生视频'
+
+// ==================== 外部添加任务 ====================
+const addExternalTask = (taskData) => {
+  const task = reactive({
+    id: ++taskIdCounter,
+    prompt: taskData.prompt || '',
+    orientation: taskData.orientation || 'portrait',
+    images: taskData.images || [],
+    status: 'pending',
+    statusText: '待处理',
+    videoUrl: '',
+    filePath: '',
+  })
+  taskList.value.unshift(task)
+  startGeneration([task])
+}
+
+defineExpose({ addExternalTask })
 </script>
 
 <template>
@@ -274,6 +292,12 @@ const modeLabel = (task) => task.images && task.images.length ? `首尾帧(${tas
     <div class="page-toolbar">
       <h2 class="page-title">VEO 视频</h2>
       <div class="toolbar-actions">
+        <button class="tool-btn refresh-btn" @click="() => window.location.reload()">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          <span>刷新</span>
+        </button>
         <button v-if="taskList.some(t => t.filePath)" class="tool-btn export-btn" @click="exportAll">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -498,6 +522,7 @@ const modeLabel = (task) => task.images && task.images.length ? `首尾帧(${tas
 .toolbar-actions { display: flex; gap: 10px; align-items: center; }
 .tool-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--border-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
 .tool-btn:hover { background: var(--accent-bg-strong); border-color: var(--accent-border); color: var(--accent); }
+.refresh-btn:hover { background: var(--accent-bg-strong); border-color: var(--accent-border); color: var(--accent); }
 .export-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
 .export-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
 .delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: var(--error); }

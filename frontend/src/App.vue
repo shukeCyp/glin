@@ -6,12 +6,21 @@ import NanoBanana from './components/NanoBanana.vue'
 import GlinVeo from './components/GlinVeo.vue'
 import VeoGeneration from './components/VeoGeneration.vue'
 import VeoProduct from './components/VeoProduct.vue'
+import VeoQihao from './components/VeoQihao.vue'
 
 const state = ref('loading')
 const deviceId = ref('')
 const activationCode = ref('')
 const toastRef = ref(null)
 const currentPage = ref('nanobanana')
+const glinVeoRef = ref(null)
+
+const handleAddVeoTask = (taskData) => {
+  currentPage.value = 'veo'
+  setTimeout(() => {
+    glinVeoRef.value?.addExternalTask(taskData)
+  }, 50)
+}
 
 const loadTheme = async () => {
   try {
@@ -162,6 +171,15 @@ onMounted(() => {
             </svg>
             <span>VEO带货</span>
           </button>
+          <button
+            :class="['nav-item', { active: currentPage === 'veo_qihao' }]"
+            @click="currentPage = 'veo_qihao'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <span>VEO起号</span>
+          </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -184,10 +202,12 @@ onMounted(() => {
         <NanoBanana
           v-show="currentPage === 'nanobanana'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
+          @add-veo-task="handleAddVeoTask"
         />
 
         <!-- VEO视频 -->
         <GlinVeo
+          ref="glinVeoRef"
           v-show="currentPage === 'veo'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
@@ -195,6 +215,12 @@ onMounted(() => {
         <!-- VEO带货 -->
         <VeoProduct
           v-show="currentPage === 'veo_product'"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
+        <!-- VEO起号 -->
+        <VeoQihao
+          v-show="currentPage === 'veo_qihao'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 

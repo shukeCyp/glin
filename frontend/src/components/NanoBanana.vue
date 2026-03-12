@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 
-const emit = defineEmits(['toast'])
+const emit = defineEmits(['toast', 'add-veo-task'])
 
 const taskList = ref([])
 let taskIdCounter = 0
@@ -229,13 +229,14 @@ const downloadImage = async (task) => {
 const createVideoTask = async (task) => {
   if (!task.resultBase64) { emit('toast', '暂无生成结果', 'error'); return }
   try {
-    const res = await window.pywebview.api.auto_create_video_task(task.resultBase64, task.resultMime)
-    if (res.ok) {
-      emit('toast', '已提交到视频任务队列', 'success')
-    } else {
-      emit('toast', res.msg || '提交失败', 'error')
-    }
-  } catch { emit('toast', '提交异常', 'error') }
+    const settings = await window.pywebview.api.get_all_settings()
+    const promptRes = await window.pywebview.api.get_video_process_prompt()
+    const prompt = promptRes.prompt || ''
+    const orientation = settings.glin_veo_orientation || 'portrait'
+    const images = [{ base64: task.resultBase64, mime: task.resultMime }]
+    emit('add-veo-task', { prompt, orientation, images })
+    emit('toast', '已添加到 VEO 视频列表', 'success')
+  } catch (e) { emit('toast', `添加失败: ${e}`, 'error') }
 }
 
 // ==================== 预览 ====================
@@ -265,6 +266,12 @@ const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || va
     <div class="page-toolbar">
       <h2 class="page-title">香蕉生图</h2>
       <div class="toolbar-actions">
+        <button class="tool-btn refresh-btn" @click="() => window.location.reload()">
+          <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          <span>刷新</span>
+        </button>
         <button v-if="taskList.some(t => t.filePath)" class="tool-btn export-btn" @click="exportAll">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -493,6 +500,7 @@ const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || va
 .toolbar-actions { display: flex; gap: 10px; align-items: center; }
 .tool-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--border-subtle); color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
 .tool-btn:hover { background: var(--accent-bg-strong); border-color: var(--accent-border); color: var(--accent); }
+.refresh-btn:hover { background: var(--accent-bg-strong); border-color: var(--accent-border); color: var(--accent); }
 .export-btn { border-color: rgba(100,210,255,0.3); background: rgba(100,210,255,0.08); color: #64d2ff; }
 .export-btn:hover { background: rgba(100,210,255,0.18); border-color: rgba(100,210,255,0.5); color: #64d2ff; }
 .delete-all-btn { border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); color: var(--error); }

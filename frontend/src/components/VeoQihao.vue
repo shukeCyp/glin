@@ -22,10 +22,10 @@ const savePromptDialog = async () => {
   if (!text) { emit('toast', '提示词不能为空', 'error'); return }
   try {
     if (promptDialogType.value === 'image') {
-      await window.pywebview.api.set_image_process_prompt(text)
+      await window.pywebview.api.set_qihao_image_prompt(text)
       defaultImagePrompt.value = text
     } else {
-      await window.pywebview.api.set_video_process_prompt(text)
+      await window.pywebview.api.set_qihao_video_prompt(text)
       defaultVideoPrompt.value = text
     }
     emit('toast', '提示词已保存', 'success')
@@ -36,8 +36,8 @@ const savePromptDialog = async () => {
 onMounted(async () => {
   try {
     const [imgRes, vidRes, settings] = await Promise.all([
-      window.pywebview.api.get_image_process_prompt(),
-      window.pywebview.api.get_video_process_prompt(),
+      window.pywebview.api.get_qihao_image_prompt(),
+      window.pywebview.api.get_qihao_video_prompt(),
       window.pywebview.api.get_all_settings(),
     ])
     if (imgRes.ok) defaultImagePrompt.value = imgRes.prompt
@@ -62,11 +62,13 @@ const dialogImageRatio = ref('9:16')
 const dialogImageQuality = ref('1K')
 const dialogVideoOrientation = ref('portrait')
 const dialogAutoVideo = ref(true)
+const dialogCount = ref(1)
 const dialogIsDragging = ref(false)
 const dialogFileInput = ref(null)
 
 const openAddDialog = () => {
   dialogImages.value = []
+  dialogCount.value = 1
   dialogImagePrompt.value = defaultImagePrompt.value
   dialogVideoPrompt.value = defaultVideoPrompt.value
   showDialog.value = true
@@ -245,7 +247,6 @@ const stats = computed(() => {
 
 // ==================== 提交任务 ====================
 const submitDialog = () => {
-  if (!dialogImages.value.length) { emit('toast', '请先选择图片', 'error'); return }
   if (!dialogImagePrompt.value.trim()) { emit('toast', '请输入图片提示词', 'error'); return }
   if (!dialogVideoPrompt.value.trim()) { emit('toast', '请输入视频提示词', 'error'); return }
 
@@ -257,31 +258,39 @@ const submitDialog = () => {
     glin_nanobanana_quality: dialogImageQuality.value,
     glin_veo_orientation: dialogVideoOrientation.value,
   }).catch(() => {})
-  window.pywebview.api.set_image_process_prompt(defaultImagePrompt.value).catch(() => {})
-  window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
+  window.pywebview.api.set_qihao_image_prompt(defaultImagePrompt.value).catch(() => {})
+  window.pywebview.api.set_qihao_video_prompt(defaultVideoPrompt.value).catch(() => {})
 
+  const hasImages = dialogImages.value.length > 0
+  const count = hasImages ? 1 : Math.max(1, Math.min(1000, dialogCount.value || 1))
   const images = dialogImages.value.map(img => ({ ...img }))
-  const task = reactive({
-    id: ++taskIdCounter,
-    images,
-    imagePrompt: defaultImagePrompt.value,
-    imageRatio: dialogImageRatio.value,
-    imageQuality: dialogImageQuality.value,
-    videoPrompt: defaultVideoPrompt.value,
-    videoOrientation: dialogVideoOrientation.value,
-    autoVideo: dialogAutoVideo.value,
-    resultImageSrc: '',
-    resultImageBase64: '',
-    resultImageMime: '',
-    videoUrl: '',
-    filePath: '',
-    status: 'pending',
-    statusText: '待处理',
-  })
-  taskList.value.unshift(task)
+
+  const newTasks = []
+  for (let i = 0; i < count; i++) {
+    const task = reactive({
+      id: ++taskIdCounter,
+      images: hasImages ? images : [],
+      imagePrompt: defaultImagePrompt.value,
+      imageRatio: dialogImageRatio.value,
+      imageQuality: dialogImageQuality.value,
+      videoPrompt: defaultVideoPrompt.value,
+      videoOrientation: dialogVideoOrientation.value,
+      autoVideo: dialogAutoVideo.value,
+      resultImageSrc: '',
+      resultImageBase64: '',
+      resultImageMime: '',
+      videoUrl: '',
+      filePath: '',
+      status: 'pending',
+      statusText: '待处理',
+    })
+    newTasks.push(task)
+  }
+  taskList.value.unshift(...newTasks)
   showDialog.value = false
 
-  generateImage(task)
+  if (count > 1) emit('toast', `已添加 ${count} 条任务，开始生成...`, 'success')
+  startBatchGeneration(newTasks)
 }
 
 // ==================== 图片生成 → 自动生成视频 ====================
@@ -428,7 +437,7 @@ const downloadImage = async (task) => {
   if (!task.resultImageBase64) { emit('toast', '暂无生成图片', 'error'); return }
   try {
     emit('toast', '开始下载图片...', 'success')
-    const res = await window.pywebview.api.download_image(task.resultImageBase64, task.resultImageMime, 'veo_product')
+    const res = await window.pywebview.api.download_image(task.resultImageBase64, task.resultImageMime, 'veo_qihao')
     if (res.ok) emit('toast', '图片已保存', 'success')
     else emit('toast', res.msg || '下载失败', 'error')
   } catch { emit('toast', '下载异常', 'error') }
@@ -546,7 +555,7 @@ const statusClass = (status) => {
   <div class="page">
     <!-- 顶栏 -->
     <div class="page-toolbar">
-      <h2 class="page-title">VEO 带货</h2>
+      <h2 class="page-title">VEO 起号</h2>
       <div class="toolbar-actions">
         <button class="tool-btn refresh-btn" @click="() => window.location.reload()">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -614,7 +623,7 @@ const statusClass = (status) => {
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <p class="drag-text">松开鼠标批量添加商品图</p>
+        <p class="drag-text">松开鼠标批量添加参考图</p>
         <p class="drag-hint">每张图片将创建一条独立任务</p>
       </div>
 
@@ -625,8 +634,8 @@ const statusClass = (status) => {
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
-        <p class="empty-text">暂无带货任务</p>
-        <p class="empty-hint">点击"添加任务"或拖拽商品图到此处</p>
+        <p class="empty-text">暂无起号任务</p>
+        <p class="empty-hint">点击"添加任务"或拖拽参考图到此处</p>
       </div>
 
       <!-- 列表 -->
@@ -755,7 +764,7 @@ const statusClass = (status) => {
       <div v-if="showBatchDialog" class="dialog-overlay" @click.self="closeBatchDialog">
         <div class="dialog dialog--image">
           <div class="dialog-header">
-            <h3 class="dialog-title">批量添加带货任务（{{ batchImages.length }} 张图 = {{ batchImages.length }} 条任务）</h3>
+            <h3 class="dialog-title">批量添加起号任务（{{ batchImages.length }} 张图 = {{ batchImages.length }} 条任务）</h3>
             <button class="dialog-close" @click="closeBatchDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -849,16 +858,16 @@ const statusClass = (status) => {
       <div v-if="showDialog" class="dialog-overlay" @click.self="closeDialog">
         <div class="dialog dialog--image">
           <div class="dialog-header">
-            <h3 class="dialog-title">添加带货任务</h3>
+            <h3 class="dialog-title">添加起号任务</h3>
             <button class="dialog-close" @click="closeDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="dialog-body dialog-body--split">
-            <!-- 左侧：图片上传（多图） -->
+            <!-- 左侧：图片上传（可选） -->
             <div class="dialog-left">
               <div class="field">
-                <span class="field-label">商品图片（必填，支持多图拖拽）</span>
+                <span class="field-label">参考图片（可选，不上传则文生图）</span>
                 <div class="ref-images-grid" v-if="dialogImages.length">
                   <div v-for="(img, idx) in dialogImages" :key="idx" class="ref-image-preview">
                     <img :src="img.preview" alt="商品图片" />
@@ -881,7 +890,7 @@ const statusClass = (status) => {
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                   </svg>
                   <span class="upload-text">{{ dialogImages.length ? '继续添加图片' : '点击或拖拽图片到此处' }}</span>
-                  <span class="upload-hint">支持 JPG / PNG / WebP，最大 10MB</span>
+                  <span class="upload-hint">支持 JPG / PNG / WebP，最大 10MB（不上传则文生图）</span>
                 </div>
               </div>
             </div>
@@ -933,8 +942,8 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
-              <div class="form-row" style="margin-top: 16px;">
-                <label class="switch-field">
+              <div class="form-row" style="margin-top: 16px; align-items: center;">
+                <label class="switch-field" style="flex: 1;">
                   <span class="switch-label">自动生成视频</span>
                   <button
                     :class="['switch-track', { active: dialogAutoVideo }]"
@@ -942,14 +951,20 @@ const statusClass = (status) => {
                   >
                     <span class="switch-thumb" />
                   </button>
-                  <span class="switch-hint">{{ dialogAutoVideo ? '图片完成后自动生成视频' : '图片完成后暂停，手动确认再生成' }}</span>
+                  <span class="switch-hint">{{ dialogAutoVideo ? '自动生成' : '手动确认' }}</span>
                 </label>
+                <div v-if="!dialogImages.length" class="field field-inline" style="flex: 0 0 auto;">
+                  <span class="field-label">数量</span>
+                  <input v-model.number="dialogCount" type="number" min="1" max="1000" class="count-input" />
+                </div>
               </div>
             </div>
           </div>
           <div class="dialog-footer">
             <button class="cancel-btn" @click="closeDialog">取消</button>
-            <button class="primary-btn save-btn" @click="submitDialog">添加并开始生成</button>
+            <button class="primary-btn save-btn" @click="submitDialog">
+              {{ dialogImages.length ? '添加并开始生成' : `添加 ${Math.max(1, dialogCount || 1)} 条任务并开始生成` }}
+            </button>
           </div>
         </div>
       </div>
@@ -1186,6 +1201,9 @@ const statusClass = (status) => {
 
 /* 切换按钮组 */
 .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.count-input { width: 90px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; -moz-appearance: textfield; }
+.count-input::-webkit-outer-spin-button, .count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.count-input:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
 .toggle-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--border-light); color: var(--text-tertiary); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
 .toggle-btn:hover { background: var(--accent-bg); border-color: rgba(200,96,122,0.2); color: var(--text-secondary); }
 .toggle-btn.active { background: var(--accent-bg-strong); border-color: rgba(200,96,122,0.4); color: var(--accent); }

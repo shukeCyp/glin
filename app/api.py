@@ -722,21 +722,26 @@ class Api:
 
             result = {"ok": True, "video_url": video_url}
 
-            try:
-                dl_dir = get_default_download_dir()
-                dl_dir.mkdir(parents=True, exist_ok=True)
-                dl_resp = requests.get(video_url, timeout=120, stream=True)
-                dl_resp.raise_for_status()
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = f"glin_veo_{ts}.mp4"
-                filepath = dl_dir / filename
-                with open(str(filepath), "wb") as f:
-                    for chunk in dl_resp.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                result["file_path"] = str(filepath)
-                logger.info(f"[API] glin_veo_generate -> 视频已保存: {filepath}")
-            except Exception as e:
-                logger.warning(f"[API] glin_veo_generate -> 自动下载失败: {e}")
+            dl_dir = get_default_download_dir()
+            dl_dir.mkdir(parents=True, exist_ok=True)
+            for dl_attempt in range(3):
+                try:
+                    dl_resp = requests.get(video_url, timeout=120, stream=True)
+                    dl_resp.raise_for_status()
+                    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                    filename = f"glin_veo_{ts}.mp4"
+                    filepath = dl_dir / filename
+                    with open(str(filepath), "wb") as f:
+                        for chunk in dl_resp.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    result["file_path"] = str(filepath)
+                    logger.info(f"[API] glin_veo_generate -> 视频已保存: {filepath}")
+                    break
+                except Exception as e:
+                    logger.warning(f"[API] glin_veo_generate -> 自动下载失败(第{dl_attempt+1}次): {e}")
+                    import time
+                    if dl_attempt < 2:
+                        time.sleep(2)
 
             return result
 
@@ -760,23 +765,30 @@ class Api:
         except Exception as e:
             return {"ok": False, "msg": f"下载目录无法创建: {download_dir}"}
 
-        try:
-            resp = requests.get(video_url, timeout=120, stream=True)
-            resp.raise_for_status()
+        last_err = None
+        for attempt in range(3):
+            try:
+                resp = requests.get(video_url, timeout=120, stream=True)
+                resp.raise_for_status()
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            filename = f"veo_{timestamp}.mp4"
-            filepath = download_dir / filename
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                filename = f"veo_{timestamp}.mp4"
+                filepath = download_dir / filename
 
-            with open(str(filepath), "wb") as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                with open(str(filepath), "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
 
-            logger.info(f"[API] download_veo_video -> 保存成功: {filepath}")
-            return {"ok": True, "path": str(filepath)}
-        except Exception as e:
-            logger.error(f"[API] download_veo_video -> 异常: {e}")
-            return {"ok": False, "msg": str(e)}
+                logger.info(f"[API] download_veo_video -> 保存成功: {filepath}")
+                return {"ok": True, "path": str(filepath)}
+            except Exception as e:
+                last_err = e
+                logger.warning(f"[API] download_veo_video -> 下载失败(第{attempt+1}次): {e}")
+                import time
+                if attempt < 2:
+                    time.sleep(2)
+        logger.error(f"[API] download_veo_video -> 3次重试均失败: {last_err}")
+        return {"ok": False, "msg": str(last_err)}
 
     # ==================== 视频任务 ====================
 
@@ -793,6 +805,35 @@ class Api:
         logger.info(f"[API] set_video_process_prompt 调用, prompt={prompt[:50]}...")
         set_setting(SettingKeys.VIDEO_PROCESS_PROMPT, prompt.strip())
         logger.info("[API] set_video_process_prompt -> 保存成功")
+        return {"ok": True}
+
+    _DEFAULT_QIHAO_IMAGE_PROMPT = "请根据参考图片，为其绘制一个自然、真实的起号展示场景，突出人物或产品，背景环境要逼真有质感。注意：画面中不要出现任何文字、标签或水印。"
+    _DEFAULT_QIHAO_VIDEO_PROMPT = "根据图片内容生成一段自然流畅的起号展示视频"
+
+    def get_qihao_image_prompt(self) -> dict:
+        """获取起号图片提示词"""
+        logger.debug("[API] get_qihao_image_prompt 调用")
+        prompt = get_setting(SettingKeys.QIHAO_IMAGE_PROMPT) or self._DEFAULT_QIHAO_IMAGE_PROMPT
+        return {"ok": True, "prompt": prompt}
+
+    def set_qihao_image_prompt(self, prompt: str) -> dict:
+        """保存起号图片提示词"""
+        logger.info(f"[API] set_qihao_image_prompt 调用, prompt={prompt[:50]}...")
+        set_setting(SettingKeys.QIHAO_IMAGE_PROMPT, prompt.strip())
+        logger.info("[API] set_qihao_image_prompt -> 保存成功")
+        return {"ok": True}
+
+    def get_qihao_video_prompt(self) -> dict:
+        """获取起号视频提示词"""
+        logger.debug("[API] get_qihao_video_prompt 调用")
+        prompt = get_setting(SettingKeys.QIHAO_VIDEO_PROMPT) or self._DEFAULT_QIHAO_VIDEO_PROMPT
+        return {"ok": True, "prompt": prompt}
+
+    def set_qihao_video_prompt(self, prompt: str) -> dict:
+        """保存起号视频提示词"""
+        logger.info(f"[API] set_qihao_video_prompt 调用, prompt={prompt[:50]}...")
+        set_setting(SettingKeys.QIHAO_VIDEO_PROMPT, prompt.strip())
+        logger.info("[API] set_qihao_video_prompt -> 保存成功")
         return {"ok": True}
 
     def get_video_tasks(self) -> dict:
@@ -917,7 +958,7 @@ class Api:
             if not task.video_url:
                 return {"ok": False, "msg": "该任务暂无视频链接"}
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             remote_id = task.remote_task_id or ""
 
             settings = get_all_settings()
@@ -1016,7 +1057,7 @@ class Api:
         try:
             ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
             ext = ext_map.get(mime_type or "", ".png")
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
             filename = f"{filename_prefix}_{timestamp}{ext}"
             filepath = download_dir / filename
 
