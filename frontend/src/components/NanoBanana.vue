@@ -162,11 +162,13 @@ const generateTask = async (task) => {
     try {
       const refImages = (task.images || []).map(img => ({ base64: img.base64, mime: img.mime }))
       const res = await withTimeout(
-        window.pywebview.api.debug_nanobanana(
+        window.pywebview.api.generate_media_image(
           task.prompt,
           refImages,
           task.ratio,
           task.quality,
+          '',
+          '',
         ),
         300000,
       )

@@ -112,7 +112,14 @@ const generateTask = async (task) => {
       task.statusText = `重试中 (${attempts}/${maxRetry})...`
     }
     try {
-      const res = await window.pywebview.api.veo_text_to_video(task.prompt, task.orientation)
+      const res = await window.pywebview.api.generate_media_video(
+        task.prompt,
+        [],
+        task.orientation,
+        10,
+        'veo3',
+        'hetang',
+      )
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url
         task.status = 'completed'

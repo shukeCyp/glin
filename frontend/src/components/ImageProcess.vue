@@ -132,8 +132,9 @@ const generateSingle = async (img) => {
       img.statusText = `重试中 (${attempts}/${maxRetry})...`
     }
     try {
+      const refImages = [{ base64, mime: img.file.type || 'image/jpeg' }]
       const res = await withTimeout(
-        window.pywebview.api.debug_nanobanana(promptText.value, base64, img.file.type || 'image/jpeg'),
+        window.pywebview.api.generate_media_image(promptText.value, refImages),
         200000
       )
       if (res.ok && res.image_data && res.mime_type) {

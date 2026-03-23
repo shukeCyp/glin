@@ -1,5 +1,6 @@
 import unittest
 
+from app.constants import SettingKeys
 from app.services.media_generation import media_generation_registry
 from app.services.nanobanana.yunwu import NanoBananaYunwu
 
@@ -60,6 +61,97 @@ class MediaGenerationRegistryTests(unittest.TestCase):
         self.assertIsNotNone(generator)
         self.assertEqual(generator.provider, "yunwu")
         self.assertEqual(generator.platform, "nanobanana")
+
+    def test_resolve_image_generator_prefers_saved_video_product_default(self):
+        settings = {
+            SettingKeys.VIDEO_PRODUCT_IMAGE_PLATFORM: "nanobanana",
+            SettingKeys.VIDEO_PRODUCT_IMAGE_PROVIDER: "yunwu",
+            SettingKeys.YUNWU_API_KEY: "test-key",
+        }
+
+        generator, platform, provider = media_generation_registry.resolve_image_generator(settings)
+
+        self.assertIsNotNone(generator)
+        self.assertEqual(platform, "nanobanana")
+        self.assertEqual(provider, "yunwu")
+
+    def test_resolve_image_generator_falls_back_to_configured_provider_in_platform(self):
+        settings = {
+            SettingKeys.YUNWU_API_KEY: "test-key",
+        }
+
+        generator, platform, provider = media_generation_registry.resolve_image_generator(
+            settings,
+            platform="nanobanana",
+            provider="missing-provider",
+        )
+
+        self.assertIsNotNone(generator)
+        self.assertEqual(platform, "nanobanana")
+        self.assertEqual(provider, "yunwu")
+
+    def test_resolve_video_generator_falls_back_to_sora2_setting(self):
+        settings = {
+            SettingKeys.SORA2_MODEL: "xiaobanshou",
+            SettingKeys.XIAOBANSHOU_API_KEY: "test-key",
+        }
+
+        generator, platform, provider = media_generation_registry.resolve_video_generator(settings)
+
+        self.assertIsNotNone(generator)
+        self.assertEqual(platform, "sora2")
+        self.assertEqual(provider, "xiaobanshou")
+
+    def test_resolve_image_generator_uses_nanobanana_setting_when_platform_is_explicit(self):
+        settings = {
+            SettingKeys.NANOBANANA_MODEL: "yunwu",
+            SettingKeys.YUNWU_API_KEY: "test-key",
+        }
+
+        generator, platform, provider = media_generation_registry.resolve_image_generator(
+            settings,
+            platform="nanobanana",
+            provider="",
+        )
+
+        self.assertIsNotNone(generator)
+        self.assertEqual(platform, "nanobanana")
+        self.assertEqual(provider, "yunwu")
+
+    def test_resolve_video_generator_uses_sora2_setting_when_platform_is_explicit(self):
+        settings = {
+            SettingKeys.SORA2_MODEL: "xiaobanshou",
+            SettingKeys.XIAOBANSHOU_API_KEY: "test-key",
+        }
+
+        generator, platform, provider = media_generation_registry.resolve_video_generator(
+            settings,
+            platform="sora2",
+            provider="",
+        )
+
+        self.assertIsNotNone(generator)
+        self.assertEqual(platform, "sora2")
+        self.assertEqual(provider, "xiaobanshou")
+
+    def test_resolve_video_generator_prefers_global_sora2_setting_over_video_product_default(self):
+        settings = {
+            SettingKeys.SORA2_MODEL: "bandianwa",
+            SettingKeys.BANDIANWA_API_KEY: "test-key",
+            SettingKeys.VIDEO_PRODUCT_VIDEO_PLATFORM: "sora2",
+            SettingKeys.VIDEO_PRODUCT_VIDEO_PROVIDER: "xiaobanshou",
+            SettingKeys.XIAOBANSHOU_API_KEY: "legacy-key",
+        }
+
+        generator, platform, provider = media_generation_registry.resolve_video_generator(
+            settings,
+            platform="sora2",
+            provider="",
+        )
+
+        self.assertIsNotNone(generator)
+        self.assertEqual(platform, "sora2")
+        self.assertEqual(provider, "bandianwa")
 
 
 if __name__ == "__main__":

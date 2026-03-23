@@ -316,11 +316,13 @@ const generateImage = async (task) => {
     if (attempts > 0) task.statusText = `图片重试中 (${attempts}/${maxRetry})...`
     try {
       const refImages = (task.images || []).map(img => ({ base64: img.base64, mime: img.mime }))
-      const res = await window.pywebview.api.debug_nanobanana(
+      const res = await window.pywebview.api.generate_media_image(
         task.imagePrompt,
         refImages,
         task.imageRatio,
         task.imageQuality,
+        '',
+        '',
       )
       if (res.ok && res.image_data && res.mime_type) {
         task.resultImageSrc = `data:${res.mime_type};base64,${res.image_data}`
@@ -370,10 +372,13 @@ const generateVideo = async (task) => {
     if (attempts > 0) task.statusText = `视频重试中 (${attempts}/${maxRetry})...`
     try {
       const refImages = [{ base64: task.resultImageBase64, mime: task.resultImageMime }]
-      const res = await window.pywebview.api.hetang_veo_generate(
+      const res = await window.pywebview.api.generate_media_video(
         task.videoPrompt,
         refImages,
         task.videoOrientation,
+        10,
+        'veo3',
+        'hetang',
       )
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url

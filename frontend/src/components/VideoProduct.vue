@@ -31,6 +31,13 @@ const buildPlatformOptions = (options) => {
 const getProviderOptions = (options, platform) =>
   options.filter(item => item.platform === platform)
 
+const formatGeneratorLabel = (options, platform, provider) => {
+  if (!platform) return ''
+  const matched = options.find(item => item.platform === platform && item.provider === provider)
+  if (matched) return `${matched.platform_label} / ${matched.provider_label}`
+  return provider ? `${platform} / ${provider}` : platform
+}
+
 const normalizeGeneratorSelection = (options, platform, provider) => {
   const providerOptions = getProviderOptions(options, platform)
   if (!providerOptions.length) {
@@ -112,8 +119,9 @@ onMounted(async () => {
       imageGeneratorOptions.value = generatorRes.image_options || []
       videoGeneratorOptions.value = generatorRes.video_options || []
 
-      const imagePlatformFromSettings = settings.video_product_image_platform || (settings.nanobanana_model ? 'nanobanana' : null)
-      const imageProviderFromSettings = settings.video_product_image_provider || settings.nanobanana_model || 'yunwu'
+      // 优先使用“设置”页面的全局渠道；仅在全局未配置时回退到页面历史默认值。
+      const imagePlatformFromSettings = (settings.nanobanana_model ? 'nanobanana' : null) || settings.video_product_image_platform
+      const imageProviderFromSettings = settings.nanobanana_model || settings.video_product_image_provider || 'yunwu'
       const imageDefaults = normalizeGeneratorSelection(
         imageGeneratorOptions.value,
         imagePlatformFromSettings || 'nanobanana',
@@ -122,8 +130,8 @@ onMounted(async () => {
       selectedImagePlatform.value = imageDefaults.platform
       selectedImageProvider.value = imageDefaults.provider
 
-      const videoPlatformFromSettings = settings.video_product_video_platform || (settings.sora2_model ? 'sora2' : null)
-      const videoProviderFromSettings = settings.video_product_video_provider || settings.sora2_model || 'dayangyu'
+      const videoPlatformFromSettings = (settings.sora2_model ? 'sora2' : null) || settings.video_product_video_platform
+      const videoProviderFromSettings = settings.sora2_model || settings.video_product_video_provider || 'dayangyu'
       const videoDefaults = normalizeGeneratorSelection(
         videoGeneratorOptions.value,
         videoPlatformFromSettings || 'sora2',
@@ -307,6 +315,10 @@ const submitBatchDialog = () => {
     resultImagePath: '',
     videoUrl: '',
     filePath: '',
+    actualImagePlatform: '',
+    actualImageProvider: '',
+    actualVideoPlatform: '',
+    actualVideoProvider: '',
     status: 'pending',
     statusText: '待处理',
   }))
@@ -396,6 +408,10 @@ const submitDialog = () => {
     resultImagePath: '',
     videoUrl: '',
     filePath: '',
+    actualImagePlatform: '',
+    actualImageProvider: '',
+    actualVideoPlatform: '',
+    actualVideoProvider: '',
     status: 'pending',
     statusText: '待处理',
   })
@@ -414,6 +430,10 @@ const generateImage = async (task) => {
   task.resultImageBase64 = ''
   task.resultImageMime = ''
   task.resultImagePath = ''
+  task.actualImagePlatform = ''
+  task.actualImageProvider = ''
+  task.actualVideoPlatform = ''
+  task.actualVideoProvider = ''
 
   let maxRetry = 0
   try {
@@ -443,6 +463,8 @@ const generateImage = async (task) => {
         task.resultImageBase64 = res.image_data
         task.resultImageMime = res.mime_type
         task.resultImagePath = res.file_path || ''
+        task.actualImagePlatform = res.platform || ''
+        task.actualImageProvider = res.provider || ''
         task.status = 'image_done'
         if (task.autoVideo) {
           task.statusText = '图片完成，开始生成视频...'
@@ -471,6 +493,8 @@ const generateVideo = async (task) => {
   task.statusText = '视频生成中...'
   task.videoUrl = ''
   task.filePath = ''
+  task.actualVideoPlatform = ''
+  task.actualVideoProvider = ''
 
   let maxRetry = 0
   try {
@@ -498,6 +522,8 @@ const generateVideo = async (task) => {
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url
         task.filePath = res.file_path || ''
+        task.actualVideoPlatform = res.platform || ''
+        task.actualVideoProvider = res.provider || ''
         task.status = 'completed'
         task.statusText = '已完成'
         if (task.filePath) {
@@ -525,6 +551,8 @@ const regenImage = (task) => {
   if (isTaskBusy(task)) return
   task.videoUrl = ''
   task.filePath = ''
+  task.actualVideoPlatform = ''
+  task.actualVideoProvider = ''
   generateImage(task)
 }
 
@@ -637,12 +665,9 @@ const showEditDialog = ref(false)
 const editingTask = ref(null)
 const editImagePrompt = ref('')
 const editVideoPrompt = ref('')
-const editImagePlatform = ref('nanobanana')
-const editImageProvider = ref('hetang')
 const editImageRatio = ref('9:16')
 const editImageQuality = ref('1K')
 const editVideoPlatform = ref('veo3')
-const editVideoProvider = ref('hetang')
 const editVideoOrientation = ref('portrait')
 const editVideoDuration = ref(10)
 
@@ -651,12 +676,9 @@ const openEditDialog = (task) => {
   editingTask.value = task
   editImagePrompt.value = task.imagePrompt
   editVideoPrompt.value = task.videoPrompt
-  editImagePlatform.value = task.imagePlatform || selectedImagePlatform.value
-  editImageProvider.value = task.imageProvider || selectedImageProvider.value
   editImageRatio.value = task.imageRatio
   editImageQuality.value = task.imageQuality
   editVideoPlatform.value = task.videoPlatform || selectedVideoPlatform.value
-  editVideoProvider.value = task.videoProvider || selectedVideoProvider.value
   editVideoOrientation.value = task.videoOrientation
   editVideoDuration.value = task.videoDuration || 10
   showEditDialog.value = true
@@ -669,13 +691,6 @@ const saveEditDialog = () => {
   if (!task) return
   task.imagePrompt = editImagePrompt.value.trim()
   task.videoPrompt = editVideoPrompt.value.trim()
-  const normalizedImage = normalizeGeneratorSelection(
-    imageGeneratorOptions.value,
-    editImagePlatform.value,
-    editImageProvider.value,
-  )
-  task.imagePlatform = normalizedImage.platform
-  task.imageProvider = normalizedImage.provider
   task.imageRatio = editImageRatio.value
   task.imageQuality = editImageQuality.value
   task.videoOrientation = editVideoOrientation.value
@@ -815,6 +830,23 @@ const statusClass = (status) => {
           </div>
           <div class="col col-status">
             <span :class="['status-tag', statusClass(task.status)]">{{ task.statusText }}</span>
+            <div
+              v-if="task.imagePlatform || task.videoPlatform || task.actualImagePlatform || task.actualVideoPlatform"
+              class="channel-meta"
+            >
+              <div v-if="task.imagePlatform" class="channel-line">
+                请求图片: {{ formatGeneratorLabel(imageGeneratorOptions, task.imagePlatform, task.imageProvider) }}
+              </div>
+              <div v-if="task.actualImagePlatform" class="channel-line">
+                实际图片: {{ formatGeneratorLabel(imageGeneratorOptions, task.actualImagePlatform, task.actualImageProvider) }}
+              </div>
+              <div v-if="task.videoPlatform" class="channel-line">
+                请求视频: {{ formatGeneratorLabel(videoGeneratorOptions, task.videoPlatform, task.videoProvider) }}
+              </div>
+              <div v-if="task.actualVideoPlatform" class="channel-line">
+                实际视频: {{ formatGeneratorLabel(videoGeneratorOptions, task.actualVideoPlatform, task.actualVideoProvider) }}
+              </div>
+            </div>
           </div>
           <div class="col col-actions">
             <!-- 图片重新生成 -->
@@ -1159,31 +1191,6 @@ const statusClass = (status) => {
             </div>
             <div class="form-row">
               <div class="field field-inline">
-                <span class="field-label">图片渠道</span>
-                <div class="generator-select-row">
-                  <div class="generator-select-box">
-                    <select v-model="editImagePlatform" class="generator-select" @change="editImageProvider = normalizeGeneratorSelection(imageGeneratorOptions, editImagePlatform, editImageProvider).provider">
-                      <option v-for="item in imagePlatformOptions" :key="`edit-image-${item.value}`" :value="item.value">{{ item.label }}</option>
-                    </select>
-                    <span class="generator-chevron"></span>
-                  </div>
-                  <div class="generator-select-box">
-                    <select v-model="editImageProvider" class="generator-select">
-                      <option
-                        v-for="item in getProviderOptions(imageGeneratorOptions, editImagePlatform)"
-                        :key="`edit-image-provider-${item.platform}-${item.provider}`"
-                        :value="item.provider"
-                      >
-                        {{ item.provider_label }}{{ item.configured ? '' : '（未配置）' }}
-                      </option>
-                    </select>
-                    <span class="generator-chevron"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="field field-inline">
                 <span class="field-label">图片比例</span>
                 <div class="toggle-group">
                   <button :class="['toggle-btn', { active: editImageRatio === '9:16' }]" @click="editImageRatio = '9:16'">9:16 竖屏</button>
@@ -1219,17 +1226,15 @@ const statusClass = (status) => {
                 </div>
               </div>
             </div>
-            <div v-if="editVideoPlatform === 'sora2'" class="form-row">
-              <div class="field field-inline">
+            <div class="form-row">
+              <div v-if="editVideoPlatform === 'sora2'" class="field field-inline">
                 <span class="field-label">视频时长</span>
                 <div class="toggle-group">
                   <button :class="['toggle-btn', { active: editVideoDuration === 10 }]" @click="editVideoDuration = 10">10S</button>
                   <button :class="['toggle-btn', { active: editVideoDuration === 15 }]" @click="editVideoDuration = 15">15S</button>
                 </div>
               </div>
-            </div>
-            <div v-else class="form-row">
-              <div class="field field-inline">
+              <div v-else class="field field-inline">
                 <span class="field-label">视频时长</span>
                 <div class="fixed-value">约 8 秒（渠道固定）</div>
               </div>
@@ -1387,6 +1392,8 @@ const statusClass = (status) => {
 .status-tag.image-done { background: rgba(100,210,255,0.1); color: #64d2ff; }
 .status-tag.completed { background: var(--success-bg); color: var(--success); }
 .status-tag.failed { background: var(--error-bg); color: var(--error); }
+.channel-meta { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.channel-line { font-size: 11px; line-height: 1.35; color: var(--text-hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 操作按钮 */
 .action-btn { width: 34px; height: 34px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--border-medium); background: var(--border-light); color: var(--text-tertiary); cursor: pointer; transition: all 0.15s ease; position: relative; }

@@ -30,6 +30,96 @@ class Api:
         download_dir.mkdir(parents=True, exist_ok=True)
         return download_dir
 
+    @staticmethod
+    def _folder_dialog_type(webview_module):
+        file_dialog = getattr(webview_module, "FileDialog", None)
+        if file_dialog and hasattr(file_dialog, "FOLDER"):
+            return file_dialog.FOLDER
+        return webview_module.FOLDER_DIALOG
+
+    def _generate_image_via_registry(
+        self,
+        prompt: str,
+        ref_images: list = None,
+        aspect_ratio: str = "9:16",
+        image_size: str = "1K",
+        platform: str = "",
+        provider: str = "",
+        download: bool = True,
+    ) -> dict:
+        settings = get_all_settings()
+        generator, resolved_platform, resolved_provider = media_generation_registry.resolve_image_generator(
+            settings,
+            platform,
+            provider,
+        )
+        if not generator:
+            suffix = f": {resolved_platform}/{resolved_provider}" if resolved_platform or resolved_provider else ""
+            return {"ok": False, "msg": f"未找到图片生成器{suffix}"}
+
+        request = ImageGenerationRequest(
+            prompt=prompt,
+            ref_images=ref_images or [],
+            aspect_ratio=aspect_ratio,
+            image_size=image_size,
+            download_dir=self._resolve_download_dir() if download else None,
+        )
+        result = generator.generate(request, settings)
+        if not result.success:
+            return {"ok": False, "msg": result.error_message or "图片生成失败"}
+
+        response = {
+            "ok": True,
+            "image_data": result.image_data,
+            "mime_type": result.mime_type,
+            "platform": resolved_platform,
+            "provider": resolved_provider,
+        }
+        if result.file_path:
+            response["file_path"] = result.file_path
+        return response
+
+    def _generate_video_via_registry(
+        self,
+        prompt: str,
+        ref_images: list = None,
+        orientation: str = "portrait",
+        duration: int = 10,
+        platform: str = "",
+        provider: str = "",
+        download: bool = True,
+    ) -> dict:
+        settings = get_all_settings()
+        generator, resolved_platform, resolved_provider = media_generation_registry.resolve_video_generator(
+            settings,
+            platform,
+            provider,
+        )
+        if not generator:
+            suffix = f": {resolved_platform}/{resolved_provider}" if resolved_platform or resolved_provider else ""
+            return {"ok": False, "msg": f"未找到视频生成器{suffix}"}
+
+        request = VideoGenerationRequest(
+            prompt=prompt,
+            ref_images=ref_images or [],
+            orientation=orientation,
+            duration=int(duration or settings.get(SettingKeys.SORA2_DURATION, "10") or 10),
+            download_dir=self._resolve_download_dir() if download else None,
+        )
+        result = generator.generate(request, settings)
+        if not result.success:
+            return {"ok": False, "msg": result.error_message or "视频生成失败"}
+
+        response = {
+            "ok": True,
+            "video_url": result.video_url,
+            "platform": resolved_platform,
+            "provider": resolved_provider,
+        }
+        if result.file_path:
+            response["file_path"] = result.file_path
+        return response
+
     def get_status(self) -> dict:
         """检查激活状态"""
         logger.debug("[API] get_status 调用")
@@ -86,7 +176,7 @@ class Api:
         if not window:
             logger.warning("[API] select_folder -> 无法获取窗口实例")
             return {"ok": False, "msg": "无法获取窗口实例"}
-        result = window.create_file_dialog(webview.FOLDER_DIALOG)
+        result = window.create_file_dialog(self._folder_dialog_type(webview))
         if result and len(result) > 0:
             folder = result[0]
             logger.info(f"[API] select_folder -> 已选择: {folder}")
@@ -458,37 +548,20 @@ class Api:
         ref_images: list = None,
         aspect_ratio: str = "9:16",
         image_size: str = "1K",
-        platform: str = "nanobanana",
-        provider: str = "hetang",
+        platform: str = "",
+        provider: str = "",
     ) -> dict:
         """通过注册表调用指定图片生成器。"""
-        generator = media_generation_registry.get_image_generator(platform, provider)
-        if not generator:
-            return {"ok": False, "msg": f"未找到图片生成器: {platform}/{provider}"}
-
         try:
-            settings = get_all_settings()
-            request = ImageGenerationRequest(
+            return self._generate_image_via_registry(
                 prompt=prompt,
                 ref_images=ref_images or [],
                 aspect_ratio=aspect_ratio,
                 image_size=image_size,
-                download_dir=self._resolve_download_dir(),
+                platform=platform,
+                provider=provider,
+                download=True,
             )
-            result = generator.generate(request, settings)
-            if not result.success:
-                return {"ok": False, "msg": result.error_message or "图片生成失败"}
-
-            response = {
-                "ok": True,
-                "image_data": result.image_data,
-                "mime_type": result.mime_type,
-                "platform": platform,
-                "provider": provider,
-            }
-            if result.file_path:
-                response["file_path"] = result.file_path
-            return response
         except Exception as e:
             logger.error(f"[API] generate_media_image -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
@@ -499,36 +572,20 @@ class Api:
         ref_images: list = None,
         orientation: str = "portrait",
         duration: int = 10,
-        platform: str = "veo3",
-        provider: str = "hetang",
+        platform: str = "",
+        provider: str = "",
     ) -> dict:
         """通过注册表调用指定视频生成器。"""
-        generator = media_generation_registry.get_video_generator(platform, provider)
-        if not generator:
-            return {"ok": False, "msg": f"未找到视频生成器: {platform}/{provider}"}
-
         try:
-            settings = get_all_settings()
-            request = VideoGenerationRequest(
+            return self._generate_video_via_registry(
                 prompt=prompt,
                 ref_images=ref_images or [],
                 orientation=orientation,
-                duration=int(duration or settings.get(SettingKeys.SORA2_DURATION, "10") or 10),
-                download_dir=self._resolve_download_dir(),
+                duration=duration,
+                platform=platform,
+                provider=provider,
+                download=True,
             )
-            result = generator.generate(request, settings)
-            if not result.success:
-                return {"ok": False, "msg": result.error_message or "视频生成失败"}
-
-            response = {
-                "ok": True,
-                "video_url": result.video_url,
-                "platform": platform,
-                "provider": provider,
-            }
-            if result.file_path:
-                response["file_path"] = result.file_path
-            return response
         except Exception as e:
             logger.error(f"[API] generate_media_video -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
@@ -536,332 +593,71 @@ class Api:
     # ==================== VEO 视频生成 ====================
 
     def veo_text_to_video(self, prompt: str, orientation: str = "landscape") -> dict:
-        """VEO 文生视频 - 通过 SSE 流式调用荷塘接口生成视频"""
-        import json
-        import re
-        import requests
-
+        """VEO 文生视频兼容入口，内部走统一视频生成器。"""
         logger.info(f"[API] veo_text_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
-
-        settings = get_all_settings()
-        api_key = (settings.get(SettingKeys.HETANG_VEO_API_KEY) or "").strip()
-        base_url = (settings.get(SettingKeys.HETANG_VEO_BASE_URL) or "").strip().rstrip("/")
-        if not api_key or not base_url:
-            return {"ok": False, "msg": "未配置荷塘 VEO 的 Base URL 或 API Key，请前往设置页面配置"}
-
-        if orientation == "portrait":
-            model = "veo_3_1_t2v_fast_portrait"
-        else:
-            model = "veo_3_1_t2v_fast_landscape"
-
-        url = f"{base_url}/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": prompt}],
-            "stream": True,
-        }
-
         try:
-            resp = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
-            resp.raise_for_status()
-
-            video_url = ""
-            error_msg = ""
-
-            for line in resp.iter_lines(decode_unicode=True):
-                if not line or not line.startswith("data: "):
-                    continue
-                data_str = line[6:].strip()
-                if data_str == "[DONE]":
-                    break
-                try:
-                    data = json.loads(data_str)
-                    choices = data.get("choices", [])
-                    if not choices:
-                        continue
-                    delta = choices[0].get("delta", {})
-                    content = delta.get("content", "")
-                    if content:
-                        match = re.search(r"<video\s+src='([^']+)'", content)
-                        if match:
-                            video_url = match.group(1)
-                    reasoning = delta.get("reasoning_content", "")
-                    if reasoning and ("❌" in reasoning or "失败" in reasoning):
-                        error_msg = reasoning.strip()
-                except json.JSONDecodeError:
-                    continue
-
-            if video_url:
-                logger.info(f"[API] veo_text_to_video -> 成功, url={video_url[:80]}...")
-                return {"ok": True, "video_url": video_url}
-            elif error_msg:
-                logger.warning(f"[API] veo_text_to_video -> 失败: {error_msg}")
-                return {"ok": False, "msg": error_msg}
-            else:
-                logger.warning("[API] veo_text_to_video -> 未获取到视频链接")
-                return {"ok": False, "msg": "未获取到视频链接"}
-        except requests.Timeout:
-            logger.error("[API] veo_text_to_video -> 请求超时")
-            return {"ok": False, "msg": "请求超时（600秒）"}
+            return self._generate_video_via_registry(
+                prompt=prompt,
+                ref_images=[],
+                orientation=orientation,
+                duration=10,
+                platform="veo3",
+                provider="hetang",
+                download=False,
+            )
         except Exception as e:
             logger.error(f"[API] veo_text_to_video -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     def veo_image_to_video(self, prompt: str, image_base64: str, mime_type: str, orientation: str = "landscape") -> dict:
-        """VEO 图生视频 - 通过 SSE 流式调用荷塘接口，以图片为首帧生成视频"""
-        import json
-        import re
-        import requests
-
+        """VEO 图生视频兼容入口，内部走统一视频生成器。"""
         logger.info(f"[API] veo_image_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
-
-        settings = get_all_settings()
-        api_key = (settings.get(SettingKeys.HETANG_VEO_API_KEY) or "").strip()
-        base_url = (settings.get(SettingKeys.HETANG_VEO_BASE_URL) or "").strip().rstrip("/")
-        if not api_key or not base_url:
-            return {"ok": False, "msg": "未配置荷塘 VEO 的 Base URL 或 API Key，请前往设置页面配置"}
-
-        if orientation == "portrait":
-            model = "veo_3_1_i2v_s_fast_portrait_fl"
-        else:
-            model = "veo_3_1_i2v_s_fast_fl"
-
-        url = f"{base_url}/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        content = [
-            {"type": "text", "text": prompt},
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:{mime_type};base64,{image_base64}"
-                }
-            }
-        ]
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": content}],
-            "stream": True,
-        }
-
         try:
-            resp = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
-            resp.raise_for_status()
-
-            video_url = ""
-            error_msg = ""
-
-            for line in resp.iter_lines(decode_unicode=True):
-                if not line or not line.startswith("data: "):
-                    continue
-                data_str = line[6:].strip()
-                if data_str == "[DONE]":
-                    break
-                try:
-                    data = json.loads(data_str)
-                    choices = data.get("choices", [])
-                    if not choices:
-                        continue
-                    delta = choices[0].get("delta", {})
-                    delta_content = delta.get("content", "")
-                    if delta_content:
-                        match = re.search(r"<video\s+src='([^']+)'", delta_content)
-                        if match:
-                            video_url = match.group(1)
-                    reasoning = delta.get("reasoning_content", "")
-                    if reasoning and ("❌" in reasoning or "失败" in reasoning):
-                        error_msg = reasoning.strip()
-                except json.JSONDecodeError:
-                    continue
-
-            if video_url:
-                logger.info(f"[API] veo_image_to_video -> 成功, url={video_url[:80]}...")
-                return {"ok": True, "video_url": video_url}
-            elif error_msg:
-                logger.warning(f"[API] veo_image_to_video -> 失败: {error_msg}")
-                return {"ok": False, "msg": error_msg}
-            else:
-                logger.warning("[API] veo_image_to_video -> 未获取到视频链接")
-                return {"ok": False, "msg": "未获取到视频链接"}
-        except requests.Timeout:
-            logger.error("[API] veo_image_to_video -> 请求超时")
-            return {"ok": False, "msg": "请求超时（600秒）"}
+            return self._generate_video_via_registry(
+                prompt=prompt,
+                ref_images=[{"base64": image_base64, "mime": mime_type}],
+                orientation=orientation,
+                duration=10,
+                platform="veo3",
+                provider="hetang",
+                download=False,
+            )
         except Exception as e:
             logger.error(f"[API] veo_image_to_video -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     def hetang_veo_generate(self, prompt: str, ref_images: list = None, orientation: str = "landscape") -> dict:
-        """荷塘 VEO 视频生成（统一接口：文生视频 / 首尾帧生视频，自动下载）
-
-        Args:
-            prompt: 视频描述
-            ref_images: [{base64, mime}, ...]  空=文生视频，有图=首尾帧生视频
-            orientation: portrait / landscape
-        """
-        import json
-        import re
-        import requests
-        from datetime import datetime
-        from pathlib import Path
-
-        imgs = ref_images or []
-        mode = f"首尾帧({len(imgs)}张)" if imgs else "文生视频"
-
-        logger.info(f"[API] hetang_veo_generate 调用, orientation={orientation}, 模式={mode}")
-
-        settings = get_all_settings()
-        api_key = (settings.get(SettingKeys.HETANG_VEO_API_KEY) or "").strip()
-        base_url = (settings.get(SettingKeys.HETANG_VEO_BASE_URL) or "").strip().rstrip("/")
-        if not api_key or not base_url:
-            return {"ok": False, "msg": "未配置荷塘 VEO 的 Base URL 或 API Key，请前往设置页面配置"}
-
-        if imgs:
-            model = "veo_3_1_i2v_s_fast_portrait_fl" if orientation == "portrait" else "veo_3_1_i2v_s_fast_fl"
-            content = [{"type": "text", "text": prompt}]
-            for img in imgs:
-                b64 = img.get("base64", "")
-                mime = img.get("mime", "image/jpeg")
-                if b64:
-                    content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
-            messages = [{"role": "user", "content": content}]
-        else:
-            model = "veo_3_1_t2v_fast_portrait" if orientation == "portrait" else "veo_3_1_t2v_fast_landscape"
-            messages = [{"role": "user", "content": prompt}]
-
-        url = f"{base_url}/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {"model": model, "messages": messages, "stream": True}
-
+        """荷塘 VEO 兼容入口，内部走统一视频生成器。"""
+        logger.info(f"[API] hetang_veo_generate 调用, orientation={orientation}, 模式={'图生视频' if ref_images else '文生视频'}")
         try:
-            resp = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
-            resp.raise_for_status()
-
-            video_url = ""
-            error_msg = ""
-
-            for line in resp.iter_lines(decode_unicode=True):
-                if not line or not line.startswith("data: "):
-                    continue
-                data_str = line[6:].strip()
-                if data_str == "[DONE]":
-                    break
-                try:
-                    data = json.loads(data_str)
-                    choices = data.get("choices", [])
-                    if not choices:
-                        continue
-                    delta = choices[0].get("delta", {})
-                    c = delta.get("content", "")
-                    if c:
-                        match = re.search(r"<video\s+src='([^']+)'", c)
-                        if match:
-                            video_url = match.group(1)
-                    r = delta.get("reasoning_content", "")
-                    if r and ("❌" in r or "失败" in r):
-                        error_msg = r.strip()
-                except json.JSONDecodeError:
-                    continue
-
-            if not video_url:
-                return {"ok": False, "msg": error_msg or "未获取到视频链接"}
-
-            logger.info(f"[API] hetang_veo_generate -> 成功, url={video_url[:80]}...")
-
-            result = {"ok": True, "video_url": video_url}
-
-            dl_dir = get_default_download_dir()
-            dl_dir.mkdir(parents=True, exist_ok=True)
-            for dl_attempt in range(3):
-                try:
-                    dl_resp = requests.get(video_url, timeout=120, stream=True)
-                    dl_resp.raise_for_status()
-                    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                    filename = f"hetang_veo_{ts}.mp4"
-                    filepath = dl_dir / filename
-                    with open(str(filepath), "wb") as f:
-                        for chunk in dl_resp.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                    result["file_path"] = str(filepath)
-                    logger.info(f"[API] hetang_veo_generate -> 视频已保存: {filepath}")
-                    break
-                except Exception as e:
-                    logger.warning(f"[API] hetang_veo_generate -> 自动下载失败(第{dl_attempt+1}次): {e}")
-                    import time
-                    if dl_attempt < 2:
-                        time.sleep(2)
-
-            return result
-
-        except requests.Timeout:
-            return {"ok": False, "msg": "请求超时（600秒）"}
+            return self._generate_video_via_registry(
+                prompt=prompt,
+                ref_images=ref_images or [],
+                orientation=orientation,
+                duration=10,
+                platform="veo3",
+                provider="hetang",
+                download=True,
+            )
         except Exception as e:
             logger.error(f"[API] hetang_veo_generate -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
     def sora2_text_to_video(self, prompt: str, orientation: str = "landscape", duration: int = 10) -> dict:
-        """Sora2 文生视频"""
+        """Sora2 文生视频兼容入口，内部走统一视频生成器。"""
         logger.info(f"[API] sora2_text_to_video 调用, orientation={orientation}, duration={duration}, prompt={prompt[:50]}...")
-
-        settings = get_all_settings()
-        provider = settings.get(SettingKeys.SORA2_MODEL, "dayangyu")
-        logger.info(f"[API] sora2_text_to_video -> provider={provider}")
-
-        if provider == "dayangyu":
-            api_key = (settings.get(SettingKeys.DAYANGYU_API_KEY) or "").strip()
-            if not api_key:
-                logger.warning("[API] sora2_text_to_video -> 未配置大洋芋 API Key")
-                return {"ok": False, "msg": "未配置大洋芋 API Key"}
-            logger.info(f"[API] sora2_text_to_video -> 使用大洋芋API, key={api_key[:10]}...")
-            sora2 = Sora2Dayangyu(api_key)
-        elif provider == "bandianwa":
-            api_key = (settings.get(SettingKeys.BANDIANWA_API_KEY) or "").strip()
-            if not api_key:
-                logger.warning("[API] sora2_text_to_video -> 未配置斑点蛙 API Key")
-                return {"ok": False, "msg": "未配置斑点蛙 API Key"}
-            logger.info(f"[API] sora2_text_to_video -> 使用斑点蛙API, key={api_key[:10]}...")
-            sora2 = Sora2Bandianwa(api_key)
-        elif provider == "xiaobanshou":
-            api_key = (settings.get(SettingKeys.XIAOBANSHOU_API_KEY) or "").strip()
-            if not api_key:
-                logger.warning("[API] sora2_text_to_video -> 未配置小扳手 API Key")
-                return {"ok": False, "msg": "未配置小扳手 API Key"}
-            logger.info(f"[API] sora2_text_to_video -> 使用小扳手API, key={api_key[:10]}...")
-            sora2 = Sora2Xiaobanshou(api_key)
-        else:
-            logger.warning(f"[API] sora2_text_to_video -> 不支持的提供商: {provider}")
-            return {"ok": False, "msg": f"不支持的 Sora2 提供商: {provider}"}
-
         try:
-            logger.info("[API] sora2_text_to_video -> 开始创建任务...")
-            task = sora2.create_task(prompt, orientation, duration)
-            logger.info(f"[API] sora2_text_to_video -> 任务已创建, task_id={task.task_id}, status={task.status.value}")
-            if task.status.value == "failed":
-                logger.warning(f"[API] sora2_text_to_video -> 创建任务失败: {task.error_message}")
-                return {"ok": False, "msg": task.error_message or "创建任务失败"}
-
-            # 轮询任务状态，最长等待半小时
-            import time
-            max_wait = 1800
-            start = time.time()
-            while time.time() - start < max_wait:
-                task = sora2.query_task(task.task_id)
-                if task.status.value == "completed":
-                    logger.info(f"[API] sora2_text_to_video -> 成功, url={task.video_url[:80] if task.video_url else 'N/A'}...")
-                    return {"ok": True, "video_url": task.video_url}
-                elif task.status.value == "failed":
-                    return {"ok": False, "msg": task.error_message or "生成失败"}
-                time.sleep(3)
-
-            return {"ok": False, "msg": "生成超时"}
+            settings = get_all_settings()
+            provider = settings.get(SettingKeys.SORA2_MODEL, "dayangyu") or "dayangyu"
+            return self._generate_video_via_registry(
+                prompt=prompt,
+                ref_images=[],
+                orientation=orientation,
+                duration=duration,
+                platform="sora2",
+                provider=provider,
+                download=False,
+            )
         except Exception as e:
             logger.error(f"[API] sora2_text_to_video -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
@@ -1281,7 +1077,7 @@ class Api:
         if not window:
             return {"ok": False, "msg": "无法获取窗口实例"}
 
-        result = window.create_file_dialog(webview.FOLDER_DIALOG)
+        result = window.create_file_dialog(self._folder_dialog_type(webview))
         if not result or len(result) == 0:
             return {"ok": False, "msg": "未选择文件夹"}
 
@@ -1301,11 +1097,22 @@ class Api:
             except Exception as e:
                 errors.append(f"{src.name}: {e}")
 
+        if copied == 0:
+            detail = "；".join(errors[:3]) if errors else "没有可导出的本地文件"
+            logger.warning(f"[API] batch_export_files -> 导出失败 0/{len(file_paths)} 到 {dest_dir} | {detail}")
+            return {
+                "ok": False,
+                "msg": f"导出失败：0/{len(file_paths)} 成功。{detail}",
+                "copied": copied,
+                "total": len(file_paths),
+                "errors": errors,
+            }
+
         logger.info(f"[API] batch_export_files -> 导出 {copied}/{len(file_paths)} 到 {dest_dir}")
         msg = f"已导出 {copied} 个文件到 {dest_dir}"
         if errors:
             msg += f"，{len(errors)} 个失败"
-        return {"ok": True, "msg": msg, "copied": copied, "total": len(file_paths)}
+        return {"ok": True, "msg": msg, "copied": copied, "total": len(file_paths), "errors": errors}
 
     def get_download_status(self) -> dict:
         """获取默认下载文件夹（~/Downloads/Glin）的状态"""

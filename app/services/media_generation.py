@@ -1,11 +1,12 @@
-"""可插拔的图片/视频生成注册表。"""
+"""统一图片/视频生成入口。
+
+上游只关心生成请求参数；渠道选择、实例化与调用由注册表和各自生成器负责。
+"""
 
 from __future__ import annotations
 
 import base64
-import json
 import os
-import re
 import tempfile
 import time
 import uuid
@@ -17,7 +18,7 @@ from typing import Optional
 
 import requests
 
-from ..constants import ApiUrls, SettingKeys
+from ..constants import SettingKeys
 from ..logger import logger
 from .nanobanana import NanoBananaGlinCustom, NanoBananaXiaobanshou, NanoBananaYunwu
 from .sora2 import (
@@ -26,6 +27,7 @@ from .sora2 import (
     Sora2TaskStatus,
     Sora2Xiaobanshou,
 )
+from .veo import VeoHetang
 
 _IMAGE_EXT_MAP = {
     "image/png": ".png",
@@ -342,76 +344,34 @@ class HetangVeo3Generator(BaseVideoGenerator):
         if not api_key or not base_url:
             return VideoGenerationResult(success=False, error_message=self.get_missing_key_message())
 
-        ref_images = request.ref_images or []
-        if ref_images:
-            model = "veo_3_1_i2v_s_fast_portrait_fl" if request.orientation == "portrait" else "veo_3_1_i2v_s_fast_fl"
-            content = [{"type": "text", "text": request.prompt}]
-            for image in ref_images:
-                image_data = image.get("base64", "")
-                mime_type = image.get("mime", "image/jpeg")
-                if image_data:
-                    content.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:{mime_type};base64,{image_data}"},
-                        }
-                    )
-            messages = [{"role": "user", "content": content}]
-        else:
-            model = "veo_3_1_t2v_fast_portrait" if request.orientation == "portrait" else "veo_3_1_t2v_fast_landscape"
-            messages = [{"role": "user", "content": request.prompt}]
-
-        url = f"{base_url}/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {"model": model, "messages": messages, "stream": True}
+        image_path = _write_temp_image(request.ref_images)
 
         try:
-            response = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
-            response.raise_for_status()
+            service = VeoHetang(api_key, base_url)
+            result = service.generate(
+                prompt=request.prompt,
+                orientation=request.orientation,
+                duration=request.duration,
+                ref_image_path=image_path,
+                download_dir=str(request.download_dir) if request.download_dir else None,
+            )
+            if not result.success:
+                return VideoGenerationResult(success=False, error_message=result.error_message)
 
-            video_url = ""
-            error_message = ""
-            for line in response.iter_lines(decode_unicode=True):
-                if not line or not line.startswith("data: "):
-                    continue
-                raw = line[6:].strip()
-                if raw == "[DONE]":
-                    break
-                try:
-                    data = json.loads(raw)
-                except json.JSONDecodeError:
-                    continue
-
-                choices = data.get("choices", [])
-                if not choices:
-                    continue
-                delta = choices[0].get("delta", {})
-                content = delta.get("content", "")
-                if content:
-                    match = re.search(r"<video\s+src='([^']+)'", content)
-                    if match:
-                        video_url = match.group(1)
-
-                reasoning = delta.get("reasoning_content", "")
-                if reasoning and ("❌" in reasoning or "失败" in reasoning):
-                    error_message = reasoning.strip()
-
-            if not video_url:
-                return VideoGenerationResult(success=False, error_message=error_message or "未获取到视频链接")
-
-            file_path = None
-            if request.download_dir:
-                file_path = _download_remote_file(video_url, request.download_dir, "veo3_hetang")
-
-            return VideoGenerationResult(success=True, video_url=video_url, file_path=file_path)
-        except requests.Timeout:
-            return VideoGenerationResult(success=False, error_message="请求超时（600秒）")
+            return VideoGenerationResult(
+                success=True,
+                video_url=result.video_url,
+                file_path=result.file_path,
+            )
         except Exception as exc:
             logger.error(f"[{self.platform_label}/{self.provider_label}] 视频生成异常: {exc}")
             return VideoGenerationResult(success=False, error_message=str(exc))
+        finally:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
 
 
 class BaseSora2Generator(BaseVideoGenerator, ABC):
@@ -544,6 +504,96 @@ class MediaGenerationRegistry:
 
     def get_video_generator(self, platform: str, provider: str) -> Optional[BaseVideoGenerator]:
         return self._video_generators.get((platform, provider))
+
+    @staticmethod
+    def _clean(value: Optional[str]) -> str:
+        return (value or "").strip()
+
+    @staticmethod
+    def _pick_from_platform(generators: dict, settings: dict, platform: str, provider: str = ""):
+        matches = [generator for (item_platform, _), generator in generators.items() if item_platform == platform]
+        if not matches:
+            return None
+
+        provider = (provider or "").strip()
+        if provider:
+            exact = next((generator for generator in matches if generator.provider == provider), None)
+            if exact:
+                return exact
+
+        configured = next((generator for generator in matches if generator.is_configured(settings)), None)
+        return configured or matches[0]
+
+    @staticmethod
+    def _pick_first_configured(generators: dict, settings: dict):
+        return next((generator for generator in generators.values() if generator.is_configured(settings)), None)
+
+    def _resolve_generator(self, generators: dict, settings: dict, platform: str, provider: str, candidates: list[tuple[str, str]]):
+        platform = self._clean(platform)
+        provider = self._clean(provider)
+
+        if platform:
+            if not provider:
+                for candidate_platform, candidate_provider in candidates:
+                    candidate_platform = self._clean(candidate_platform)
+                    candidate_provider = self._clean(candidate_provider)
+                    if candidate_platform == platform and candidate_provider:
+                        provider = candidate_provider
+                        break
+            generator = self._pick_from_platform(generators, settings, platform, provider)
+            if generator:
+                return generator, generator.platform, generator.provider
+            return None, platform, provider
+
+        for candidate_platform, candidate_provider in candidates:
+            candidate_platform = self._clean(candidate_platform)
+            candidate_provider = self._clean(candidate_provider)
+            if not candidate_platform:
+                continue
+            generator = self._pick_from_platform(generators, settings, candidate_platform, candidate_provider)
+            if generator:
+                return generator, generator.platform, generator.provider
+
+        generator = self._pick_first_configured(generators, settings)
+        if generator:
+            return generator, generator.platform, generator.provider
+
+        generator = next(iter(generators.values()), None)
+        if generator:
+            return generator, generator.platform, generator.provider
+
+        return None, platform, provider
+
+    def resolve_image_generator(self, settings: dict, platform: str = "", provider: str = ""):
+        return self._resolve_generator(
+            self._image_generators,
+            settings,
+            platform,
+            provider,
+            candidates=[
+                ("nanobanana", settings.get(SettingKeys.NANOBANANA_MODEL, "")),
+                (
+                    settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PLATFORM, "nanobanana"),
+                    settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PROVIDER, ""),
+                ),
+            ],
+        )
+
+    def resolve_video_generator(self, settings: dict, platform: str = "", provider: str = ""):
+        return self._resolve_generator(
+            self._video_generators,
+            settings,
+            platform,
+            provider,
+            candidates=[
+                ("sora2", settings.get(SettingKeys.SORA2_MODEL, "")),
+                ("veo3", settings.get("veo_model", "")),
+                (
+                    settings.get(SettingKeys.VIDEO_PRODUCT_VIDEO_PLATFORM, ""),
+                    settings.get(SettingKeys.VIDEO_PRODUCT_VIDEO_PROVIDER, ""),
+                ),
+            ],
+        )
 
     def list_image_options(self, settings: dict) -> list[GeneratorOption]:
         return [generator.to_option(settings) for generator in self._image_generators.values()]

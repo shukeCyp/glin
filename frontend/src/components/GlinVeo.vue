@@ -183,10 +183,13 @@ const generateTask = async (task) => {
     try {
       const refImages = (task.images || []).map(img => ({ base64: img.base64, mime: img.mime }))
       const res = await withTimeout(
-        window.pywebview.api.hetang_veo_generate(
+        window.pywebview.api.generate_media_video(
           task.prompt,
-          refImages.length ? refImages : null,
+          refImages,
           task.orientation,
+          10,
+          'veo3',
+          'hetang',
         ),
         660000,
       )
