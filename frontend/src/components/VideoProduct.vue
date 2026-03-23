@@ -3,6 +3,14 @@ import { ref, reactive, computed, onMounted } from 'vue'
 
 const emit = defineEmits(['toast'])
 
+const imageGeneratorOptions = ref([])
+const videoGeneratorOptions = ref([])
+
+const selectedImagePlatform = ref('nanobanana')
+const selectedImageProvider = ref('yunwu')
+const selectedVideoPlatform = ref('sora2')
+const selectedVideoProvider = ref('dayangyu')
+
 // ==================== 默认提示词 ====================
 const defaultImagePrompt = ref('')
 const defaultVideoPrompt = ref('')
@@ -10,6 +18,55 @@ const defaultVideoPrompt = ref('')
 const showPromptDialog = ref(false)
 const promptDialogType = ref('image')
 const promptDialogText = ref('')
+
+const buildPlatformOptions = (options) => {
+  const seen = new Set()
+  return options.filter((item) => {
+    if (seen.has(item.platform)) return false
+    seen.add(item.platform)
+    return true
+  }).map(item => ({ value: item.platform, label: item.platform_label }))
+}
+
+const getProviderOptions = (options, platform) =>
+  options.filter(item => item.platform === platform)
+
+const normalizeGeneratorSelection = (options, platform, provider) => {
+  const providerOptions = getProviderOptions(options, platform)
+  if (!providerOptions.length) {
+    return { platform, provider }
+  }
+  const matched = providerOptions.find(item => item.provider === provider)
+  if (matched) {
+    return { platform: matched.platform, provider: matched.provider }
+  }
+  const fallback = providerOptions.find(item => item.configured) || providerOptions[0]
+  return { platform: fallback.platform, provider: fallback.provider }
+}
+
+const imagePlatformOptions = computed(() => buildPlatformOptions(imageGeneratorOptions.value))
+const videoPlatformOptions = computed(() => buildPlatformOptions(videoGeneratorOptions.value))
+const updateSelectedImagePlatform = () => {
+  const normalized = normalizeGeneratorSelection(
+    imageGeneratorOptions.value,
+    selectedImagePlatform.value,
+    selectedImageProvider.value,
+  )
+  selectedImagePlatform.value = normalized.platform
+  selectedImageProvider.value = normalized.provider
+  persistGeneratorDefaults()
+}
+
+const updateSelectedVideoPlatform = () => {
+  const normalized = normalizeGeneratorSelection(
+    videoGeneratorOptions.value,
+    selectedVideoPlatform.value,
+    selectedVideoProvider.value,
+  )
+  selectedVideoPlatform.value = normalized.platform
+  selectedVideoProvider.value = normalized.provider
+  persistGeneratorDefaults()
+}
 
 const openPromptDialog = (type) => {
   promptDialogType.value = type
@@ -22,10 +79,10 @@ const savePromptDialog = async () => {
   if (!text) { emit('toast', '提示词不能为空', 'error'); return }
   try {
     if (promptDialogType.value === 'image') {
-      await window.pywebview.api.set_qihao_image_prompt(text)
+      await window.pywebview.api.set_image_process_prompt(text)
       defaultImagePrompt.value = text
     } else {
-      await window.pywebview.api.set_qihao_video_prompt(text)
+      await window.pywebview.api.set_video_process_prompt(text)
       defaultVideoPrompt.value = text
     }
     emit('toast', '提示词已保存', 'success')
@@ -35,16 +92,41 @@ const savePromptDialog = async () => {
 
 onMounted(async () => {
   try {
-    const [imgRes, vidRes, settings] = await Promise.all([
-      window.pywebview.api.get_qihao_image_prompt(),
-      window.pywebview.api.get_qihao_video_prompt(),
+    const [imgRes, vidRes, settings, generatorRes] = await Promise.all([
+      window.pywebview.api.get_image_process_prompt(),
+      window.pywebview.api.get_video_process_prompt(),
       window.pywebview.api.get_all_settings(),
+      window.pywebview.api.get_media_generator_options(),
     ])
     if (imgRes.ok) defaultImagePrompt.value = imgRes.prompt
     if (vidRes.ok) defaultVideoPrompt.value = vidRes.prompt
     if (settings.glin_nanobanana_ratio) dialogImageRatio.value = settings.glin_nanobanana_ratio
     if (settings.glin_nanobanana_quality) dialogImageQuality.value = settings.glin_nanobanana_quality
     if (settings.hetang_veo_orientation) dialogVideoOrientation.value = settings.hetang_veo_orientation
+    if (generatorRes.ok) {
+      imageGeneratorOptions.value = generatorRes.image_options || []
+      videoGeneratorOptions.value = generatorRes.video_options || []
+
+      const imagePlatformFromSettings = settings.video_product_image_platform || (settings.nanobanana_model ? 'nanobanana' : null)
+      const imageProviderFromSettings = settings.video_product_image_provider || settings.nanobanana_model || 'yunwu'
+      const imageDefaults = normalizeGeneratorSelection(
+        imageGeneratorOptions.value,
+        imagePlatformFromSettings || 'nanobanana',
+        imageProviderFromSettings,
+      )
+      selectedImagePlatform.value = imageDefaults.platform
+      selectedImageProvider.value = imageDefaults.provider
+
+      const videoPlatformFromSettings = settings.video_product_video_platform || (settings.sora2_model ? 'sora2' : null)
+      const videoProviderFromSettings = settings.video_product_video_provider || settings.sora2_model || 'dayangyu'
+      const videoDefaults = normalizeGeneratorSelection(
+        videoGeneratorOptions.value,
+        videoPlatformFromSettings || 'sora2',
+        videoProviderFromSettings,
+      )
+      selectedVideoPlatform.value = videoDefaults.platform
+      selectedVideoProvider.value = videoDefaults.provider
+    }
   } catch { /* ignore */ }
 })
 
@@ -62,13 +144,11 @@ const dialogImageRatio = ref('9:16')
 const dialogImageQuality = ref('1K')
 const dialogVideoOrientation = ref('portrait')
 const dialogAutoVideo = ref(true)
-const dialogCount = ref(1)
 const dialogIsDragging = ref(false)
 const dialogFileInput = ref(null)
 
 const openAddDialog = () => {
   dialogImages.value = []
-  dialogCount.value = 1
   dialogImagePrompt.value = defaultImagePrompt.value
   dialogVideoPrompt.value = defaultVideoPrompt.value
   showDialog.value = true
@@ -158,6 +238,15 @@ const batchImageQuality = ref('1K')
 const batchVideoOrientation = ref('portrait')
 const batchAutoVideo = ref(true)
 
+const persistGeneratorDefaults = () => {
+  window.pywebview.api.save_settings({
+    video_product_image_platform: selectedImagePlatform.value,
+    video_product_image_provider: selectedImageProvider.value,
+    video_product_video_platform: selectedVideoPlatform.value,
+    video_product_video_provider: selectedVideoProvider.value,
+  }).catch(() => {})
+}
+
 const openBatchDialog = (imgs) => {
   batchImages.value = imgs
   batchImagePrompt.value = defaultImagePrompt.value
@@ -182,6 +271,10 @@ const submitBatchDialog = () => {
     glin_nanobanana_ratio: batchImageRatio.value,
     glin_nanobanana_quality: batchImageQuality.value,
     hetang_veo_orientation: batchVideoOrientation.value,
+    video_product_image_platform: selectedImagePlatform.value,
+    video_product_image_provider: selectedImageProvider.value,
+    video_product_video_platform: selectedVideoPlatform.value,
+    video_product_video_provider: selectedVideoProvider.value,
   }).catch(() => {})
   window.pywebview.api.set_image_process_prompt(defaultImagePrompt.value).catch(() => {})
   window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
@@ -190,14 +283,19 @@ const submitBatchDialog = () => {
     id: ++taskIdCounter,
     images: [{ ...img }],
     imagePrompt: defaultImagePrompt.value,
+    imagePlatform: selectedImagePlatform.value,
+    imageProvider: selectedImageProvider.value,
     imageRatio: batchImageRatio.value,
     imageQuality: batchImageQuality.value,
     videoPrompt: defaultVideoPrompt.value,
+    videoPlatform: selectedVideoPlatform.value,
+    videoProvider: selectedVideoProvider.value,
     videoOrientation: batchVideoOrientation.value,
     autoVideo: batchAutoVideo.value,
     resultImageSrc: '',
     resultImageBase64: '',
     resultImageMime: '',
+    resultImagePath: '',
     videoUrl: '',
     filePath: '',
     status: 'pending',
@@ -209,6 +307,7 @@ const submitBatchDialog = () => {
   batchImages.value = []
 
   emit('toast', `已添加 ${tasks.length} 条任务，开始生成...`, 'success')
+  persistGeneratorDefaults()
   startBatchGeneration(tasks)
 }
 
@@ -247,6 +346,7 @@ const stats = computed(() => {
 
 // ==================== 提交任务 ====================
 const submitDialog = () => {
+  if (!dialogImages.value.length) { emit('toast', '请先选择图片', 'error'); return }
   if (!dialogImagePrompt.value.trim()) { emit('toast', '请输入图片提示词', 'error'); return }
   if (!dialogVideoPrompt.value.trim()) { emit('toast', '请输入视频提示词', 'error'); return }
 
@@ -257,40 +357,42 @@ const submitDialog = () => {
     glin_nanobanana_ratio: dialogImageRatio.value,
     glin_nanobanana_quality: dialogImageQuality.value,
     hetang_veo_orientation: dialogVideoOrientation.value,
+    video_product_image_platform: selectedImagePlatform.value,
+    video_product_image_provider: selectedImageProvider.value,
+    video_product_video_platform: selectedVideoPlatform.value,
+    video_product_video_provider: selectedVideoProvider.value,
   }).catch(() => {})
-  window.pywebview.api.set_qihao_image_prompt(defaultImagePrompt.value).catch(() => {})
-  window.pywebview.api.set_qihao_video_prompt(defaultVideoPrompt.value).catch(() => {})
+  window.pywebview.api.set_image_process_prompt(defaultImagePrompt.value).catch(() => {})
+  window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
 
-  const hasImages = dialogImages.value.length > 0
-  const count = hasImages ? 1 : Math.max(1, Math.min(1000, dialogCount.value || 1))
   const images = dialogImages.value.map(img => ({ ...img }))
-
-  const newTasks = []
-  for (let i = 0; i < count; i++) {
-    const task = reactive({
-      id: ++taskIdCounter,
-      images: hasImages ? images : [],
-      imagePrompt: defaultImagePrompt.value,
-      imageRatio: dialogImageRatio.value,
-      imageQuality: dialogImageQuality.value,
-      videoPrompt: defaultVideoPrompt.value,
-      videoOrientation: dialogVideoOrientation.value,
-      autoVideo: dialogAutoVideo.value,
-      resultImageSrc: '',
-      resultImageBase64: '',
-      resultImageMime: '',
-      videoUrl: '',
-      filePath: '',
-      status: 'pending',
-      statusText: '待处理',
-    })
-    newTasks.push(task)
-  }
-  taskList.value.unshift(...newTasks)
+  const task = reactive({
+    id: ++taskIdCounter,
+    images,
+    imagePrompt: defaultImagePrompt.value,
+    imagePlatform: selectedImagePlatform.value,
+    imageProvider: selectedImageProvider.value,
+    imageRatio: dialogImageRatio.value,
+    imageQuality: dialogImageQuality.value,
+    videoPrompt: defaultVideoPrompt.value,
+    videoPlatform: selectedVideoPlatform.value,
+    videoProvider: selectedVideoProvider.value,
+    videoOrientation: dialogVideoOrientation.value,
+    autoVideo: dialogAutoVideo.value,
+    resultImageSrc: '',
+    resultImageBase64: '',
+    resultImageMime: '',
+    resultImagePath: '',
+    videoUrl: '',
+    filePath: '',
+    status: 'pending',
+    statusText: '待处理',
+  })
+  taskList.value.unshift(task)
   showDialog.value = false
 
-  if (count > 1) emit('toast', `已添加 ${count} 条任务，开始生成...`, 'success')
-  startBatchGeneration(newTasks)
+  persistGeneratorDefaults()
+  generateImage(task)
 }
 
 // ==================== 图片生成 → 自动生成视频 ====================
@@ -300,6 +402,7 @@ const generateImage = async (task) => {
   task.resultImageSrc = ''
   task.resultImageBase64 = ''
   task.resultImageMime = ''
+  task.resultImagePath = ''
 
   let maxRetry = 0
   try {
@@ -316,16 +419,19 @@ const generateImage = async (task) => {
     if (attempts > 0) task.statusText = `图片重试中 (${attempts}/${maxRetry})...`
     try {
       const refImages = (task.images || []).map(img => ({ base64: img.base64, mime: img.mime }))
-      const res = await window.pywebview.api.debug_nanobanana(
+      const res = await window.pywebview.api.generate_media_image(
         task.imagePrompt,
         refImages,
         task.imageRatio,
         task.imageQuality,
+        task.imagePlatform,
+        task.imageProvider,
       )
       if (res.ok && res.image_data && res.mime_type) {
         task.resultImageSrc = `data:${res.mime_type};base64,${res.image_data}`
         task.resultImageBase64 = res.image_data
         task.resultImageMime = res.mime_type
+        task.resultImagePath = res.file_path || ''
         task.status = 'image_done'
         if (task.autoVideo) {
           task.statusText = '图片完成，开始生成视频...'
@@ -370,10 +476,12 @@ const generateVideo = async (task) => {
     if (attempts > 0) task.statusText = `视频重试中 (${attempts}/${maxRetry})...`
     try {
       const refImages = [{ base64: task.resultImageBase64, mime: task.resultImageMime }]
-      const res = await window.pywebview.api.hetang_veo_generate(
+      const res = await window.pywebview.api.generate_media_video(
         task.videoPrompt,
         refImages,
         task.videoOrientation,
+        task.videoPlatform,
+        task.videoProvider,
       )
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url
@@ -437,8 +545,11 @@ const downloadImage = async (task) => {
   if (!task.resultImageBase64) { emit('toast', '暂无生成图片', 'error'); return }
   try {
     emit('toast', '开始下载图片...', 'success')
-    const res = await window.pywebview.api.download_image(task.resultImageBase64, task.resultImageMime, 'veo_qihao')
-    if (res.ok) emit('toast', '图片已保存', 'success')
+    const res = await window.pywebview.api.download_image(task.resultImageBase64, task.resultImageMime, 'video_product')
+    if (res.ok) {
+      task.resultImagePath = res.path || task.resultImagePath
+      emit('toast', '图片已保存', 'success')
+    }
     else emit('toast', res.msg || '下载失败', 'error')
   } catch { emit('toast', '下载异常', 'error') }
 }
@@ -448,7 +559,10 @@ const downloadVideo = async (task, silent = false) => {
   try {
     if (!silent) emit('toast', '开始下载视频...', 'success')
     const res = await window.pywebview.api.download_veo_video(task.videoUrl)
-    if (res.ok) { if (!silent) emit('toast', '视频已保存', 'success') }
+    if (res.ok) {
+      task.filePath = res.path || task.filePath
+      if (!silent) emit('toast', '视频已保存', 'success')
+    }
     else { if (!silent) emit('toast', res.msg || '下载失败', 'error') }
   } catch { if (!silent) emit('toast', '下载异常', 'error') }
 }
@@ -511,8 +625,12 @@ const showEditDialog = ref(false)
 const editingTask = ref(null)
 const editImagePrompt = ref('')
 const editVideoPrompt = ref('')
+const editImagePlatform = ref('nanobanana')
+const editImageProvider = ref('hetang')
 const editImageRatio = ref('9:16')
 const editImageQuality = ref('1K')
+const editVideoPlatform = ref('veo3')
+const editVideoProvider = ref('hetang')
 const editVideoOrientation = ref('portrait')
 
 const openEditDialog = (task) => {
@@ -520,8 +638,12 @@ const openEditDialog = (task) => {
   editingTask.value = task
   editImagePrompt.value = task.imagePrompt
   editVideoPrompt.value = task.videoPrompt
+  editImagePlatform.value = task.imagePlatform || selectedImagePlatform.value
+  editImageProvider.value = task.imageProvider || selectedImageProvider.value
   editImageRatio.value = task.imageRatio
   editImageQuality.value = task.imageQuality
+  editVideoPlatform.value = task.videoPlatform || selectedVideoPlatform.value
+  editVideoProvider.value = task.videoProvider || selectedVideoProvider.value
   editVideoOrientation.value = task.videoOrientation
   showEditDialog.value = true
 }
@@ -533,8 +655,22 @@ const saveEditDialog = () => {
   if (!task) return
   task.imagePrompt = editImagePrompt.value.trim()
   task.videoPrompt = editVideoPrompt.value.trim()
+  const normalizedImage = normalizeGeneratorSelection(
+    imageGeneratorOptions.value,
+    editImagePlatform.value,
+    editImageProvider.value,
+  )
+  const normalizedVideo = normalizeGeneratorSelection(
+    videoGeneratorOptions.value,
+    editVideoPlatform.value,
+    editVideoProvider.value,
+  )
+  task.imagePlatform = normalizedImage.platform
+  task.imageProvider = normalizedImage.provider
   task.imageRatio = editImageRatio.value
   task.imageQuality = editImageQuality.value
+  task.videoPlatform = normalizedVideo.platform
+  task.videoProvider = normalizedVideo.provider
   task.videoOrientation = editVideoOrientation.value
   showEditDialog.value = false
   editingTask.value = null
@@ -555,7 +691,7 @@ const statusClass = (status) => {
   <div class="page">
     <!-- 顶栏 -->
     <div class="page-toolbar">
-      <h2 class="page-title">VEO 起号</h2>
+      <h2 class="page-title">视频带货</h2>
       <div class="toolbar-actions">
         <button class="tool-btn refresh-btn" @click="() => window.location.reload()">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -623,7 +759,7 @@ const statusClass = (status) => {
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <p class="drag-text">松开鼠标批量添加参考图</p>
+        <p class="drag-text">松开鼠标批量添加商品图</p>
         <p class="drag-hint">每张图片将创建一条独立任务</p>
       </div>
 
@@ -634,8 +770,8 @@ const statusClass = (status) => {
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
-        <p class="empty-text">暂无起号任务</p>
-        <p class="empty-hint">点击"添加任务"或拖拽参考图到此处</p>
+        <p class="empty-text">暂无带货任务</p>
+        <p class="empty-hint">点击"添加任务"或拖拽商品图到此处</p>
       </div>
 
       <!-- 列表 -->
@@ -764,7 +900,7 @@ const statusClass = (status) => {
       <div v-if="showBatchDialog" class="dialog-overlay" @click.self="closeBatchDialog">
         <div class="dialog dialog--image">
           <div class="dialog-header">
-            <h3 class="dialog-title">批量添加起号任务（{{ batchImages.length }} 张图 = {{ batchImages.length }} 条任务）</h3>
+            <h3 class="dialog-title">批量添加带货任务（{{ batchImages.length }} 张图 = {{ batchImages.length }} 条任务）</h3>
             <button class="dialog-close" @click="closeBatchDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -858,16 +994,16 @@ const statusClass = (status) => {
       <div v-if="showDialog" class="dialog-overlay" @click.self="closeDialog">
         <div class="dialog dialog--image">
           <div class="dialog-header">
-            <h3 class="dialog-title">添加起号任务</h3>
+            <h3 class="dialog-title">添加带货任务</h3>
             <button class="dialog-close" @click="closeDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="dialog-body dialog-body--split">
-            <!-- 左侧：图片上传（可选） -->
+            <!-- 左侧：图片上传（多图） -->
             <div class="dialog-left">
               <div class="field">
-                <span class="field-label">参考图片（可选，不上传则文生图）</span>
+                <span class="field-label">商品图片（必填，支持多图拖拽）</span>
                 <div class="ref-images-grid" v-if="dialogImages.length">
                   <div v-for="(img, idx) in dialogImages" :key="idx" class="ref-image-preview">
                     <img :src="img.preview" alt="商品图片" />
@@ -890,7 +1026,7 @@ const statusClass = (status) => {
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                   </svg>
                   <span class="upload-text">{{ dialogImages.length ? '继续添加图片' : '点击或拖拽图片到此处' }}</span>
-                  <span class="upload-hint">支持 JPG / PNG / WebP，最大 10MB（不上传则文生图）</span>
+                  <span class="upload-hint">支持 JPG / PNG / WebP，最大 10MB</span>
                 </div>
               </div>
             </div>
@@ -942,8 +1078,8 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
-              <div class="form-row" style="margin-top: 16px; align-items: center;">
-                <label class="switch-field" style="flex: 1;">
+              <div class="form-row" style="margin-top: 16px;">
+                <label class="switch-field">
                   <span class="switch-label">自动生成视频</span>
                   <button
                     :class="['switch-track', { active: dialogAutoVideo }]"
@@ -951,20 +1087,14 @@ const statusClass = (status) => {
                   >
                     <span class="switch-thumb" />
                   </button>
-                  <span class="switch-hint">{{ dialogAutoVideo ? '自动生成' : '手动确认' }}</span>
+                  <span class="switch-hint">{{ dialogAutoVideo ? '图片完成后自动生成视频' : '图片完成后暂停，手动确认再生成' }}</span>
                 </label>
-                <div v-if="!dialogImages.length" class="field field-inline" style="flex: 0 0 auto;">
-                  <span class="field-label">数量</span>
-                  <input v-model.number="dialogCount" type="number" min="1" max="1000" class="count-input" />
-                </div>
               </div>
             </div>
           </div>
           <div class="dialog-footer">
             <button class="cancel-btn" @click="closeDialog">取消</button>
-            <button class="primary-btn save-btn" @click="submitDialog">
-              {{ dialogImages.length ? '添加并开始生成' : `添加 ${Math.max(1, dialogCount || 1)} 条任务并开始生成` }}
-            </button>
+            <button class="primary-btn save-btn" @click="submitDialog">添加并开始生成</button>
           </div>
         </div>
       </div>
@@ -988,6 +1118,56 @@ const statusClass = (status) => {
             <div class="field" style="margin-top: 12px;">
               <span class="field-label">视频提示词</span>
               <textarea v-model="editVideoPrompt" placeholder="描述视频生成效果" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">图片渠道</span>
+                <div class="generator-select-row">
+                  <div class="generator-select-box">
+                    <select v-model="editImagePlatform" class="generator-select" @change="editImageProvider = normalizeGeneratorSelection(imageGeneratorOptions, editImagePlatform, editImageProvider).provider">
+                      <option v-for="item in imagePlatformOptions" :key="`edit-image-${item.value}`" :value="item.value">{{ item.label }}</option>
+                    </select>
+                    <span class="generator-chevron"></span>
+                  </div>
+                  <div class="generator-select-box">
+                    <select v-model="editImageProvider" class="generator-select">
+                      <option
+                        v-for="item in getProviderOptions(imageGeneratorOptions, editImagePlatform)"
+                        :key="`edit-image-provider-${item.platform}-${item.provider}`"
+                        :value="item.provider"
+                      >
+                        {{ item.provider_label }}{{ item.configured ? '' : '（未配置）' }}
+                      </option>
+                    </select>
+                    <span class="generator-chevron"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">视频渠道</span>
+                <div class="generator-select-row">
+                  <div class="generator-select-box">
+                    <select v-model="editVideoPlatform" class="generator-select" @change="editVideoProvider = normalizeGeneratorSelection(videoGeneratorOptions, editVideoPlatform, editVideoProvider).provider">
+                      <option v-for="item in videoPlatformOptions" :key="`edit-video-${item.value}`" :value="item.value">{{ item.label }}</option>
+                    </select>
+                    <span class="generator-chevron"></span>
+                  </div>
+                  <div class="generator-select-box">
+                    <select v-model="editVideoProvider" class="generator-select">
+                      <option
+                        v-for="item in getProviderOptions(videoGeneratorOptions, editVideoPlatform)"
+                        :key="`edit-video-provider-${item.platform}-${item.provider}`"
+                        :value="item.provider"
+                      >
+                        {{ item.provider_label }}{{ item.configured ? '' : '（未配置）' }}
+                      </option>
+                    </select>
+                    <span class="generator-chevron"></span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-row">
               <div class="field field-inline">
@@ -1084,7 +1264,36 @@ const statusClass = (status) => {
 /* ============ 顶栏 ============ */
 .page-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .page-title { margin: 0; font-size: 18px; font-weight: 600; color: var(--text-primary); }
-.toolbar-actions { display: flex; gap: 10px; align-items: center; }
+.toolbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.generator-select-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.generator-select-box { position: relative; flex: 1; min-width: 0; }
+.generator-select {
+  width: 100%;
+  min-width: 116px;
+  padding: 10px 36px 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-medium);
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--border-subtle) 100%);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.generator-select:hover { border-color: var(--border-strong); background: var(--bg-surface); }
+.generator-select:focus { border-color: rgba(200,96,122,0.45); box-shadow: 0 0 0 3px var(--accent-bg-strong); background: var(--bg-surface); }
+.generator-chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-hint);
+  border-bottom: 2px solid var(--text-hint);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
 .stats-text { font-size: 13px; color: var(--text-dim); margin-right: 8px; }
 .stats-processing { color: var(--accent); }
 .stats-completed { color: var(--success); }
@@ -1194,6 +1403,7 @@ const statusClass = (status) => {
 .dialog-body textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
 .dialog-body textarea::placeholder { color: var(--text-placeholder); }
 .dialog-body textarea:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
+.dialog-body .generator-select-box { flex: 1; }
 
 /* 表单行 */
 .form-row { display: flex; gap: 24px; margin-top: 12px; align-items: flex-start; }
@@ -1201,9 +1411,6 @@ const statusClass = (status) => {
 
 /* 切换按钮组 */
 .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; }
-.count-input { width: 90px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; -moz-appearance: textfield; }
-.count-input::-webkit-outer-spin-button, .count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.count-input:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
 .toggle-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--border-light); color: var(--text-tertiary); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
 .toggle-btn:hover { background: var(--accent-bg); border-color: rgba(200,96,122,0.2); color: var(--text-secondary); }
 .toggle-btn.active { background: var(--accent-bg-strong); border-color: rgba(200,96,122,0.4); color: var(--accent); }

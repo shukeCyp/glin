@@ -9,10 +9,6 @@ from ...constants import ApiUrls
 from ...logger import logger
 from .base import Sora2Base, Sora2Task, Sora2TaskStatus
 
-# 默认模型（竖屏 15 秒）
-DEFAULT_MODEL = "sora2-portrait-15s"
-
-
 def _map_status(api_status: str) -> Sora2TaskStatus:
     """将接口 status 映射为 Sora2TaskStatus"""
     s = (api_status or "").lower()
@@ -30,6 +26,14 @@ def _map_status(api_status: str) -> Sora2TaskStatus:
 class Sora2Dayangyu(Sora2Base):
     """大洋芋 API Sora2 生成（文生视频 + 图生视频，异步）"""
 
+    # 大洋芋支持的模型，按 (orientation, duration) 索引
+    SUPPORTED_MODELS = {
+        ("portrait", 10):  "sora2-portrait",
+        ("portrait", 15):  "sora2-portrait-15s",
+        ("landscape", 10): "sora2-landscape",
+        ("landscape", 15): "sora2-landscape-15s",
+    }
+
     @property
     def provider_name(self) -> str:
         return "大洋芋 API"
@@ -41,23 +45,22 @@ class Sora2Dayangyu(Sora2Base):
     def create_task(
         self,
         prompt: str,
-        duration: int = 5,
-        resolution: str = "1080p",
+        orientation: str = "portrait",
+        duration: int = 10,
         **kwargs
     ) -> Sora2Task:
         """
         创建生成任务（文生视频或图生视频）。
 
-        - 文生视频：仅传 prompt + model（kwargs 中）。
-        - 图生视频：在 kwargs 中传 image_path（本地图片路径），同时传 prompt、model。
+        模型由基类 resolve_model(orientation, duration) 自动选取。
 
         Args:
             prompt: 视频描述 / 图生时的风格描述
-            duration: 未使用（大洋芋用 model 决定时长）
-            resolution: 未使用（大洋芋用 model/size）
-            **kwargs: model（必填，如 sora2-portrait-15s）, image_path（图生时必填）, size, seconds
+            orientation: 方向，"portrait"（竖屏）或 "landscape"（横屏）
+            duration: 时长（秒），支持 10 / 15
+            **kwargs: image_path（图生时必填）, size, seconds
         """
-        model = kwargs.get("model") or DEFAULT_MODEL
+        model = self.resolve_model(orientation, duration)
         image_path: Optional[str] = kwargs.get("image_path")
 
         headers = {
@@ -262,7 +265,10 @@ def _read_error_message(e: requests.exceptions.HTTPError) -> str:
     try:
         body = e.response.json()
         if isinstance(body, dict):
-            return body.get("message") or body.get("error") or body.get("msg") or e.response.text[:500]
+            error = body.get("error")
+            if isinstance(error, dict):
+                return error.get("message") or error.get("detail") or str(error)
+            return body.get("message") or error or body.get("msg") or e.response.text[:500]
         return e.response.text[:500]
     except Exception:
         return (e.response.text or str(e))[:500]

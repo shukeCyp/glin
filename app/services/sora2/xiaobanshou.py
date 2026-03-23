@@ -1,16 +1,13 @@
 """小扳手 API Sora2 生成（文生视频 / 图生视频 异步）"""
 
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 import requests
 
 from ...constants import ApiUrls
 from ...logger import logger
 from .base import Sora2Base, Sora2Task, Sora2TaskStatus
-
-# 默认模型（竖屏 10 秒）
-DEFAULT_MODEL = "sora-2-portrait-10s"
 
 
 def _map_status(api_status: str) -> Sora2TaskStatus:
@@ -28,10 +25,15 @@ def _map_status(api_status: str) -> Sora2TaskStatus:
 
 
 class Sora2Xiaobanshou(Sora2Base):
-    """小扳手 API Sora2 生成（文生视频 + 图生视频，异步）
+    """小扳手 API Sora2 生成（文生视频 + 图生视频，异步）"""
 
-    注意：小扳手的文生视频和图生视频都使用 multipart/form-data 提交。
-    """
+    # 小扳手目前支持的全部模型，按 (orientation, duration) 索引
+    SUPPORTED_MODELS = {
+        ("portrait", 10):  "sora-2-portrait-10s",
+        ("portrait", 15):  "sora-2-portrait-15s",
+        ("landscape", 10): "sora-2-landscape-10s",
+        ("landscape", 15): "sora-2-landscape-15s",
+    }
 
     @property
     def provider_name(self) -> str:
@@ -44,23 +46,23 @@ class Sora2Xiaobanshou(Sora2Base):
     def create_task(
         self,
         prompt: str,
-        duration: int = 5,
-        resolution: str = "1080p",
+        orientation: str = "portrait",
+        duration: int = 10,
         **kwargs
     ) -> Sora2Task:
         """
         创建生成任务（文生视频或图生视频）。
 
-        - 文生视频：multipart/form-data 传 prompt + model。
-        - 图生视频：multipart/form-data 传 input_reference + prompt + model。
+        模型由基类 resolve_model(orientation, duration) 自动选取，
+        调用方只需传方向和时长即可，无需手动指定 model 名。
 
         Args:
-            prompt: 视频描述 / 提示词，支持 @角色username
-            duration: 未使用（小扳手用 model 决定时长）
-            resolution: 未使用
-            **kwargs: model, image_path（图生时传入本地图片路径）
+            prompt: 视频描述 / 提示词
+            orientation: 方向，"portrait"（竖屏）或 "landscape"（横屏）
+            duration: 时长（秒），支持 10 / 15
+            **kwargs: image_path（图生时传入本地图片路径）
         """
-        model = kwargs.get("model") or DEFAULT_MODEL
+        model = self.resolve_model(orientation, duration)
         image_path: Optional[str] = kwargs.get("image_path")
 
         headers = {
@@ -73,13 +75,15 @@ class Sora2Xiaobanshou(Sora2Base):
         return self._create_task_text(url, headers, prompt, model)
 
     def _create_task_text(self, url: str, headers: dict, prompt: str, model: str) -> Sora2Task:
-        """文生视频：POST multipart/form-data（prompt + model）"""
-        data = {"prompt": prompt, "model": model}
+        """文生视频：POST application/json（prompt + model）"""
+        req_headers = dict(headers)
+        req_headers["Content-Type"] = "application/json"
+        payload = {"prompt": prompt, "model": model}
         try:
             logger.info(f"[{self.provider_name}] 文生视频 | POST {url} | model={model} | prompt={prompt[:50]}...")
-            logger.info(f"[{self.provider_name}] 请求头: {headers}")
-            logger.info(f"[{self.provider_name}] 表单数据: {data}")
-            resp = requests.post(url, headers=headers, data=data, timeout=60)
+            logger.info(f"[{self.provider_name}] 请求头: {req_headers}")
+            logger.info(f"[{self.provider_name}] 请求体: {payload}")
+            resp = requests.post(url, headers=req_headers, json=payload, timeout=60)
             logger.info(f"[{self.provider_name}] 响应状态码: {resp.status_code}")
             logger.info(f"[{self.provider_name}] 响应体: {resp.text[:500]}")
             resp.raise_for_status()
@@ -213,13 +217,51 @@ class Sora2Xiaobanshou(Sora2Base):
             completed_at=str(completed_at) if completed_at is not None else None,
         )
 
+    def get_video_content(self, task_id: str) -> Tuple[Optional[bytes], Optional[str], Optional[str]]:
+        """
+        下载视频内容（GET /v1/videos/{task_id}/content）。
+        优先用于规避短时效 video_url 过期的问题。
+
+        Returns:
+            (data, content_type, error_message)
+            - 成功: (bytes, content_type, None)
+            - 失败: (None, None, error_message)
+        """
+        if not task_id or not task_id.strip():
+            return (None, None, "任务 ID 为空")
+        url = f"{self.base_url.rstrip('/')}/v1/videos/{task_id.strip()}/content"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Accept": "application/json, */*",
+        }
+        try:
+            logger.info(f"[{self.provider_name}] 查看视频内容 | GET {url}")
+            resp = requests.get(url, headers=headers, timeout=120)
+            logger.info(
+                f"[{self.provider_name}] 响应状态码: {resp.status_code} | "
+                f"Content-Type: {resp.headers.get('Content-Type', 'N/A')} | 大小: {len(resp.content)} bytes"
+            )
+            resp.raise_for_status()
+            content_type = (resp.headers.get("Content-Type") or "").split(";")[0].strip()
+            return (resp.content, content_type or "application/octet-stream", None)
+        except requests.exceptions.HTTPError as e:
+            msg = _read_error_message(e)
+            logger.error(f"[{self.provider_name}] 查看视频内容失败 | {task_id} | {e.response.status_code} | {msg}")
+            return (None, None, msg or str(e))
+        except Exception as e:
+            logger.error(f"[{self.provider_name}] 查看视频内容异常 | {task_id} | {type(e).__name__}: {e}")
+            return (None, None, str(e))
+
 
 def _read_error_message(e: requests.exceptions.HTTPError) -> str:
     """从 HTTPError 响应中读取错误信息"""
     try:
         body = e.response.json()
         if isinstance(body, dict):
-            return body.get("message") or body.get("error") or body.get("msg") or e.response.text[:500]
+            error = body.get("error")
+            if isinstance(error, dict):
+                return error.get("message") or error.get("detail") or str(error)
+            return body.get("message") or error or body.get("msg") or e.response.text[:500]
         return e.response.text[:500]
     except Exception:
         return (e.response.text or str(e))[:500]

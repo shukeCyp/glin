@@ -44,7 +44,7 @@ onMounted(async () => {
     if (vidRes.ok) defaultVideoPrompt.value = vidRes.prompt
     if (settings.glin_nanobanana_ratio) dialogImageRatio.value = settings.glin_nanobanana_ratio
     if (settings.glin_nanobanana_quality) dialogImageQuality.value = settings.glin_nanobanana_quality
-    if (settings.glin_veo_orientation) dialogVideoOrientation.value = settings.glin_veo_orientation
+    if (settings.hetang_veo_orientation) dialogVideoOrientation.value = settings.hetang_veo_orientation
   } catch { /* ignore */ }
 })
 
@@ -179,7 +179,7 @@ const submitBatchDialog = () => {
   window.pywebview.api.save_settings({
     glin_nanobanana_ratio: batchImageRatio.value,
     glin_nanobanana_quality: batchImageQuality.value,
-    glin_veo_orientation: batchVideoOrientation.value,
+    hetang_veo_orientation: batchVideoOrientation.value,
   }).catch(() => {})
   window.pywebview.api.set_image_process_prompt(defaultImagePrompt.value).catch(() => {})
   window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
@@ -255,7 +255,7 @@ const submitDialog = () => {
   window.pywebview.api.save_settings({
     glin_nanobanana_ratio: dialogImageRatio.value,
     glin_nanobanana_quality: dialogImageQuality.value,
-    glin_veo_orientation: dialogVideoOrientation.value,
+    hetang_veo_orientation: dialogVideoOrientation.value,
   }).catch(() => {})
   window.pywebview.api.set_image_process_prompt(defaultImagePrompt.value).catch(() => {})
   window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
@@ -361,7 +361,7 @@ const generateVideo = async (task) => {
     if (attempts > 0) task.statusText = `视频重试中 (${attempts}/${maxRetry})...`
     try {
       const refImages = [{ base64: task.resultImageBase64, mime: task.resultImageMime }]
-      const res = await window.pywebview.api.glin_veo_generate(
+      const res = await window.pywebview.api.hetang_veo_generate(
         task.videoPrompt,
         refImages,
         task.videoOrientation,

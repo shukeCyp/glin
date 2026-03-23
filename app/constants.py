@@ -4,11 +4,10 @@
 class ApiUrls:
     """API 地址"""
     DAYANGYU = "https://api.dyuapi.com"
-    YUNWU = "https://yunwu.zeabur.app"
+    YUNWU = "https://yunwu.ai"
     XIAOBANSHOU = "https://api.xintianwengai.com"
-    HAOTIAN = "https://api.haoapi.top"
     BANDIANWA = "https://api.hellobabygo.com"
-    GLIN = "https://glinflow.lyvideo.top"
+    HETANG = ""  # 荷塘渠道 Base URL 由用户在设置页面配置，无默认值
 
 
 class ModelProviders:
@@ -16,7 +15,6 @@ class ModelProviders:
     DAYANGYU = "dayangyu"
     YUNWU = "yunwu"
     XIAOBANSHOU = "xiaobanshou"
-    HAOTIAN = "haotian"
     BANDIANWA = "bandianwa"
 
 
@@ -26,10 +24,20 @@ class SettingKeys:
     ACTIVATION_CODE = "activation_code"
     # 自定义 API
     DAYANGYU_API_KEY = "dayangyu_api_key"
+    DAYANGYU_BASE_URL = "dayangyu_base_url"
     YUNWU_API_KEY = "yunwu_api_key"
+    YUNWU_BASE_URL = "yunwu_base_url"
     XIAOBANSHOU_API_KEY = "xiaobanshou_api_key"
-    HAOTIAN_API_KEY = "haotian_api_key"
-    GLIN_API_KEY = "glin_api_key"
+    XIAOBANSHOU_BASE_URL = "xiaobanshou_base_url"
+    BANDIANWA_API_KEY = "bandianwa_api_key"
+    BANDIANWA_BASE_URL = "bandianwa_base_url"
+    HETANG_VEO_BASE_URL = "hetang_veo_base_url"   # 荷塘渠道（VEO + NanoBanana 共用）
+    HETANG_VEO_API_KEY = "hetang_veo_api_key"      # 荷塘渠道（VEO + NanoBanana 共用）
+    # 别名：NanoBanana 荷塘渠道与 VEO 共用同一地址和密钥
+    HETANG_NANOBANANA_BASE_URL = "hetang_veo_base_url"
+    HETANG_NANOBANANA_API_KEY = "hetang_veo_api_key"
+    CUSTOM_NANOBANANA_BASE_URL = "hetang_veo_base_url"
+    CUSTOM_NANOBANANA_API_KEY = "hetang_veo_api_key"
     SORA2_MODEL = "sora2_model"
     SORA2_ORIENTATION = "sora2_orientation"
     SORA2_DURATION = "sora2_duration"
@@ -38,7 +46,11 @@ class SettingKeys:
     NANOBANANA_QUALITY = "nanobanana_quality"
     GLIN_NANOBANANA_RATIO = "glin_nanobanana_ratio"
     GLIN_NANOBANANA_QUALITY = "glin_nanobanana_quality"
-    GLIN_VEO_ORIENTATION = "glin_veo_orientation"
+    HETANG_VEO_ORIENTATION = "hetang_veo_orientation"
+    VIDEO_PRODUCT_IMAGE_PLATFORM = "video_product_image_platform"
+    VIDEO_PRODUCT_IMAGE_PROVIDER = "video_product_image_provider"
+    VIDEO_PRODUCT_VIDEO_PLATFORM = "video_product_video_platform"
+    VIDEO_PRODUCT_VIDEO_PROVIDER = "video_product_video_provider"
     # 斑点蛙
     BANDIANWA_API_KEY = "bandianwa_api_key"
     # 下载配置

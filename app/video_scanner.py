@@ -16,7 +16,7 @@ from .database import (
 )
 from .logger import logger
 from .thread_pool import get_pool
-from .services.sora2 import Sora2Dayangyu, Sora2Yunwu, Sora2Xiaobanshou, Sora2Bandianwa
+from .services.sora2 import Sora2Dayangyu, Sora2Xiaobanshou, Sora2Bandianwa
 from .services.sora2.base import Sora2TaskStatus
 
 
@@ -27,7 +27,7 @@ def _build_model_name(provider: str, orientation: str, duration: str) -> str:
     if provider == ModelProviders.DAYANGYU:
         return f"sora2-pro-{o}-hd-{d}s"
     elif provider == ModelProviders.XIAOBANSHOU:
-        return f"sora-2-pro-{o}-hd-{d}s"
+        return f"sora-2-{o}-{d}s"
     elif provider == ModelProviders.BANDIANWA:
         return f"sora-2-{o}-{d}s-guanzhuan"
     return None
@@ -45,12 +45,6 @@ def _get_sora2_service(settings: dict):
             return None, "未配置大洋芋 API Key"
         model = _build_model_name(provider, orientation, duration)
         return (Sora2Dayangyu(api_key), model), None
-
-    elif provider == ModelProviders.YUNWU:
-        api_key = settings.get(SettingKeys.YUNWU_API_KEY, "")
-        if not api_key:
-            return None, "未配置云雾 API Key"
-        return (Sora2Yunwu(api_key), None), None
 
     elif provider == ModelProviders.XIAOBANSHOU:
         api_key = settings.get(SettingKeys.XIAOBANSHOU_API_KEY, "")

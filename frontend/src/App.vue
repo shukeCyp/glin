@@ -6,7 +6,11 @@ import NanoBanana from './components/NanoBanana.vue'
 import GlinVeo from './components/GlinVeo.vue'
 import VeoGeneration from './components/VeoGeneration.vue'
 import VeoProduct from './components/VeoProduct.vue'
+import VideoProduct from './components/VideoProduct.vue'
 import VeoQihao from './components/VeoQihao.vue'
+import Debug from './components/Debug.vue'
+
+const isDevMode = ref(false)
 
 const state = ref('loading')
 const deviceId = ref('')
@@ -38,10 +42,14 @@ const checkStatus = async () => {
     if (res.state === 'pending') {
       deviceId.value = res.device_id
     }
+    // pywebview 已就绪，检测调试模式
     try {
-      const info = await window.pywebview.api.get_app_info()
+      const settings = await window.pywebview.api.get_all_settings()
+      isDevMode.value = settings.__dev_mode__ === '1'
+      if (settings.theme) {
+        document.documentElement.setAttribute('data-theme', settings.theme)
+      }
     } catch { /* ignore */ }
-    loadTheme()
   } catch {
     setTimeout(checkStatus, 100)
   }
@@ -180,9 +188,31 @@ onMounted(() => {
             </svg>
             <span>VEO起号</span>
           </button>
+          <button
+            :class="['nav-item', { active: currentPage === 'video_product' }]"
+            @click="currentPage = 'video_product'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="14" rx="2" ry="2"/>
+              <polygon points="11 9 16 12 11 15 11 9"/>
+              <line x1="8" y1="20" x2="16" y2="20"/>
+            </svg>
+            <span>视频带货</span>
+          </button>
         </nav>
 
         <div class="sidebar-footer">
+          <button
+            v-if="isDevMode"
+            :class="['nav-item', { active: currentPage === 'debug' }]"
+            @click="currentPage = 'debug'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+              <path d="M12 8v4M12 16h.01"/>
+            </svg>
+            <span>调试</span>
+          </button>
           <button
             :class="['nav-item', { active: currentPage === 'settings' }]"
             @click="currentPage = 'settings'"
@@ -224,9 +254,22 @@ onMounted(() => {
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 
+        <!-- 视频带货 -->
+        <VideoProduct
+          v-show="currentPage === 'video_product'"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
         <!-- Settings page -->
         <Settings
           v-show="currentPage === 'settings'"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
+        <!-- Debug page (only in dev mode) -->
+        <Debug
+          v-if="isDevMode"
+          v-show="currentPage === 'debug'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
       </main>

@@ -232,7 +232,7 @@ const createVideoTask = async (task) => {
     const settings = await window.pywebview.api.get_all_settings()
     const promptRes = await window.pywebview.api.get_video_process_prompt()
     const prompt = promptRes.prompt || ''
-    const orientation = settings.glin_veo_orientation || 'portrait'
+    const orientation = settings.hetang_veo_orientation || 'portrait'
     const images = [{ base64: task.resultBase64, mime: task.resultMime }]
     emit('add-veo-task', { prompt, orientation, images })
     emit('toast', '已添加到 VEO 视频列表', 'success')

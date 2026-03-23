@@ -22,15 +22,21 @@ const applyTheme = (themeId) => {
 
 // API Keys
 const dayangyu_api_key = ref('')
+const dayangyu_base_url = ref('')
 const yunwu_api_key = ref('')
+const yunwu_base_url = ref('')
 const xiaobanshou_api_key = ref('')
+const xiaobanshou_base_url = ref('')
 const bandianwa_api_key = ref('')
-const haotian_api_key = ref('')
-const glin_api_key = ref('')
+const bandianwa_base_url = ref('')
+const hetang_veo_base_url = ref('')
+const hetang_veo_api_key = ref('')
+// 荷塘 VEO 与 NanoBanana 共用同一 Base URL 和 API Key
 
 // Model selections
 const sora2_model = ref('dayangyu')
-const nanobanana_model = ref('yunwu')
+const nanobanana_model = ref('hetang')
+const veo_model = ref('hetang')
 
 
 // 下载路径（单条下载用）
@@ -101,13 +107,18 @@ const saveSettings = async () => {
     await window.pywebview.api.save_settings({
       theme: currentTheme.value,
       dayangyu_api_key: dayangyu_api_key.value,
+      dayangyu_base_url: dayangyu_base_url.value,
       yunwu_api_key: yunwu_api_key.value,
+      yunwu_base_url: yunwu_base_url.value,
       xiaobanshou_api_key: xiaobanshou_api_key.value,
+      xiaobanshou_base_url: xiaobanshou_base_url.value,
       bandianwa_api_key: bandianwa_api_key.value,
-      haotian_api_key: haotian_api_key.value,
-      glin_api_key: glin_api_key.value,
+      bandianwa_base_url: bandianwa_base_url.value,
+      hetang_veo_base_url: hetang_veo_base_url.value,
+      hetang_veo_api_key: hetang_veo_api_key.value,
       sora2_model: sora2_model.value,
       nanobanana_model: nanobanana_model.value,
+      veo_model: veo_model.value,
       download_path: download_path.value,
       auto_retry: auto_retry.value ? 'true' : 'false',
       image_max_retry: image_max_retry.value,
@@ -175,13 +186,18 @@ const loadSettings = async () => {
       applyTheme(settings.theme)
     }
     if (settings.dayangyu_api_key) dayangyu_api_key.value = settings.dayangyu_api_key
+    if (settings.dayangyu_base_url !== undefined) dayangyu_base_url.value = settings.dayangyu_base_url
     if (settings.yunwu_api_key) yunwu_api_key.value = settings.yunwu_api_key
+    if (settings.yunwu_base_url !== undefined) yunwu_base_url.value = settings.yunwu_base_url
     if (settings.xiaobanshou_api_key) xiaobanshou_api_key.value = settings.xiaobanshou_api_key
+    if (settings.xiaobanshou_base_url !== undefined) xiaobanshou_base_url.value = settings.xiaobanshou_base_url
     if (settings.bandianwa_api_key) bandianwa_api_key.value = settings.bandianwa_api_key
-    if (settings.haotian_api_key) haotian_api_key.value = settings.haotian_api_key
-    if (settings.glin_api_key) glin_api_key.value = settings.glin_api_key
+    if (settings.bandianwa_base_url !== undefined) bandianwa_base_url.value = settings.bandianwa_base_url
+    if (settings.hetang_veo_base_url !== undefined) hetang_veo_base_url.value = settings.hetang_veo_base_url
+    if (settings.hetang_veo_api_key) hetang_veo_api_key.value = settings.hetang_veo_api_key
     if (settings.sora2_model) sora2_model.value = settings.sora2_model
     if (settings.nanobanana_model) nanobanana_model.value = settings.nanobanana_model
+    if (settings.veo_model) veo_model.value = settings.veo_model
     if (settings.download_path) download_path.value = settings.download_path
     if (settings.auto_retry) auto_retry.value = settings.auto_retry === 'true'
     if (settings.image_max_retry) image_max_retry.value = settings.image_max_retry
@@ -235,10 +251,17 @@ onMounted(() => {
               <div class="card-header"><h3 class="card-title">Sora2 视频渠道</h3></div>
               <div class="card-body">
                 <div class="radio-group">
-                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="dayangyu" /><span class="radio-label">DYY</span></label>
-                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="yunwu" /><span class="radio-label">YW</span></label>
-                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="xiaobanshou" /><span class="radio-label">XBS</span></label>
+                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="dayangyu" /><span class="radio-label">DYY 大洋芋</span></label>
+                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="xiaobanshou" /><span class="radio-label">XBS 小扳手</span></label>
                   <label class="radio-item"><input type="radio" v-model="sora2_model" value="bandianwa" /><span class="radio-label">BDW</span></label>
+                </div>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">VEO 视频渠道</h3></div>
+              <div class="card-body">
+                <div class="radio-group">
+                  <label class="radio-item"><input type="radio" v-model="veo_model" value="hetang" /><span class="radio-label">荷塘渠道</span></label>
                 </div>
               </div>
             </div>
@@ -246,9 +269,8 @@ onMounted(() => {
               <div class="card-header"><h3 class="card-title">NanoBanana 生图渠道</h3></div>
               <div class="card-body">
                 <div class="radio-group">
-                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW 渠道</span></label>
-                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="haotian" /><span class="radio-label">HT 渠道</span></label>
-                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="glin" /><span class="radio-label">Glin 渠道</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="hetang" /><span class="radio-label">荷塘渠道</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW 云雾</span></label>
                 </div>
               </div>
             </div>
@@ -296,56 +318,67 @@ onMounted(() => {
           <h2 class="section-heading">API Keys</h2>
           <div class="settings-grid">
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">DYY</h3></div>
+              <div class="card-header"><h3 class="card-title">DYY 大洋芋</h3></div>
               <div class="card-body">
                 <label class="field">
+                  <span class="field-label">Base URL</span>
+                  <input v-model="dayangyu_base_url" type="text" placeholder="https://api.dyuapi.com" autocomplete="off" />
+                </label>
+                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
                   <input v-model="dayangyu_api_key" type="password" placeholder="请输入 DYY API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">YW</h3></div>
+              <div class="card-header"><h3 class="card-title">YW 云雾</h3></div>
               <div class="card-body">
                 <label class="field">
+                  <span class="field-label">Base URL</span>
+                  <input v-model="yunwu_base_url" type="text" placeholder="https://yunwu.ai" autocomplete="off" />
+                </label>
+                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
                   <input v-model="yunwu_api_key" type="password" placeholder="请输入 YW API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">XBS</h3></div>
+              <div class="card-header"><h3 class="card-title">XBS 小扳手</h3></div>
               <div class="card-body">
                 <label class="field">
+                  <span class="field-label">Base URL</span>
+                  <input v-model="xiaobanshou_base_url" type="text" placeholder="https://api.xintianwengai.com" autocomplete="off" />
+                </label>
+                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
-                  <input v-model="xiaobanshou_api_key" type="password" placeholder="请输入 XBS API Key" autocomplete="off" />
+                  <input v-model="xiaobanshou_api_key" type="password" placeholder="请输入 XBS 小扳手 API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">BDW</h3></div>
+              <div class="card-header"><h3 class="card-title">BDW 斑点蛙</h3></div>
               <div class="card-body">
                 <label class="field">
+                  <span class="field-label">Base URL</span>
+                  <input v-model="bandianwa_base_url" type="text" placeholder="https://api.hellobabygo.com" autocomplete="off" />
+                </label>
+                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
                   <input v-model="bandianwa_api_key" type="password" placeholder="请输入 BDW API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">HT</h3></div>
+              <div class="card-header"><h3 class="card-title">荷塘渠道</h3></div>
               <div class="card-body">
                 <label class="field">
-                  <span class="field-label">API Key</span>
-                  <input v-model="haotian_api_key" type="password" placeholder="请输入 HT API Key" autocomplete="off" />
+                  <span class="field-label">Base URL <span class="field-hint">自定义，留空则不启用</span></span>
+                  <input v-model="hetang_veo_base_url" type="text" placeholder="例如 https://your-hetang-domain.com" autocomplete="off" />
                 </label>
-              </div>
-            </div>
-            <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">Glin</h3></div>
-              <div class="card-body">
-                <label class="field">
+                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
-                  <input v-model="glin_api_key" type="password" placeholder="请输入 Glin API Key" autocomplete="off" />
+                  <input v-model="hetang_veo_api_key" type="password" placeholder="请输入荷塘 API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
@@ -484,6 +517,7 @@ onMounted(() => {
 
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field-label { font-size: 13px; color: var(--text-tertiary); }
+.field-hint { font-size: 11px; color: var(--text-hint); margin-left: 6px; font-weight: 400; }
 .radio-group { display: flex; flex-direction: column; gap: 12px; }
 .radio-group.horizontal { flex-direction: row; flex-wrap: wrap; gap: 16px; }
 .settings-sub-section { display: flex; flex-direction: column; gap: 10px; }

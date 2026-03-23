@@ -151,8 +151,11 @@ const generateTask = async (task) => {
       task.statusText = `重试中 (${attempts}/${maxRetry})...`
     }
     try {
+      const refImages = task.imageBase64
+        ? [{ base64: task.imageBase64, mime: task.imageMime }]
+        : []
       const res = await withTimeout(
-        window.pywebview.api.debug_nanobanana(task.prompt, task.imageBase64, task.imageMime),
+        window.pywebview.api.debug_nanobanana(task.prompt, refImages),
         200000
       )
       if (res.ok && res.image_data && res.mime_type) {

@@ -49,7 +49,27 @@ def init_db() -> None:
     db.connect()
     db.create_tables([Settings, VideoTask], safe=True)
     _migrate_db()
+    _init_default_settings()
     logger.info("[DB] 数据库初始化完成, 表: Settings, VideoTask")
+
+
+_DEFAULT_BASE_URLS = {
+    "dayangyu_base_url":    "https://api.dyuapi.com",
+    "yunwu_base_url":       "https://yunwu.ai",
+    "xiaobanshou_base_url": "https://api.xintianwengai.com",
+    "bandianwa_base_url":   "https://api.hellobabygo.com",
+    "hetang_veo_base_url":  "",  # 荷塘渠道（VEO + NanoBanana 共用）
+}
+
+
+def _init_default_settings() -> None:
+    """写入默认 Base URL（仅当数据库中不存在时写入，不覆盖用户修改）"""
+    for key, default_value in _DEFAULT_BASE_URLS.items():
+        try:
+            Settings.get(Settings.key == key)
+        except Settings.DoesNotExist:
+            Settings.replace(key=key, value=default_value).execute()
+            logger.info(f"[DB] 写入默认配置: {key} = {default_value}")
 
 
 def get_setting(key: str) -> Optional[str]:

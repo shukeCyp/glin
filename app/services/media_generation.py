@@ -1,0 +1,563 @@
+"""可插拔的图片/视频生成注册表。"""
+
+from __future__ import annotations
+
+import base64
+import json
+import os
+import re
+import tempfile
+import time
+import uuid
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+import requests
+
+from ..constants import ApiUrls, SettingKeys
+from ..logger import logger
+from .nanobanana import NanoBananaGlinCustom, NanoBananaXiaobanshou, NanoBananaYunwu
+from .sora2 import (
+    Sora2Bandianwa,
+    Sora2Dayangyu,
+    Sora2TaskStatus,
+    Sora2Xiaobanshou,
+)
+
+_IMAGE_EXT_MAP = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+
+
+@dataclass(frozen=True)
+class GeneratorOption:
+    """前端可见的生成器选项。"""
+
+    platform: str
+    provider: str
+    platform_label: str
+    provider_label: str
+    configured: bool
+    kind: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.platform_label} / {self.provider_label}"
+
+
+@dataclass
+class ImageGenerationRequest:
+    prompt: str
+    ref_images: list
+    aspect_ratio: str = "9:16"
+    image_size: str = "1K"
+    download_dir: Optional[Path] = None
+
+
+@dataclass
+class ImageGenerationResult:
+    success: bool
+    image_data: Optional[str] = None
+    mime_type: Optional[str] = None
+    file_path: Optional[str] = None
+    error_message: Optional[str] = None
+
+
+@dataclass
+class VideoGenerationRequest:
+    prompt: str
+    ref_images: list
+    orientation: str = "portrait"
+    duration: int = 10
+    download_dir: Optional[Path] = None
+
+
+@dataclass
+class VideoGenerationResult:
+    success: bool
+    video_url: Optional[str] = None
+    file_path: Optional[str] = None
+    error_message: Optional[str] = None
+
+
+class BaseGenerator(ABC):
+    """生成器基类。"""
+
+    kind: str = ""
+    platform: str = ""
+    provider: str = ""
+    platform_label: str = ""
+    provider_label: str = ""
+    setting_key: str = ""
+
+    def get_api_key(self, settings: dict) -> str:
+        return (settings.get(self.setting_key) or "").strip()
+
+    def is_configured(self, settings: dict) -> bool:
+        return bool(self.get_api_key(settings))
+
+    def get_missing_key_message(self) -> str:
+        return f"未配置 {self.provider_label} API Key，请前往设置页面配置"
+
+    def to_option(self, settings: dict) -> GeneratorOption:
+        return GeneratorOption(
+            platform=self.platform,
+            provider=self.provider,
+            platform_label=self.platform_label,
+            provider_label=self.provider_label,
+            configured=self.is_configured(settings),
+            kind=self.kind,
+        )
+
+
+class BaseImageGenerator(BaseGenerator, ABC):
+    kind = "image"
+
+    @abstractmethod
+    def generate(self, request: ImageGenerationRequest, settings: dict) -> ImageGenerationResult:
+        raise NotImplementedError
+
+
+class BaseVideoGenerator(BaseGenerator, ABC):
+    kind = "video"
+
+    @abstractmethod
+    def generate(self, request: VideoGenerationRequest, settings: dict) -> VideoGenerationResult:
+        raise NotImplementedError
+
+
+def _save_base64_image(image_data: str, mime_type: str, download_dir: Path, prefix: str) -> str:
+    download_dir.mkdir(parents=True, exist_ok=True)
+    ext = _IMAGE_EXT_MAP.get(mime_type or "", ".png")
+    filename = f"{prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:6]}{ext}"
+    file_path = download_dir / filename
+    file_path.write_bytes(base64.b64decode(image_data))
+    return str(file_path)
+
+
+def _download_remote_file(url: str, download_dir: Path, prefix: str, default_ext: str = ".mp4") -> str:
+    download_dir.mkdir(parents=True, exist_ok=True)
+    response = requests.get(url, timeout=120, stream=True)
+    response.raise_for_status()
+
+    filename = f"{prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}{default_ext}"
+    file_path = download_dir / filename
+    with open(file_path, "wb") as handle:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                handle.write(chunk)
+    return str(file_path)
+
+
+def _write_temp_image(ref_images: list) -> Optional[str]:
+    if not ref_images:
+        return None
+    image = ref_images[0]
+    image_data = image.get("base64", "")
+    if not image_data:
+        return None
+
+    ext = _IMAGE_EXT_MAP.get(image.get("mime", "image/png"), ".png")
+    tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+    try:
+        tmp.write(base64.b64decode(image_data))
+        tmp.flush()
+        return tmp.name
+    finally:
+        tmp.close()
+
+
+def _poll_sora_task(service, task_id: str, timeout_seconds: int = 900, interval_seconds: int = 5):
+    deadline = time.time() + timeout_seconds
+    last_task = None
+    while time.time() < deadline:
+        last_task = service.query_task(task_id)
+        if last_task.status == Sora2TaskStatus.COMPLETED:
+            return last_task
+        if last_task.status == Sora2TaskStatus.FAILED:
+            return last_task
+        time.sleep(interval_seconds)
+    return last_task
+
+
+class NanoBananaYunwuGenerator(BaseImageGenerator):
+    platform = "nanobanana"
+    provider = "yunwu"
+    platform_label = "香蕉生图"
+    provider_label = "YW"
+    setting_key = SettingKeys.YUNWU_API_KEY
+
+    def generate(self, request: ImageGenerationRequest, settings: dict) -> ImageGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return ImageGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        service = NanoBananaYunwu(api_key)
+        kwargs = {
+            "ref_images": request.ref_images or [],
+            "download_dir": request.download_dir,
+        }
+
+        result = service.generate(
+            prompt=request.prompt,
+            aspect_ratio=request.aspect_ratio,
+            image_size=request.image_size,
+            **kwargs,
+        )
+        if not result.success:
+            return ImageGenerationResult(success=False, error_message=result.error_message)
+
+        file_path = result.file_path
+        if not file_path and result.image_data and result.mime_type and request.download_dir:
+            file_path = _save_base64_image(
+                result.image_data,
+                result.mime_type,
+                request.download_dir,
+                "nanobanana_yw",
+            )
+
+        return ImageGenerationResult(
+            success=True,
+            image_data=result.image_data,
+            mime_type=result.mime_type,
+            file_path=file_path,
+        )
+
+
+
+class NanoBananaXiaobanshouGenerator(BaseImageGenerator):
+    platform = "nanobanana"
+    provider = "xiaobanshou"
+    platform_label = "香蕉生图"
+    provider_label = "XBS"
+    setting_key = SettingKeys.XIAOBANSHOU_API_KEY
+
+    def generate(self, request: ImageGenerationRequest, settings: dict) -> ImageGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return ImageGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        service = NanoBananaXiaobanshou(api_key)
+        result = service.generate(
+            prompt=request.prompt,
+            aspect_ratio=request.aspect_ratio,
+            image_size=request.image_size,
+            ref_images=request.ref_images or [],
+        )
+        if not result.success:
+            return ImageGenerationResult(success=False, error_message=result.error_message)
+
+        file_path = result.file_path
+        if not file_path and result.image_data and result.mime_type and request.download_dir:
+            file_path = _save_base64_image(
+                result.image_data,
+                result.mime_type,
+                request.download_dir,
+                "nanobanana_xbs",
+            )
+
+        return ImageGenerationResult(
+            success=True,
+            image_data=result.image_data,
+            mime_type=result.mime_type,
+            file_path=file_path,
+        )
+
+
+class NanoBananaHetangGenerator(BaseImageGenerator):
+    platform = "nanobanana"
+    provider = "hetang"
+    platform_label = "香蕉生图"
+    provider_label = "荷塘"
+    setting_key = SettingKeys.HETANG_VEO_API_KEY
+
+    def get_base_url(self, settings: dict) -> str:
+        return (settings.get(SettingKeys.HETANG_VEO_BASE_URL) or "").strip().rstrip("/")
+
+    def is_configured(self, settings: dict) -> bool:
+        return bool(self.get_api_key(settings) and self.get_base_url(settings))
+
+    def get_missing_key_message(self) -> str:
+        return "未配置荷塘 Base URL 或 API Key，请前往设置页面配置"
+
+    def generate(self, request: ImageGenerationRequest, settings: dict) -> ImageGenerationResult:
+        api_key = self.get_api_key(settings)
+        base_url = self.get_base_url(settings)
+        if not api_key or not base_url:
+            return ImageGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        service = NanoBananaGlinCustom(api_key, base_url)
+        result = service.generate(
+            prompt=request.prompt,
+            aspect_ratio=request.aspect_ratio,
+            image_size=request.image_size,
+            ref_images=request.ref_images or [],
+            download_dir=str(request.download_dir) if request.download_dir else None,
+        )
+        if not result.success:
+            return ImageGenerationResult(success=False, error_message=result.error_message)
+
+        file_path = result.file_path
+        if not file_path and result.image_data and result.mime_type and request.download_dir:
+            file_path = _save_base64_image(
+                result.image_data,
+                result.mime_type,
+                request.download_dir,
+                "nanobanana_hetang",
+            )
+
+        return ImageGenerationResult(
+            success=True,
+            image_data=result.image_data,
+            mime_type=result.mime_type,
+            file_path=file_path,
+        )
+
+
+class HetangVeo3Generator(BaseVideoGenerator):
+    platform = "veo3"
+    provider = "hetang"
+    platform_label = "VEO3"
+    provider_label = "荷塘"
+    setting_key = SettingKeys.HETANG_VEO_API_KEY
+
+    def get_base_url(self, settings: dict) -> str:
+        return (settings.get(SettingKeys.HETANG_VEO_BASE_URL) or "").strip().rstrip("/")
+
+    def is_configured(self, settings: dict) -> bool:
+        return bool(self.get_api_key(settings) and self.get_base_url(settings))
+
+    def get_missing_key_message(self) -> str:
+        return "未配置荷塘 VEO 的 Base URL 或 API Key，请前往设置页面配置"
+
+    def generate(self, request: VideoGenerationRequest, settings: dict) -> VideoGenerationResult:
+        api_key = self.get_api_key(settings)
+        base_url = self.get_base_url(settings)
+        if not api_key or not base_url:
+            return VideoGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        ref_images = request.ref_images or []
+        if ref_images:
+            model = "veo_3_1_i2v_s_fast_portrait_fl" if request.orientation == "portrait" else "veo_3_1_i2v_s_fast_fl"
+            content = [{"type": "text", "text": request.prompt}]
+            for image in ref_images:
+                image_data = image.get("base64", "")
+                mime_type = image.get("mime", "image/jpeg")
+                if image_data:
+                    content.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:{mime_type};base64,{image_data}"},
+                        }
+                    )
+            messages = [{"role": "user", "content": content}]
+        else:
+            model = "veo_3_1_t2v_fast_portrait" if request.orientation == "portrait" else "veo_3_1_t2v_fast_landscape"
+            messages = [{"role": "user", "content": request.prompt}]
+
+        url = f"{base_url}/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {"model": model, "messages": messages, "stream": True}
+
+        try:
+            response = requests.post(url, headers=headers, json=payload, stream=True, timeout=600)
+            response.raise_for_status()
+
+            video_url = ""
+            error_message = ""
+            for line in response.iter_lines(decode_unicode=True):
+                if not line or not line.startswith("data: "):
+                    continue
+                raw = line[6:].strip()
+                if raw == "[DONE]":
+                    break
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+
+                choices = data.get("choices", [])
+                if not choices:
+                    continue
+                delta = choices[0].get("delta", {})
+                content = delta.get("content", "")
+                if content:
+                    match = re.search(r"<video\s+src='([^']+)'", content)
+                    if match:
+                        video_url = match.group(1)
+
+                reasoning = delta.get("reasoning_content", "")
+                if reasoning and ("❌" in reasoning or "失败" in reasoning):
+                    error_message = reasoning.strip()
+
+            if not video_url:
+                return VideoGenerationResult(success=False, error_message=error_message or "未获取到视频链接")
+
+            file_path = None
+            if request.download_dir:
+                file_path = _download_remote_file(video_url, request.download_dir, "veo3_hetang")
+
+            return VideoGenerationResult(success=True, video_url=video_url, file_path=file_path)
+        except requests.Timeout:
+            return VideoGenerationResult(success=False, error_message="请求超时（600秒）")
+        except Exception as exc:
+            logger.error(f"[{self.platform_label}/{self.provider_label}] 视频生成异常: {exc}")
+            return VideoGenerationResult(success=False, error_message=str(exc))
+
+
+class BaseSora2Generator(BaseVideoGenerator, ABC):
+    platform = "sora2"
+    platform_label = "Sora2"
+
+    @abstractmethod
+    def create_service(self, api_key: str):
+        raise NotImplementedError
+
+    @abstractmethod
+    def build_create_kwargs(self, request: VideoGenerationRequest, image_path: Optional[str]) -> dict:
+        raise NotImplementedError
+
+    def generate(self, request: VideoGenerationRequest, settings: dict) -> VideoGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return VideoGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        image_path = _write_temp_image(request.ref_images)
+        try:
+            service = self.create_service(api_key)
+            task = service.create_task(request.prompt, **self.build_create_kwargs(request, image_path))
+            if task.status == Sora2TaskStatus.FAILED:
+                return VideoGenerationResult(success=False, error_message=task.error_message or "视频任务创建失败")
+
+            if task.video_url:
+                video_url = task.video_url
+            else:
+                if not task.task_id:
+                    return VideoGenerationResult(success=False, error_message=task.error_message or "未返回任务 ID")
+                queried = _poll_sora_task(service, task.task_id)
+                if queried is None:
+                    return VideoGenerationResult(success=False, error_message="任务轮询失败")
+                if queried.status != Sora2TaskStatus.COMPLETED or not queried.video_url:
+                    return VideoGenerationResult(
+                        success=False,
+                        error_message=queried.error_message or "视频任务未完成",
+                    )
+                video_url = queried.video_url
+
+            file_path = None
+            if request.download_dir:
+                file_path = _download_remote_file(video_url, request.download_dir, f"sora2_{self.provider}")
+
+            return VideoGenerationResult(success=True, video_url=video_url, file_path=file_path)
+        except Exception as exc:
+            logger.error(f"[{self.platform_label}/{self.provider_label}] 视频生成异常: {exc}")
+            return VideoGenerationResult(success=False, error_message=str(exc))
+        finally:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
+
+
+class Sora2DayangyuGenerator(BaseSora2Generator):
+    provider = "dayangyu"
+    provider_label = "DYY"
+    setting_key = SettingKeys.DAYANGYU_API_KEY
+
+    def create_service(self, api_key: str):
+        return Sora2Dayangyu(api_key)
+
+    def build_create_kwargs(self, request: VideoGenerationRequest, image_path: Optional[str]) -> dict:
+        # 模型由 Sora2Dayangyu.resolve_model() 根据 orientation/duration 自动选取
+        kwargs = {
+            "orientation": request.orientation,
+            "duration": request.duration,
+        }
+        if image_path:
+            kwargs["image_path"] = image_path
+        return kwargs
+
+
+class Sora2XiaobanshouGenerator(BaseSora2Generator):
+    provider = "xiaobanshou"
+    provider_label = "XBS"
+    setting_key = SettingKeys.XIAOBANSHOU_API_KEY
+
+    def create_service(self, api_key: str):
+        return Sora2Xiaobanshou(api_key)
+
+    def build_create_kwargs(self, request: VideoGenerationRequest, image_path: Optional[str]) -> dict:
+        # 模型由 Sora2Xiaobanshou.resolve_model() 根据 orientation/duration 自动选取
+        kwargs = {
+            "orientation": request.orientation,
+            "duration": request.duration,
+        }
+        if image_path:
+            kwargs["image_path"] = image_path
+        return kwargs
+
+
+class Sora2BandianwaGenerator(BaseSora2Generator):
+    provider = "bandianwa"
+    provider_label = "BDW"
+    setting_key = SettingKeys.BANDIANWA_API_KEY
+
+    def create_service(self, api_key: str):
+        return Sora2Bandianwa(api_key)
+
+    def build_create_kwargs(self, request: VideoGenerationRequest, image_path: Optional[str]) -> dict:
+        # 模型由 Sora2Bandianwa.resolve_model() 根据 orientation/duration 自动选取
+        kwargs = {
+            "orientation": request.orientation,
+            "duration": request.duration,
+        }
+        if image_path:
+            kwargs["image_path"] = image_path
+        return kwargs
+
+
+class MediaGenerationRegistry:
+    """图片/视频生成器注册表。"""
+
+    def __init__(self):
+        self._image_generators: dict[tuple[str, str], BaseImageGenerator] = {}
+        self._video_generators: dict[tuple[str, str], BaseVideoGenerator] = {}
+
+    def register_image(self, generator: BaseImageGenerator) -> None:
+        self._image_generators[(generator.platform, generator.provider)] = generator
+
+    def register_video(self, generator: BaseVideoGenerator) -> None:
+        self._video_generators[(generator.platform, generator.provider)] = generator
+
+    def get_image_generator(self, platform: str, provider: str) -> Optional[BaseImageGenerator]:
+        return self._image_generators.get((platform, provider))
+
+    def get_video_generator(self, platform: str, provider: str) -> Optional[BaseVideoGenerator]:
+        return self._video_generators.get((platform, provider))
+
+    def list_image_options(self, settings: dict) -> list[GeneratorOption]:
+        return [generator.to_option(settings) for generator in self._image_generators.values()]
+
+    def list_video_options(self, settings: dict) -> list[GeneratorOption]:
+        return [generator.to_option(settings) for generator in self._video_generators.values()]
+
+
+media_generation_registry = MediaGenerationRegistry()
+media_generation_registry.register_image(NanoBananaYunwuGenerator())
+media_generation_registry.register_image(NanoBananaXiaobanshouGenerator())
+media_generation_registry.register_image(NanoBananaHetangGenerator())
+
+media_generation_registry.register_video(HetangVeo3Generator())
+media_generation_registry.register_video(Sora2DayangyuGenerator())
+media_generation_registry.register_video(Sora2XiaobanshouGenerator())
+media_generation_registry.register_video(Sora2BandianwaGenerator())

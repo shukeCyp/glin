@@ -15,7 +15,7 @@ else:
 
 DATA_DIR = BASE_DIR / "data"
 LOGS_DIR = BASE_DIR / "logs"
-DB_PATH = DATA_DIR / "glin.db"
+DB_PATH = DATA_DIR / "glin_v2.db"
 
 # 确保目录存在（parents=True 递归创建父目录）
 DATA_DIR.mkdir(parents=True, exist_ok=True)

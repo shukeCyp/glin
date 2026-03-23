@@ -1,4 +1,4 @@
-from .sora2 import Sora2Base, Sora2Task, Sora2TaskStatus, Sora2Yunwu, Sora2Dayangyu
+from .sora2 import Sora2Base, Sora2Task, Sora2TaskStatus, Sora2Dayangyu
 from .nanobanana import NanoBananaBase, NanoBananaResult, NanoBananaYunwu
 
 __all__ = [
@@ -6,7 +6,6 @@ __all__ = [
     "Sora2Base",
     "Sora2Task",
     "Sora2TaskStatus",
-    "Sora2Yunwu",
     "Sora2Dayangyu",
     # NanoBanana
     "NanoBananaBase",

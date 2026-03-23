@@ -65,6 +65,17 @@ class NanoBananaGlin(NanoBananaBase):
             "Content-Type": "application/json",
         }
 
+        # 支持 ref_image_path：从磁盘读取图片并转为 base64
+        ref_image_path = kwargs.get("ref_image_path")
+        if ref_image_path and os.path.isfile(ref_image_path):
+            import mimetypes
+            mime = mimetypes.guess_type(ref_image_path)[0] or "image/jpeg"
+            with open(ref_image_path, "rb") as _f:
+                _b64 = base64.b64encode(_f.read()).decode("ascii")
+            existing = list(kwargs.get("ref_images") or [])
+            existing.insert(0, {"base64": _b64, "mime": mime})
+            kwargs = {**kwargs, "ref_images": existing}
+
         ref_images = kwargs.get("ref_images") or []
 
         if ref_images:
@@ -87,7 +98,7 @@ class NanoBananaGlin(NanoBananaBase):
             mode = f"图生图({len(ref_images)}张)" if ref_images else "文生图"
             logger.info(
                 f"[{self.provider_name}] 生成请求 | model={model} | "
-                f"比例={aspect_ratio} 清晰度={image_size} 模式={mode}"
+                f"比例={aspect_ratio} 清晰度={image_size} 模式={mode} | base_url={self.base_url}"
             )
 
             resp = requests.post(url, headers=headers, json=payload, timeout=300, stream=True)
@@ -188,3 +199,19 @@ class NanoBananaGlin(NanoBananaBase):
             f.write(raw)
         logger.info(f"[万米霖 API] 图片已保存: {filepath} ({len(raw)} bytes)")
         return filepath
+
+
+class NanoBananaGlinCustom(NanoBananaGlin):
+    """荷塘渠道 NanoBanana 图片生成（万米霖同协议，自定义 Base URL）"""
+
+    def __init__(self, api_key: str, custom_base_url: str):
+        super().__init__(api_key)
+        self._custom_base_url = custom_base_url.rstrip("/")
+
+    @property
+    def provider_name(self) -> str:
+        return "荷塘渠道"
+
+    @property
+    def base_url(self) -> str:
+        return self._custom_base_url

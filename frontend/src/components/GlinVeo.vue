@@ -26,7 +26,7 @@ const pageDragging = ref(false)
 onMounted(async () => {
   try {
     const settings = await window.pywebview.api.get_all_settings()
-    if (settings.glin_veo_orientation) addOrientation.value = settings.glin_veo_orientation
+    if (settings.hetang_veo_orientation) addOrientation.value = settings.hetang_veo_orientation
   } catch { /* ignore */ }
 })
 
@@ -101,7 +101,7 @@ const submitAddTask = () => {
   addSubmitting.value = true
 
   window.pywebview.api.save_settings({
-    glin_veo_orientation: addOrientation.value,
+    hetang_veo_orientation: addOrientation.value,
   }).catch(() => {})
 
   const images = addImages.value.map(img => ({ ...img }))
@@ -183,7 +183,7 @@ const generateTask = async (task) => {
     try {
       const refImages = (task.images || []).map(img => ({ base64: img.base64, mime: img.mime }))
       const res = await withTimeout(
-        window.pywebview.api.glin_veo_generate(
+        window.pywebview.api.hetang_veo_generate(
           task.prompt,
           refImages.length ? refImages : null,
           task.orientation,

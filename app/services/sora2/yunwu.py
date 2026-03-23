@@ -74,29 +74,26 @@ class Sora2Yunwu(Sora2Base):
     def create_task(
         self,
         prompt: str,
+        orientation: str = "portrait",
         duration: int = 10,
-        resolution: str = "1080p",
         **kwargs
     ) -> Sora2Task:
         """
         创建 Sora2 视频生成任务
 
+        云雾接口直接接受 orientation / duration 参数，无需映射模型名。
         如果传入 image_path，会先上传到图床获取 URL，再以图生视频模式创建任务。
-        不传 image_path 则为纯文生视频。
 
         Args:
-            prompt: 视频描述提示词
-            duration: 视频时长（10 或 15）
-            resolution: 分辨率（未使用，通过 size 控制）
+            prompt:      视频描述提示词
+            orientation: 方向，"portrait"（竖屏）或 "landscape"（横屏）
+            duration:    视频时长（秒），通常 10 / 15
             **kwargs:
                 image_path: 本地图片路径，传入后自动上传图床
-                orientation: 方向 portrait / landscape，默认 portrait
-                model: 模型名，默认根据是否有图片自动选择
-                size: 尺寸 large / small，默认 large
-                watermark: 是否水印，默认 False
+                size:       尺寸 large / small，默认 large
+                watermark:  是否水印，默认 False
         """
         image_path: Optional[str] = kwargs.get("image_path")
-        orientation: str = kwargs.get("orientation", "portrait")
         size: str = kwargs.get("size", "large")
         watermark = kwargs.get("watermark", False)
 
@@ -117,7 +114,8 @@ class Sora2Yunwu(Sora2Base):
                 raise RuntimeError("图片上传图床失败，无法创建图生视频任务")
             images.append(image_url)
 
-        model: str = kwargs.get("model", "sora-2-all" if images else "sora-2")
+        # 云雾用 model 区分文生/图生，不需要编码时长/方向
+        model: str = "sora-2-all" if images else "sora-2"
 
         url = f"{YUNWU_VIDEO_BASE}/v1/video/create"
 
