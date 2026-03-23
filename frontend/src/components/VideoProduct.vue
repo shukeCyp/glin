@@ -103,6 +103,11 @@ onMounted(async () => {
     if (settings.glin_nanobanana_ratio) dialogImageRatio.value = settings.glin_nanobanana_ratio
     if (settings.glin_nanobanana_quality) dialogImageQuality.value = settings.glin_nanobanana_quality
     if (settings.hetang_veo_orientation) dialogVideoOrientation.value = settings.hetang_veo_orientation
+    if (settings.sora2_duration) {
+      const duration = parseInt(settings.sora2_duration, 10) || 10
+      dialogVideoDuration.value = duration
+      batchVideoDuration.value = duration
+    }
     if (generatorRes.ok) {
       imageGeneratorOptions.value = generatorRes.image_options || []
       videoGeneratorOptions.value = generatorRes.video_options || []
@@ -143,6 +148,7 @@ const dialogVideoPrompt = ref('')
 const dialogImageRatio = ref('9:16')
 const dialogImageQuality = ref('1K')
 const dialogVideoOrientation = ref('portrait')
+const dialogVideoDuration = ref(10)
 const dialogAutoVideo = ref(true)
 const dialogIsDragging = ref(false)
 const dialogFileInput = ref(null)
@@ -236,6 +242,7 @@ const batchVideoPrompt = ref('')
 const batchImageRatio = ref('9:16')
 const batchImageQuality = ref('1K')
 const batchVideoOrientation = ref('portrait')
+const batchVideoDuration = ref(10)
 const batchAutoVideo = ref(true)
 
 const persistGeneratorDefaults = () => {
@@ -271,6 +278,7 @@ const submitBatchDialog = () => {
     glin_nanobanana_ratio: batchImageRatio.value,
     glin_nanobanana_quality: batchImageQuality.value,
     hetang_veo_orientation: batchVideoOrientation.value,
+    sora2_duration: String(batchVideoDuration.value),
     video_product_image_platform: selectedImagePlatform.value,
     video_product_image_provider: selectedImageProvider.value,
     video_product_video_platform: selectedVideoPlatform.value,
@@ -291,6 +299,7 @@ const submitBatchDialog = () => {
     videoPlatform: selectedVideoPlatform.value,
     videoProvider: selectedVideoProvider.value,
     videoOrientation: batchVideoOrientation.value,
+    videoDuration: batchVideoDuration.value,
     autoVideo: batchAutoVideo.value,
     resultImageSrc: '',
     resultImageBase64: '',
@@ -357,6 +366,7 @@ const submitDialog = () => {
     glin_nanobanana_ratio: dialogImageRatio.value,
     glin_nanobanana_quality: dialogImageQuality.value,
     hetang_veo_orientation: dialogVideoOrientation.value,
+    sora2_duration: String(dialogVideoDuration.value),
     video_product_image_platform: selectedImagePlatform.value,
     video_product_image_provider: selectedImageProvider.value,
     video_product_video_platform: selectedVideoPlatform.value,
@@ -378,6 +388,7 @@ const submitDialog = () => {
     videoPlatform: selectedVideoPlatform.value,
     videoProvider: selectedVideoProvider.value,
     videoOrientation: dialogVideoOrientation.value,
+    videoDuration: dialogVideoDuration.value,
     autoVideo: dialogAutoVideo.value,
     resultImageSrc: '',
     resultImageBase64: '',
@@ -480,6 +491,7 @@ const generateVideo = async (task) => {
         task.videoPrompt,
         refImages,
         task.videoOrientation,
+        task.videoDuration || 10,
         task.videoPlatform,
         task.videoProvider,
       )
@@ -632,6 +644,7 @@ const editImageQuality = ref('1K')
 const editVideoPlatform = ref('veo3')
 const editVideoProvider = ref('hetang')
 const editVideoOrientation = ref('portrait')
+const editVideoDuration = ref(10)
 
 const openEditDialog = (task) => {
   if (isTaskBusy(task)) return
@@ -645,6 +658,7 @@ const openEditDialog = (task) => {
   editVideoPlatform.value = task.videoPlatform || selectedVideoPlatform.value
   editVideoProvider.value = task.videoProvider || selectedVideoProvider.value
   editVideoOrientation.value = task.videoOrientation
+  editVideoDuration.value = task.videoDuration || 10
   showEditDialog.value = true
 }
 const closeEditDialog = () => { showEditDialog.value = false; editingTask.value = null }
@@ -660,18 +674,12 @@ const saveEditDialog = () => {
     editImagePlatform.value,
     editImageProvider.value,
   )
-  const normalizedVideo = normalizeGeneratorSelection(
-    videoGeneratorOptions.value,
-    editVideoPlatform.value,
-    editVideoProvider.value,
-  )
   task.imagePlatform = normalizedImage.platform
   task.imageProvider = normalizedImage.provider
   task.imageRatio = editImageRatio.value
   task.imageQuality = editImageQuality.value
-  task.videoPlatform = normalizedVideo.platform
-  task.videoProvider = normalizedVideo.provider
   task.videoOrientation = editVideoOrientation.value
+  task.videoDuration = editVideoDuration.value
   showEditDialog.value = false
   editingTask.value = null
   emit('toast', '任务参数已更新', 'success')
@@ -967,6 +975,21 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
+              <div v-if="selectedVideoPlatform === 'sora2'" class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">视频时长</span>
+                  <div class="toggle-group">
+                    <button :class="['toggle-btn', { active: batchVideoDuration === 10 }]" @click="batchVideoDuration = 10">10S</button>
+                    <button :class="['toggle-btn', { active: batchVideoDuration === 15 }]" @click="batchVideoDuration = 15">15S</button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">视频时长</span>
+                  <div class="fixed-value">约 8 秒（渠道固定）</div>
+                </div>
+              </div>
               <div class="form-row" style="margin-top: 16px;">
                 <label class="switch-field">
                   <span class="switch-label">自动生成视频</span>
@@ -1078,6 +1101,21 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
+              <div v-if="selectedVideoPlatform === 'sora2'" class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">视频时长</span>
+                  <div class="toggle-group">
+                    <button :class="['toggle-btn', { active: dialogVideoDuration === 10 }]" @click="dialogVideoDuration = 10">10S</button>
+                    <button :class="['toggle-btn', { active: dialogVideoDuration === 15 }]" @click="dialogVideoDuration = 15">15S</button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="form-row">
+                <div class="field field-inline">
+                  <span class="field-label">视频时长</span>
+                  <div class="fixed-value">约 8 秒（渠道固定）</div>
+                </div>
+              </div>
               <div class="form-row" style="margin-top: 16px;">
                 <label class="switch-field">
                   <span class="switch-label">自动生成视频</span>
@@ -1146,31 +1184,6 @@ const statusClass = (status) => {
             </div>
             <div class="form-row">
               <div class="field field-inline">
-                <span class="field-label">视频渠道</span>
-                <div class="generator-select-row">
-                  <div class="generator-select-box">
-                    <select v-model="editVideoPlatform" class="generator-select" @change="editVideoProvider = normalizeGeneratorSelection(videoGeneratorOptions, editVideoPlatform, editVideoProvider).provider">
-                      <option v-for="item in videoPlatformOptions" :key="`edit-video-${item.value}`" :value="item.value">{{ item.label }}</option>
-                    </select>
-                    <span class="generator-chevron"></span>
-                  </div>
-                  <div class="generator-select-box">
-                    <select v-model="editVideoProvider" class="generator-select">
-                      <option
-                        v-for="item in getProviderOptions(videoGeneratorOptions, editVideoPlatform)"
-                        :key="`edit-video-provider-${item.platform}-${item.provider}`"
-                        :value="item.provider"
-                      >
-                        {{ item.provider_label }}{{ item.configured ? '' : '（未配置）' }}
-                      </option>
-                    </select>
-                    <span class="generator-chevron"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="field field-inline">
                 <span class="field-label">图片比例</span>
                 <div class="toggle-group">
                   <button :class="['toggle-btn', { active: editImageRatio === '9:16' }]" @click="editImageRatio = '9:16'">9:16 竖屏</button>
@@ -1204,6 +1217,21 @@ const statusClass = (status) => {
                     横屏
                   </button>
                 </div>
+              </div>
+            </div>
+            <div v-if="editVideoPlatform === 'sora2'" class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">视频时长</span>
+                <div class="toggle-group">
+                  <button :class="['toggle-btn', { active: editVideoDuration === 10 }]" @click="editVideoDuration = 10">10S</button>
+                  <button :class="['toggle-btn', { active: editVideoDuration === 15 }]" @click="editVideoDuration = 15">15S</button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="form-row">
+              <div class="field field-inline">
+                <span class="field-label">视频时长</span>
+                <div class="fixed-value">约 8 秒（渠道固定）</div>
               </div>
             </div>
           </div>
@@ -1415,6 +1443,7 @@ const statusClass = (status) => {
 .toggle-btn:hover { background: var(--accent-bg); border-color: rgba(200,96,122,0.2); color: var(--text-secondary); }
 .toggle-btn.active { background: var(--accent-bg-strong); border-color: rgba(200,96,122,0.4); color: var(--accent); }
 .toggle-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.fixed-value { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-secondary); font-size: 12px; }
 
 /* 开关 */
 .switch-field { display: flex; align-items: center; gap: 10px; cursor: pointer; }

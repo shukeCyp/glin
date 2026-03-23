@@ -498,6 +498,7 @@ class Api:
         prompt: str,
         ref_images: list = None,
         orientation: str = "portrait",
+        duration: int = 10,
         platform: str = "veo3",
         provider: str = "hetang",
     ) -> dict:
@@ -508,12 +509,11 @@ class Api:
 
         try:
             settings = get_all_settings()
-            duration = int(settings.get(SettingKeys.SORA2_DURATION, "10") or 10)
             request = VideoGenerationRequest(
                 prompt=prompt,
                 ref_images=ref_images or [],
                 orientation=orientation,
-                duration=duration,
+                duration=int(duration or settings.get(SettingKeys.SORA2_DURATION, "10") or 10),
                 download_dir=self._resolve_download_dir(),
             )
             result = generator.generate(request, settings)
