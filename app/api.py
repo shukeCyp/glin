@@ -848,9 +848,9 @@ class Api:
                 logger.warning(f"[API] sora2_text_to_video -> 创建任务失败: {task.error_message}")
                 return {"ok": False, "msg": task.error_message or "创建任务失败"}
 
-            # 轮询任务状态
+            # 轮询任务状态，最长等待半小时
             import time
-            max_wait = 300
+            max_wait = 1800
             start = time.time()
             while time.time() - start < max_wait:
                 task = sora2.query_task(task.task_id)
