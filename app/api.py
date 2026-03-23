@@ -807,6 +807,65 @@ class Api:
             logger.error(f"[API] hetang_veo_generate -> 异常: {e}")
             return {"ok": False, "msg": str(e)}
 
+    def sora2_text_to_video(self, prompt: str, orientation: str = "landscape", duration: int = 10) -> dict:
+        """Sora2 文生视频"""
+        logger.info(f"[API] sora2_text_to_video 调用, orientation={orientation}, duration={duration}, prompt={prompt[:50]}...")
+
+        settings = get_all_settings()
+        provider = settings.get(SettingKeys.SORA2_MODEL, "dayangyu")
+        logger.info(f"[API] sora2_text_to_video -> provider={provider}")
+
+        if provider == "dayangyu":
+            api_key = (settings.get(SettingKeys.DAYANGYU_API_KEY) or "").strip()
+            if not api_key:
+                logger.warning("[API] sora2_text_to_video -> 未配置大洋芋 API Key")
+                return {"ok": False, "msg": "未配置大洋芋 API Key"}
+            logger.info(f"[API] sora2_text_to_video -> 使用大洋芋API, key={api_key[:10]}...")
+            sora2 = Sora2Dayangyu(api_key)
+        elif provider == "bandianwa":
+            api_key = (settings.get(SettingKeys.BANDIANWA_API_KEY) or "").strip()
+            if not api_key:
+                logger.warning("[API] sora2_text_to_video -> 未配置斑点蛙 API Key")
+                return {"ok": False, "msg": "未配置斑点蛙 API Key"}
+            logger.info(f"[API] sora2_text_to_video -> 使用斑点蛙API, key={api_key[:10]}...")
+            sora2 = Sora2Bandianwa(api_key)
+        elif provider == "xiaobanshou":
+            api_key = (settings.get(SettingKeys.XIAOBANSHOU_API_KEY) or "").strip()
+            if not api_key:
+                logger.warning("[API] sora2_text_to_video -> 未配置小扳手 API Key")
+                return {"ok": False, "msg": "未配置小扳手 API Key"}
+            logger.info(f"[API] sora2_text_to_video -> 使用小扳手API, key={api_key[:10]}...")
+            sora2 = Sora2Xiaobanshou(api_key)
+        else:
+            logger.warning(f"[API] sora2_text_to_video -> 不支持的提供商: {provider}")
+            return {"ok": False, "msg": f"不支持的 Sora2 提供商: {provider}"}
+
+        try:
+            logger.info("[API] sora2_text_to_video -> 开始创建任务...")
+            task = sora2.create_task(prompt, orientation, duration)
+            logger.info(f"[API] sora2_text_to_video -> 任务已创建, task_id={task.task_id}, status={task.status.value}")
+            if task.status.value == "failed":
+                logger.warning(f"[API] sora2_text_to_video -> 创建任务失败: {task.error_message}")
+                return {"ok": False, "msg": task.error_message or "创建任务失败"}
+
+            # 轮询任务状态
+            import time
+            max_wait = 300
+            start = time.time()
+            while time.time() - start < max_wait:
+                task = sora2.query_task(task.task_id)
+                if task.status.value == "completed":
+                    logger.info(f"[API] sora2_text_to_video -> 成功, url={task.video_url[:80] if task.video_url else 'N/A'}...")
+                    return {"ok": True, "video_url": task.video_url}
+                elif task.status.value == "failed":
+                    return {"ok": False, "msg": task.error_message or "生成失败"}
+                time.sleep(3)
+
+            return {"ok": False, "msg": "生成超时"}
+        except Exception as e:
+            logger.error(f"[API] sora2_text_to_video -> 异常: {e}")
+            return {"ok": False, "msg": str(e)}
+
     def download_veo_video(self, video_url: str) -> dict:
         """下载 VEO 视频（优先用设置的下载路径，否则用默认 Glin 文件夹）"""
         import requests

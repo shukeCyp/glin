@@ -5,6 +5,7 @@ import Settings from './components/Settings.vue'
 import NanoBanana from './components/NanoBanana.vue'
 import GlinVeo from './components/GlinVeo.vue'
 import VeoGeneration from './components/VeoGeneration.vue'
+import Sora2Generation from './components/Sora2Generation.vue'
 import VeoProduct from './components/VeoProduct.vue'
 import VideoProduct from './components/VideoProduct.vue'
 import VeoQihao from './components/VeoQihao.vue'
@@ -159,14 +160,25 @@ onMounted(() => {
             <span>香蕉生图</span>
           </button>
           <button
-            :class="['nav-item', { active: currentPage === 'veo' }]"
-            @click="currentPage = 'veo'"
+            :class="['nav-item', { active: currentPage === 'video_product' }]"
+            @click="currentPage = 'video_product'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="14" rx="2" ry="2"/>
+              <polygon points="11 9 16 12 11 15 11 9"/>
+              <line x1="8" y1="20" x2="16" y2="20"/>
+            </svg>
+            <span>Sora2带货</span>
+          </button>
+          <button
+            :class="['nav-item', { active: currentPage === 'sora2' }]"
+            @click="currentPage = 'sora2'"
           >
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="23 7 16 12 23 17 23 7"></polygon>
               <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
             </svg>
-            <span>VEO视频</span>
+            <span>Sora2视频</span>
           </button>
           <button
             :class="['nav-item', { active: currentPage === 'veo_product' }]"
@@ -180,6 +192,16 @@ onMounted(() => {
             <span>VEO带货</span>
           </button>
           <button
+            :class="['nav-item', { active: currentPage === 'veo' }]"
+            @click="currentPage = 'veo'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            <span>VEO视频</span>
+          </button>
+          <button
             :class="['nav-item', { active: currentPage === 'veo_qihao' }]"
             @click="currentPage = 'veo_qihao'"
           >
@@ -187,17 +209,6 @@ onMounted(() => {
               <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
             </svg>
             <span>VEO起号</span>
-          </button>
-          <button
-            :class="['nav-item', { active: currentPage === 'video_product' }]"
-            @click="currentPage = 'video_product'"
-          >
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="14" rx="2" ry="2"/>
-              <polygon points="11 9 16 12 11 15 11 9"/>
-              <line x1="8" y1="20" x2="16" y2="20"/>
-            </svg>
-            <span>视频带货</span>
           </button>
         </nav>
 
@@ -239,6 +250,12 @@ onMounted(() => {
         <GlinVeo
           ref="glinVeoRef"
           v-show="currentPage === 'veo'"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
+        <!-- Sora2视频 -->
+        <Sora2Generation
+          v-show="currentPage === 'sora2'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 

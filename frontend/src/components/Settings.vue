@@ -251,8 +251,8 @@ onMounted(() => {
               <div class="card-header"><h3 class="card-title">Sora2 视频渠道</h3></div>
               <div class="card-body">
                 <div class="radio-group">
-                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="dayangyu" /><span class="radio-label">DYY 大洋芋</span></label>
-                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="xiaobanshou" /><span class="radio-label">XBS 小扳手</span></label>
+                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="dayangyu" /><span class="radio-label">DYY</span></label>
+                  <label class="radio-item"><input type="radio" v-model="sora2_model" value="xiaobanshou" /><span class="radio-label">XBS</span></label>
                   <label class="radio-item"><input type="radio" v-model="sora2_model" value="bandianwa" /><span class="radio-label">BDW</span></label>
                 </div>
               </div>
@@ -270,7 +270,7 @@ onMounted(() => {
               <div class="card-body">
                 <div class="radio-group">
                   <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="hetang" /><span class="radio-label">荷塘渠道</span></label>
-                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW 云雾</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW</span></label>
                 </div>
               </div>
             </div>
@@ -318,52 +318,36 @@ onMounted(() => {
           <h2 class="section-heading">API Keys</h2>
           <div class="settings-grid">
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">DYY 大洋芋</h3></div>
+              <div class="card-header"><h3 class="card-title">DYY</h3></div>
               <div class="card-body">
                 <label class="field">
-                  <span class="field-label">Base URL</span>
-                  <input v-model="dayangyu_base_url" type="text" placeholder="https://api.dyuapi.com" autocomplete="off" />
-                </label>
-                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
                   <input v-model="dayangyu_api_key" type="password" placeholder="请输入 DYY API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">YW 云雾</h3></div>
+              <div class="card-header"><h3 class="card-title">YW</h3></div>
               <div class="card-body">
                 <label class="field">
-                  <span class="field-label">Base URL</span>
-                  <input v-model="yunwu_base_url" type="text" placeholder="https://yunwu.ai" autocomplete="off" />
-                </label>
-                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
                   <input v-model="yunwu_api_key" type="password" placeholder="请输入 YW API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">XBS 小扳手</h3></div>
+              <div class="card-header"><h3 class="card-title">XBS</h3></div>
               <div class="card-body">
                 <label class="field">
-                  <span class="field-label">Base URL</span>
-                  <input v-model="xiaobanshou_base_url" type="text" placeholder="https://api.xintianwengai.com" autocomplete="off" />
-                </label>
-                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
-                  <input v-model="xiaobanshou_api_key" type="password" placeholder="请输入 XBS 小扳手 API Key" autocomplete="off" />
+                  <input v-model="xiaobanshou_api_key" type="password" placeholder="请输入 XBS API Key" autocomplete="off" />
                 </label>
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">BDW 斑点蛙</h3></div>
+              <div class="card-header"><h3 class="card-title">BDW</h3></div>
               <div class="card-body">
                 <label class="field">
-                  <span class="field-label">Base URL</span>
-                  <input v-model="bandianwa_base_url" type="text" placeholder="https://api.hellobabygo.com" autocomplete="off" />
-                </label>
-                <label class="field" style="margin-top: 16px;">
                   <span class="field-label">API Key</span>
                   <input v-model="bandianwa_api_key" type="password" placeholder="请输入 BDW API Key" autocomplete="off" />
                 </label>
