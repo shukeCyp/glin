@@ -24,12 +24,12 @@ def download_video(
 
     try:
         logger.info(f"[VEO/download] 开始下载 | url={url} | dest={file_path}")
-        resp = requests.get(url, timeout=120, stream=True)
-        resp.raise_for_status()
-        with open(file_path, "wb") as fh:
-            for chunk in resp.iter_content(chunk_size=8192):
-                if chunk:
-                    fh.write(chunk)
+        with requests.get(url, timeout=120, stream=True) as resp:
+            resp.raise_for_status()
+            with open(file_path, "wb") as fh:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    if chunk:
+                        fh.write(chunk)
         logger.info(f"[VEO/download] 下载完成 | {file_path}")
         return str(file_path)
     except Exception as exc:

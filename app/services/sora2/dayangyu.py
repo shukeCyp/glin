@@ -246,11 +246,11 @@ class Sora2Dayangyu(Sora2Base):
         }
         try:
             logger.info(f"[{self.provider_name}] 查看视频内容 | GET {url}")
-            resp = requests.get(url, headers=headers, timeout=120)
-            logger.info(f"[{self.provider_name}] 响应状态码: {resp.status_code} | Content-Type: {resp.headers.get('Content-Type', 'N/A')} | 大小: {len(resp.content)} bytes")
-            resp.raise_for_status()
-            content_type = (resp.headers.get("Content-Type") or "").split(";")[0].strip()
-            return (resp.content, content_type or "application/octet-stream", None)
+            with requests.get(url, headers=headers, timeout=120) as resp:
+                logger.info(f"[{self.provider_name}] 响应状态码: {resp.status_code} | Content-Type: {resp.headers.get('Content-Type', 'N/A')} | 大小: {len(resp.content)} bytes")
+                resp.raise_for_status()
+                content_type = (resp.headers.get("Content-Type") or "").split(";")[0].strip()
+                return (resp.content, content_type or "application/octet-stream", None)
         except requests.exceptions.HTTPError as e:
             msg = _read_error_message(e)
             logger.error(f"[{self.provider_name}] 查看视频内容失败 | {task_id} | {e.response.status_code} | {msg}")

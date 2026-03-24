@@ -158,11 +158,13 @@ const dialogImageQuality = ref('1K')
 const dialogVideoOrientation = ref('portrait')
 const dialogVideoDuration = ref(10)
 const dialogAutoVideo = ref(true)
+const dialogCount = ref(1)
 const dialogIsDragging = ref(false)
 const dialogFileInput = ref(null)
 
 const openAddDialog = () => {
   dialogImages.value = []
+  dialogCount.value = 1
   dialogImagePrompt.value = defaultImagePrompt.value
   dialogVideoPrompt.value = defaultVideoPrompt.value
   showDialog.value = true
@@ -391,34 +393,41 @@ const submitDialog = () => {
   window.pywebview.api.set_video_process_prompt(defaultVideoPrompt.value).catch(() => {})
 
   const images = dialogImages.value.map(img => ({ ...img }))
-  const task = reactive({
-    id: ++taskIdCounter,
-    images,
-    imagePrompt: defaultImagePrompt.value,
-    imageRatio: dialogImageRatio.value,
-    imageQuality: dialogImageQuality.value,
-    videoPrompt: defaultVideoPrompt.value,
-    videoOrientation: dialogVideoOrientation.value,
-    videoDuration: dialogVideoDuration.value,
-    autoVideo: dialogAutoVideo.value,
-    resultImageSrc: '',
-    resultImageBase64: '',
-    resultImageMime: '',
-    resultImagePath: '',
-    videoUrl: '',
-    filePath: '',
-    actualImagePlatform: '',
-    actualImageProvider: '',
-    actualVideoPlatform: '',
-    actualVideoProvider: '',
-    status: 'pending',
-    statusText: '待处理',
-  })
-  taskList.value.unshift(task)
+  const count = Math.max(1, Math.min(1000, dialogCount.value || 1))
+  const tasks = []
+  for (let i = 0; i < count; i++) {
+    tasks.push(reactive({
+      id: ++taskIdCounter,
+      images: images.map(img => ({ ...img })),
+      imagePrompt: defaultImagePrompt.value,
+      imageRatio: dialogImageRatio.value,
+      imageQuality: dialogImageQuality.value,
+      videoPrompt: defaultVideoPrompt.value,
+      videoOrientation: dialogVideoOrientation.value,
+      videoDuration: dialogVideoDuration.value,
+      autoVideo: dialogAutoVideo.value,
+      resultImageSrc: '',
+      resultImageBase64: '',
+      resultImageMime: '',
+      resultImagePath: '',
+      videoUrl: '',
+      filePath: '',
+      actualImagePlatform: '',
+      actualImageProvider: '',
+      actualVideoPlatform: '',
+      actualVideoProvider: '',
+      status: 'pending',
+      statusText: '待处理',
+    }))
+  }
+  taskList.value.unshift(...tasks)
   showDialog.value = false
 
   persistGeneratorDefaults()
-  generateImage(task)
+  if (tasks.length > 1) {
+    emit('toast', `已添加 ${tasks.length} 条任务，开始生成...`, 'success')
+  }
+  startBatchGeneration(tasks)
 }
 
 // ==================== 图片生成 → 自动生成视频 ====================
@@ -1104,6 +1113,10 @@ const statusClass = (status) => {
                     <button :class="['toggle-btn', { active: dialogImageQuality === '4K' }]" @click="dialogImageQuality = '4K'">4K</button>
                   </div>
                 </div>
+                <div class="field field-inline" style="flex: 0 0 auto;">
+                  <span class="field-label">数量</span>
+                  <input v-model.number="dialogCount" type="number" min="1" max="1000" class="count-input" />
+                </div>
               </div>
               <div class="form-row">
                 <div class="field field-inline">
@@ -1151,7 +1164,9 @@ const statusClass = (status) => {
           </div>
           <div class="dialog-footer">
             <button class="cancel-btn" @click="closeDialog">取消</button>
-            <button class="primary-btn save-btn" @click="submitDialog">添加并开始生成</button>
+            <button class="primary-btn save-btn" @click="submitDialog">
+              {{ `添加 ${Math.max(1, dialogCount || 1)} 条任务并开始生成` }}
+            </button>
           </div>
         </div>
       </div>
@@ -1425,6 +1440,9 @@ const statusClass = (status) => {
 .dialog-body textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 14px; font-family: inherit; outline: none; resize: vertical; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
 .dialog-body textarea::placeholder { color: var(--text-placeholder); }
 .dialog-body textarea:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
+.count-input { width: 90px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-medium); background: var(--bg-surface); color: var(--text-primary); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; -moz-appearance: textfield; }
+.count-input::-webkit-outer-spin-button, .count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.count-input:focus { border-color: rgba(200,96,122,0.6); box-shadow: 0 0 0 3px var(--accent-bg-strong); }
 .dialog-body .generator-select-box { flex: 1; }
 
 /* 表单行 */

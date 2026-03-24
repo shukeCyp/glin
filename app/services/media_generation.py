@@ -145,15 +145,14 @@ def _save_base64_image(image_data: str, mime_type: str, download_dir: Path, pref
 
 def _download_remote_file(url: str, download_dir: Path, prefix: str, default_ext: str = ".mp4") -> str:
     download_dir.mkdir(parents=True, exist_ok=True)
-    response = requests.get(url, timeout=120, stream=True)
-    response.raise_for_status()
-
     filename = f"{prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}{default_ext}"
     file_path = download_dir / filename
-    with open(file_path, "wb") as handle:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                handle.write(chunk)
+    with requests.get(url, timeout=120, stream=True) as response:
+        response.raise_for_status()
+        with open(file_path, "wb") as handle:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    handle.write(chunk)
     return str(file_path)
 
 

@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 from pathlib import Path
 
 from .activation import get_device_id, verify_activation
@@ -33,6 +34,34 @@ def get_media_download_dir(kind: str) -> Path:
     download_dir = get_download_root_dir() / folder_name
     download_dir.mkdir(parents=True, exist_ok=True)
     return download_dir
+
+
+def _is_winerror_32(exc: Exception) -> bool:
+    if getattr(exc, "winerror", None) == 32:
+        return True
+    return "WinError 32" in str(exc)
+
+
+def _copy_file_with_retries(src: Path, dst: Path, retries: int = 5, delay_seconds: float = 1.0) -> None:
+    last_error = None
+    for attempt in range(retries):
+        try:
+            with open(src, "rb") as src_handle:
+                with open(dst, "wb") as dst_handle:
+                    shutil.copyfileobj(src_handle, dst_handle, length=1024 * 1024)
+            return
+        except Exception as exc:
+            last_error = exc
+            if not _is_winerror_32(exc) or attempt == retries - 1:
+                raise
+            logger.warning(
+                f"[API] batch_export_files -> 文件占用，等待重试 "
+                f"{attempt + 1}/{retries}: {src.name} | {exc}"
+            )
+            time.sleep(delay_seconds)
+
+    if last_error:
+        raise last_error
 
 class Api:
     """pywebview JS API"""
@@ -693,16 +722,16 @@ class Api:
         last_err = None
         for attempt in range(3):
             try:
-                resp = requests.get(video_url, timeout=120, stream=True)
-                resp.raise_for_status()
-
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
                 filename = f"veo_{timestamp}.mp4"
                 filepath = download_dir / filename
 
-                with open(str(filepath), "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=8192):
-                        f.write(chunk)
+                with requests.get(video_url, timeout=120, stream=True) as resp:
+                    resp.raise_for_status()
+                    with open(str(filepath), "wb") as f:
+                        for chunk in resp.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
 
                 logger.info(f"[API] download_veo_video -> 保存成功: {filepath}")
                 return {"ok": True, "path": str(filepath)}
@@ -927,11 +956,12 @@ class Api:
             filepath = download_dir / filename
 
             logger.info(f"[API] download_video_task -> 使用 URL 下载: {video_url}")
-            resp = requests.get(video_url, timeout=120, stream=True)
-            resp.raise_for_status()
-            with open(str(filepath), "wb") as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f.write(chunk)
+            with requests.get(video_url, timeout=120, stream=True) as resp:
+                resp.raise_for_status()
+                with open(str(filepath), "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
             logger.info(f"[API] download_video_task -> URL 下载完成: {filepath}")
 
             update_video_task(task_id, video_path=str(filepath))
@@ -1102,7 +1132,7 @@ class Api:
                 errors.append(f"文件不存在: {src.name}")
                 continue
             try:
-                shutil.copy2(str(src), str(dest_dir / src.name))
+                _copy_file_with_retries(src, dest_dir / src.name)
                 copied += 1
             except Exception as e:
                 errors.append(f"{src.name}: {e}")
