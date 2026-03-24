@@ -20,15 +20,26 @@ def get_default_download_dir() -> Path:
     """~/Downloads/Glin"""
     return Path.home() / "Downloads" / "Glin"
 
+
+def get_download_root_dir() -> Path:
+    custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
+    root_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
+    root_dir.mkdir(parents=True, exist_ok=True)
+    return root_dir
+
+
+def get_media_download_dir(kind: str) -> Path:
+    folder_name = "videos" if kind == "video" else "images"
+    download_dir = get_download_root_dir() / folder_name
+    download_dir.mkdir(parents=True, exist_ok=True)
+    return download_dir
+
 class Api:
     """pywebview JS API"""
 
     @staticmethod
-    def _resolve_download_dir() -> Path:
-        custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-        download_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
-        download_dir.mkdir(parents=True, exist_ok=True)
-        return download_dir
+    def _resolve_download_dir(kind: str) -> Path:
+        return get_media_download_dir(kind)
 
     @staticmethod
     def _folder_dialog_type(webview_module):
@@ -53,27 +64,30 @@ class Api:
             platform,
             provider,
         )
+        response_meta = {
+            "platform": resolved_platform,
+            "provider": resolved_provider,
+        }
         if not generator:
             suffix = f": {resolved_platform}/{resolved_provider}" if resolved_platform or resolved_provider else ""
-            return {"ok": False, "msg": f"未找到图片生成器{suffix}"}
+            return {"ok": False, "msg": f"未找到图片生成器{suffix}", **response_meta}
 
         request = ImageGenerationRequest(
             prompt=prompt,
             ref_images=ref_images or [],
             aspect_ratio=aspect_ratio,
             image_size=image_size,
-            download_dir=self._resolve_download_dir() if download else None,
+            download_dir=self._resolve_download_dir("image") if download else None,
         )
         result = generator.generate(request, settings)
         if not result.success:
-            return {"ok": False, "msg": result.error_message or "图片生成失败"}
+            return {"ok": False, "msg": result.error_message or "图片生成失败", **response_meta}
 
         response = {
             "ok": True,
             "image_data": result.image_data,
             "mime_type": result.mime_type,
-            "platform": resolved_platform,
-            "provider": resolved_provider,
+            **response_meta,
         }
         if result.file_path:
             response["file_path"] = result.file_path
@@ -95,26 +109,29 @@ class Api:
             platform,
             provider,
         )
+        response_meta = {
+            "platform": resolved_platform,
+            "provider": resolved_provider,
+        }
         if not generator:
             suffix = f": {resolved_platform}/{resolved_provider}" if resolved_platform or resolved_provider else ""
-            return {"ok": False, "msg": f"未找到视频生成器{suffix}"}
+            return {"ok": False, "msg": f"未找到视频生成器{suffix}", **response_meta}
 
         request = VideoGenerationRequest(
             prompt=prompt,
             ref_images=ref_images or [],
             orientation=orientation,
             duration=int(duration or settings.get(SettingKeys.SORA2_DURATION, "10") or 10),
-            download_dir=self._resolve_download_dir() if download else None,
+            download_dir=self._resolve_download_dir("video") if download else None,
         )
         result = generator.generate(request, settings)
         if not result.success:
-            return {"ok": False, "msg": result.error_message or "视频生成失败"}
+            return {"ok": False, "msg": result.error_message or "视频生成失败", **response_meta}
 
         response = {
             "ok": True,
             "video_url": result.video_url,
-            "platform": resolved_platform,
-            "provider": resolved_provider,
+            **response_meta,
         }
         if result.file_path:
             response["file_path"] = result.file_path
@@ -475,8 +492,7 @@ class Api:
             else:
                 logger.info(f"NanoBanana 调试 ({provider_label}): 文生图模式")
 
-            dl_dir = get_default_download_dir()
-            dl_dir.mkdir(parents=True, exist_ok=True)
+            dl_dir = get_media_download_dir("image")
             kwargs["download_dir"] = str(dl_dir)
 
             result = service.generate(
@@ -669,12 +685,10 @@ class Api:
 
         logger.info(f"[API] download_veo_video 调用, url={video_url[:80]}...")
 
-        custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-        download_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
         try:
-            download_dir.mkdir(parents=True, exist_ok=True)
+            download_dir = get_media_download_dir("video")
         except Exception as e:
-            return {"ok": False, "msg": f"下载目录无法创建: {download_dir}"}
+            return {"ok": False, "msg": f"下载目录无法创建: {e}"}
 
         last_err = None
         for attempt in range(3):
@@ -848,13 +862,11 @@ class Api:
 
         logger.info(f"[API] download_video_task 调用, task_id={task_id}")
 
-        custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-        download_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
         try:
-            download_dir.mkdir(parents=True, exist_ok=True)
+            download_dir = get_media_download_dir("video")
         except Exception as e:
             logger.error(f"[API] download_video_task -> 创建下载目录失败: {e}")
-            return {"ok": False, "msg": f"下载目录无法创建: {download_dir}"}
+            return {"ok": False, "msg": f"下载目录无法创建: {e}"}
 
         from .database import get_video_tasks, update_video_task
         try:
@@ -961,12 +973,10 @@ class Api:
 
         logger.info(f"[API] download_image 调用, prefix={filename_prefix}")
 
-        custom_path = get_setting(SettingKeys.DOWNLOAD_PATH)
-        download_dir = Path(custom_path) if custom_path and custom_path.strip() else get_default_download_dir()
         try:
-            download_dir.mkdir(parents=True, exist_ok=True)
+            download_dir = get_media_download_dir("image")
         except Exception as e:
-            return {"ok": False, "msg": f"下载目录无法创建: {download_dir}"}
+            return {"ok": False, "msg": f"下载目录无法创建: {e}"}
 
         try:
             ext_map = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
@@ -1116,21 +1126,36 @@ class Api:
 
     def get_download_status(self) -> dict:
         """获取默认下载文件夹（~/Downloads/Glin）的状态"""
-        dl_dir = get_default_download_dir()
-        if not dl_dir.exists():
-            return {"ok": True, "path": str(dl_dir), "file_count": 0, "total_size": 0}
+        dl_dir = get_download_root_dir()
         try:
-            file_count = 0
-            total_size = 0
-            for f in dl_dir.iterdir():
-                if f.is_file():
-                    file_count += 1
-                    total_size += f.stat().st_size
+            image_dir = dl_dir / "images"
+            video_dir = dl_dir / "videos"
+            image_count = 0
+            image_size = 0
+            video_count = 0
+            video_size = 0
+
+            if image_dir.exists():
+                for f in image_dir.rglob("*"):
+                    if f.is_file():
+                        image_count += 1
+                        image_size += f.stat().st_size
+
+            if video_dir.exists():
+                for f in video_dir.rglob("*"):
+                    if f.is_file():
+                        video_count += 1
+                        video_size += f.stat().st_size
+
             return {
                 "ok": True,
                 "path": str(dl_dir),
-                "file_count": file_count,
-                "total_size": total_size,
+                "file_count": image_count + video_count,
+                "total_size": image_size + video_size,
+                "image_count": image_count,
+                "image_total_size": image_size,
+                "video_count": video_count,
+                "video_total_size": video_size,
             }
         except Exception as e:
             logger.error(f"[API] get_download_status -> 异常: {e}")
@@ -1138,15 +1163,17 @@ class Api:
 
     def clean_downloads(self) -> dict:
         """清理默认下载文件夹（~/Downloads/Glin）中的所有文件"""
-        dl_dir = get_default_download_dir()
-        if not dl_dir.exists():
-            return {"ok": True, "count": 0, "msg": "下载文件夹不存在"}
+        dl_dir = get_download_root_dir()
         try:
             count = 0
-            for f in dl_dir.iterdir():
-                if f.is_file():
-                    f.unlink()
-                    count += 1
+            for subdir_name in ("images", "videos"):
+                subdir = dl_dir / subdir_name
+                if not subdir.exists():
+                    continue
+                for f in subdir.rglob("*"):
+                    if f.is_file():
+                        f.unlink()
+                        count += 1
             logger.info(f"[API] clean_downloads -> 已清理 {count} 个文件")
             return {"ok": True, "count": count}
         except Exception as e:
@@ -1158,8 +1185,9 @@ class Api:
         import platform
         import subprocess
 
-        dl_dir = get_default_download_dir()
-        dl_dir.mkdir(parents=True, exist_ok=True)
+        dl_dir = get_download_root_dir()
+        get_media_download_dir("image")
+        get_media_download_dir("video")
         try:
             system = platform.system()
             if system == "Windows":

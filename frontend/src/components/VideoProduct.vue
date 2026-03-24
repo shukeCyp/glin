@@ -299,13 +299,9 @@ const submitBatchDialog = () => {
     id: ++taskIdCounter,
     images: [{ ...img }],
     imagePrompt: defaultImagePrompt.value,
-    imagePlatform: selectedImagePlatform.value,
-    imageProvider: selectedImageProvider.value,
     imageRatio: batchImageRatio.value,
     imageQuality: batchImageQuality.value,
     videoPrompt: defaultVideoPrompt.value,
-    videoPlatform: selectedVideoPlatform.value,
-    videoProvider: selectedVideoProvider.value,
     videoOrientation: batchVideoOrientation.value,
     videoDuration: batchVideoDuration.value,
     autoVideo: batchAutoVideo.value,
@@ -356,6 +352,13 @@ const startBatchGeneration = async (tasks) => {
   }
 }
 
+const applyActualGenerator = (task, type, res) => {
+  const platformKey = type === 'image' ? 'actualImagePlatform' : 'actualVideoPlatform'
+  const providerKey = type === 'image' ? 'actualImageProvider' : 'actualVideoProvider'
+  task[platformKey] = res?.platform || ''
+  task[providerKey] = res?.provider || ''
+}
+
 // ==================== 统计信息 ====================
 const stats = computed(() => {
   const total = taskList.value.length
@@ -392,13 +395,9 @@ const submitDialog = () => {
     id: ++taskIdCounter,
     images,
     imagePrompt: defaultImagePrompt.value,
-    imagePlatform: selectedImagePlatform.value,
-    imageProvider: selectedImageProvider.value,
     imageRatio: dialogImageRatio.value,
     imageQuality: dialogImageQuality.value,
     videoPrompt: defaultVideoPrompt.value,
-    videoPlatform: selectedVideoPlatform.value,
-    videoProvider: selectedVideoProvider.value,
     videoOrientation: dialogVideoOrientation.value,
     videoDuration: dialogVideoDuration.value,
     autoVideo: dialogAutoVideo.value,
@@ -455,16 +454,13 @@ const generateImage = async (task) => {
         refImages,
         task.imageRatio,
         task.imageQuality,
-        task.imagePlatform,
-        task.imageProvider,
       )
+      applyActualGenerator(task, 'image', res)
       if (res.ok && res.image_data && res.mime_type) {
         task.resultImageSrc = `data:${res.mime_type};base64,${res.image_data}`
         task.resultImageBase64 = res.image_data
         task.resultImageMime = res.mime_type
         task.resultImagePath = res.file_path || ''
-        task.actualImagePlatform = res.platform || ''
-        task.actualImageProvider = res.provider || ''
         task.status = 'image_done'
         if (task.autoVideo) {
           task.statusText = '图片完成，开始生成视频...'
@@ -516,14 +512,11 @@ const generateVideo = async (task) => {
         refImages,
         task.videoOrientation,
         task.videoDuration || 10,
-        task.videoPlatform,
-        task.videoProvider,
       )
+      applyActualGenerator(task, 'video', res)
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url
         task.filePath = res.file_path || ''
-        task.actualVideoPlatform = res.platform || ''
-        task.actualVideoProvider = res.provider || ''
         task.status = 'completed'
         task.statusText = '已完成'
         if (task.filePath) {
@@ -678,7 +671,7 @@ const openEditDialog = (task) => {
   editVideoPrompt.value = task.videoPrompt
   editImageRatio.value = task.imageRatio
   editImageQuality.value = task.imageQuality
-  editVideoPlatform.value = task.videoPlatform || selectedVideoPlatform.value
+  editVideoPlatform.value = task.actualVideoPlatform || selectedVideoPlatform.value
   editVideoOrientation.value = task.videoOrientation
   editVideoDuration.value = task.videoDuration || 10
   showEditDialog.value = true
@@ -831,17 +824,11 @@ const statusClass = (status) => {
           <div class="col col-status">
             <span :class="['status-tag', statusClass(task.status)]">{{ task.statusText }}</span>
             <div
-              v-if="task.imagePlatform || task.videoPlatform || task.actualImagePlatform || task.actualVideoPlatform"
+              v-if="task.actualImagePlatform || task.actualVideoPlatform"
               class="channel-meta"
             >
-              <div v-if="task.imagePlatform" class="channel-line">
-                请求图片: {{ formatGeneratorLabel(imageGeneratorOptions, task.imagePlatform, task.imageProvider) }}
-              </div>
               <div v-if="task.actualImagePlatform" class="channel-line">
                 实际图片: {{ formatGeneratorLabel(imageGeneratorOptions, task.actualImagePlatform, task.actualImageProvider) }}
-              </div>
-              <div v-if="task.videoPlatform" class="channel-line">
-                请求视频: {{ formatGeneratorLabel(videoGeneratorOptions, task.videoPlatform, task.videoProvider) }}
               </div>
               <div v-if="task.actualVideoPlatform" class="channel-line">
                 实际视频: {{ formatGeneratorLabel(videoGeneratorOptions, task.actualVideoPlatform, task.actualVideoProvider) }}

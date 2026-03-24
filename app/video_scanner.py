@@ -6,7 +6,7 @@ import threading
 import time
 from pathlib import Path
 
-from .api import get_default_download_dir
+from .api import get_media_download_dir
 from .constants import SettingKeys
 from .database import (
     get_all_settings,
@@ -60,7 +60,7 @@ def _build_request(generator, task, settings: dict) -> VideoGenerationRequest:
         ref_images=_read_ref_images(task.image_path or ""),
         orientation=orientation,
         duration=duration,
-        download_dir=get_default_download_dir(),
+        download_dir=get_media_download_dir("video"),
     )
 
 
