@@ -8,6 +8,7 @@ import VeoGeneration from './components/VeoGeneration.vue'
 import Sora2Generation from './components/Sora2Generation.vue'
 import VeoProduct from './components/VeoProduct.vue'
 import VideoProduct from './components/VideoProduct.vue'
+import MultiShotVideoProduct from './components/MultiShotVideoProduct.vue'
 import VeoQihao from './components/VeoQihao.vue'
 import Debug from './components/Debug.vue'
 
@@ -171,6 +172,18 @@ onMounted(() => {
             <span>Sora2带货</span>
           </button>
           <button
+            :class="['nav-item', { active: currentPage === 'multi_shot_video_product' }]"
+            @click="currentPage = 'multi_shot_video_product'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="8" height="14" rx="2" ry="2"/>
+              <rect x="13" y="4" width="8" height="14" rx="2" ry="2"/>
+              <polygon points="9 9 14 12 9 15 9 9"/>
+              <line x1="8" y1="20" x2="16" y2="20"/>
+            </svg>
+            <span>多镜头带货</span>
+          </button>
+          <button
             :class="['nav-item', { active: currentPage === 'sora2' }]"
             @click="currentPage = 'sora2'"
           >
@@ -274,6 +287,11 @@ onMounted(() => {
         <!-- 视频带货 -->
         <VideoProduct
           v-show="currentPage === 'video_product'"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
+        <MultiShotVideoProduct
+          v-show="currentPage === 'multi_shot_video_product'"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 
