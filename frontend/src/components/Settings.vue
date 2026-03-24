@@ -58,6 +58,7 @@ const selectDownloadFolder = async () => {
 const auto_retry = ref(false)
 const image_max_retry = ref('3')
 const video_max_retry = ref('3')
+const multi_shot_prompt_record_enabled = ref(true)
 
 // 线程池配置
 const thread_pool_size = ref('10')
@@ -123,6 +124,7 @@ const saveSettings = async () => {
       auto_retry: auto_retry.value ? 'true' : 'false',
       image_max_retry: image_max_retry.value,
       video_max_retry: video_max_retry.value,
+      multi_shot_prompt_record_enabled: multi_shot_prompt_record_enabled.value ? 'true' : 'false',
       thread_pool_size: thread_pool_size.value,
     })
     emit('toast', '设置已保存', 'success')
@@ -202,6 +204,9 @@ const loadSettings = async () => {
     if (settings.auto_retry) auto_retry.value = settings.auto_retry === 'true'
     if (settings.image_max_retry) image_max_retry.value = settings.image_max_retry
     if (settings.video_max_retry) video_max_retry.value = settings.video_max_retry
+    if (settings.multi_shot_prompt_record_enabled !== undefined) {
+      multi_shot_prompt_record_enabled.value = settings.multi_shot_prompt_record_enabled === 'true'
+    }
     if (settings.thread_pool_size) thread_pool_size.value = settings.thread_pool_size
   } catch {
     // Settings not loaded yet
@@ -289,6 +294,18 @@ onMounted(() => {
                   <span class="field-label">视频最大重试次数</span>
                   <input v-model="video_max_retry" type="number" min="0" max="10" placeholder="3" />
                 </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">多镜头带货</h3></div>
+              <div class="card-body">
+                <label class="checkbox-item">
+                  <input type="checkbox" v-model="multi_shot_prompt_record_enabled" />
+                  <span class="checkbox-label">记录多镜头提示词</span>
+                </label>
+                <div class="field-hint" style="margin-top: 10px;">
+                  关闭后，多镜头带货的添加任务弹窗会默认只显示一对空白提示词，不再自动回填历史记录。
+                </div>
               </div>
             </div>
           </div>

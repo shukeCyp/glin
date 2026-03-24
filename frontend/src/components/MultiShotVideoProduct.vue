@@ -13,12 +13,14 @@ const selectedVideoProvider = ref('dayangyu')
 
 // ==================== 默认提示词 ====================
 const MULTI_SHOT_PROMPT_ARRAY_KEY = 'multi_shot_product_prompt_pairs'
+const MULTI_SHOT_PROMPT_RECORD_ENABLED_KEY = 'multi_shot_prompt_record_enabled'
 const DEFAULT_MULTI_SHOT_IMAGE_PROMPT = '请根据图片中的产品，为其绘制一个真实、自然的展示场景。场景需要与产品类型相匹配，突出产品本身，背景环境要逼真有质感。注意：画面中不要出现任何文字、标签或水印。'
 const DEFAULT_MULTI_SHOT_VIDEO_PROMPT = '根据图片内容生成一段自然流畅的展示视频'
 
 const defaultImagePrompt = ref(DEFAULT_MULTI_SHOT_IMAGE_PROMPT)
 const defaultVideoPrompt = ref(DEFAULT_MULTI_SHOT_VIDEO_PROMPT)
 const savedPromptPairs = ref([])
+const isPromptRecordEnabled = ref(true)
 
 const showPromptDialog = ref(false)
 const promptDialogType = ref('image')
@@ -28,6 +30,17 @@ const buildDefaultPromptPairs = () => ([{
   imagePrompt: DEFAULT_MULTI_SHOT_IMAGE_PROMPT,
   videoPrompt: DEFAULT_MULTI_SHOT_VIDEO_PROMPT,
 }])
+
+const buildEmptyPromptPairs = () => ([{
+  imagePrompt: '',
+  videoPrompt: '',
+}])
+
+const parseBooleanSetting = (value, fallback = true) => {
+  if (value === undefined || value === null || value === '') return fallback
+  if (typeof value === 'boolean') return value
+  return String(value).toLowerCase() === 'true'
+}
 
 const normalizePromptText = (value) => (
   typeof value === 'string' ? value.trim() : ''
@@ -58,7 +71,14 @@ const normalizeStoredPromptPairs = (raw) => {
   return pairs.length ? pairs : buildDefaultPromptPairs()
 }
 
-const applySavedPromptPairs = (raw) => {
+const applySavedPromptPairs = (raw, recordEnabled = isPromptRecordEnabled.value) => {
+  isPromptRecordEnabled.value = recordEnabled
+  if (!recordEnabled) {
+    savedPromptPairs.value = []
+    defaultImagePrompt.value = ''
+    defaultVideoPrompt.value = ''
+    return buildEmptyPromptPairs()
+  }
   const pairs = normalizeStoredPromptPairs(raw)
   savedPromptPairs.value = pairs
   defaultImagePrompt.value = pairs[0].imagePrompt
@@ -69,9 +89,10 @@ const applySavedPromptPairs = (raw) => {
 const loadSavedPromptPairs = async (settingsOverride = null) => {
   try {
     const settings = settingsOverride || await window.pywebview.api.get_all_settings()
-    return applySavedPromptPairs(settings?.[MULTI_SHOT_PROMPT_ARRAY_KEY])
+    const recordEnabled = parseBooleanSetting(settings?.[MULTI_SHOT_PROMPT_RECORD_ENABLED_KEY], true)
+    return applySavedPromptPairs(settings?.[MULTI_SHOT_PROMPT_ARRAY_KEY], recordEnabled)
   } catch {
-    return applySavedPromptPairs(null)
+    return applySavedPromptPairs(null, isPromptRecordEnabled.value)
   }
 }
 
@@ -139,7 +160,12 @@ const updateSelectedVideoPlatform = () => {
   persistGeneratorDefaults()
 }
 
-const openPromptDialog = (type) => {
+const openPromptDialog = async (type) => {
+  await loadSavedPromptPairs()
+  if (!isPromptRecordEnabled.value) {
+    emit('toast', '已关闭多镜头提示词记录，请在添加任务弹窗中直接填写', 'error')
+    return
+  }
   promptDialogType.value = type
   promptDialogText.value = type === 'image' ? defaultImagePrompt.value : defaultVideoPrompt.value
   showPromptDialog.value = true
@@ -148,6 +174,10 @@ const closePromptDialog = () => { showPromptDialog.value = false }
 const savePromptDialog = async () => {
   const text = promptDialogText.value.trim()
   if (!text) { emit('toast', '提示词不能为空', 'error'); return }
+  if (!isPromptRecordEnabled.value) {
+    emit('toast', '已关闭多镜头提示词记录', 'error')
+    return
+  }
   try {
     const currentPairs = normalizeStoredPromptPairs(savedPromptPairs.value)
     const firstPair = { ...currentPairs[0] }
@@ -323,7 +353,7 @@ const onPageDrop = async (e) => {
   if (!files.length) return
   const imgs = (await Promise.all(files.map(readImageFile))).filter(Boolean)
   if (!imgs.length) return
-  openBatchDialog(imgs)
+  await openBatchDialog(imgs)
 }
 
 // ==================== 批量添加弹窗 ====================
@@ -346,10 +376,11 @@ const persistGeneratorDefaults = () => {
   }).catch(() => {})
 }
 
-const openBatchDialog = (imgs) => {
+const openBatchDialog = async (imgs) => {
+  const pairs = await loadSavedPromptPairs()
   batchImages.value = imgs
-  batchImagePrompt.value = defaultImagePrompt.value
-  batchVideoPrompt.value = defaultVideoPrompt.value
+  batchImagePrompt.value = pairs[0].imagePrompt
+  batchVideoPrompt.value = pairs[0].videoPrompt
   showBatchDialog.value = true
 }
 const closeBatchDialog = () => { showBatchDialog.value = false; batchImages.value = [] }
@@ -462,8 +493,13 @@ const submitDialog = async () => {
     return
   }
 
-  defaultImagePrompt.value = promptPairs[0].imagePrompt
-  defaultVideoPrompt.value = promptPairs[0].videoPrompt
+  if (isPromptRecordEnabled.value) {
+    defaultImagePrompt.value = promptPairs[0].imagePrompt
+    defaultVideoPrompt.value = promptPairs[0].videoPrompt
+  } else {
+    defaultImagePrompt.value = ''
+    defaultVideoPrompt.value = ''
+  }
 
   window.pywebview.api.save_settings({
     glin_nanobanana_ratio: dialogImageRatio.value,
@@ -475,10 +511,12 @@ const submitDialog = async () => {
     video_product_video_platform: selectedVideoPlatform.value,
     video_product_video_provider: selectedVideoProvider.value,
   }).catch(() => {})
-  try {
-    await persistSavedPromptPairs(promptPairs)
-  } catch {
-    emit('toast', '多分镜提示词保存失败', 'error')
+  if (isPromptRecordEnabled.value) {
+    try {
+      await persistSavedPromptPairs(promptPairs)
+    } catch {
+      emit('toast', '多分镜提示词保存失败', 'error')
+    }
   }
 
   const images = dialogImages.value.map(img => ({ ...img }))
