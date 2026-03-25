@@ -172,8 +172,8 @@ onMounted(() => {
             <span>Sora2带货</span>
           </button>
           <button
-            :class="['nav-item', { active: currentPage === 'multi_shot_video_product' }]"
-            @click="currentPage = 'multi_shot_video_product'"
+            :class="['nav-item', { active: currentPage === 'multi_shot_sora2' }]"
+            @click="currentPage = 'multi_shot_sora2'"
           >
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="4" width="8" height="14" rx="2" ry="2"/>
@@ -181,7 +181,19 @@ onMounted(() => {
               <polygon points="9 9 14 12 9 15 9 9"/>
               <line x1="8" y1="20" x2="16" y2="20"/>
             </svg>
-            <span>多镜头带货</span>
+            <span>Sora2多镜头</span>
+          </button>
+          <button
+            :class="['nav-item', { active: currentPage === 'multi_shot_veo' }]"
+            @click="currentPage = 'multi_shot_veo'"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="8" height="14" rx="2" ry="2"/>
+              <rect x="13" y="4" width="8" height="14" rx="2" ry="2"/>
+              <polygon points="9 9 14 12 9 15 9 9"/>
+              <line x1="8" y1="20" x2="16" y2="20"/>
+            </svg>
+            <span>VEO多镜头</span>
           </button>
           <button
             :class="['nav-item', { active: currentPage === 'sora2' }]"
@@ -291,7 +303,18 @@ onMounted(() => {
         />
 
         <MultiShotVideoProduct
-          v-show="currentPage === 'multi_shot_video_product'"
+          v-show="currentPage === 'multi_shot_sora2'"
+          page-title="Sora2多镜头"
+          video-platform="sora2"
+          settings-key-prefix="multi_shot_sora2"
+          @toast="(msg, type) => toastRef?.show(msg, type)"
+        />
+
+        <MultiShotVideoProduct
+          v-show="currentPage === 'multi_shot_veo'"
+          page-title="VEO多镜头"
+          video-platform="veo3"
+          settings-key-prefix="multi_shot_veo"
           @toast="(msg, type) => toastRef?.show(msg, type)"
         />
 

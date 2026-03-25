@@ -1,6 +1,21 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 
+const props = defineProps({
+  pageTitle: {
+    type: String,
+    default: 'Sora2多镜头',
+  },
+  videoPlatform: {
+    type: String,
+    default: 'sora2',
+  },
+  settingsKeyPrefix: {
+    type: String,
+    default: 'multi_shot_sora2',
+  },
+})
+
 const emit = defineEmits(['toast'])
 
 const imageGeneratorOptions = ref([])
@@ -8,14 +23,42 @@ const videoGeneratorOptions = ref([])
 
 const selectedImagePlatform = ref('nanobanana')
 const selectedImageProvider = ref('yunwu')
-const selectedVideoPlatform = ref('sora2')
-const selectedVideoProvider = ref('dayangyu')
+const selectedVideoPlatform = ref(props.videoPlatform)
+const selectedVideoProvider = ref(props.videoPlatform === 'veo3' ? 'hetang' : 'dayangyu')
 
 // ==================== 默认提示词 ====================
 const MULTI_SHOT_PROMPT_ARRAY_KEY = 'multi_shot_product_prompt_pairs'
 const MULTI_SHOT_PROMPT_RECORD_ENABLED_KEY = 'multi_shot_prompt_record_enabled'
 const DEFAULT_MULTI_SHOT_IMAGE_PROMPT = '请根据图片中的产品，为其绘制一个真实、自然的展示场景。场景需要与产品类型相匹配，突出产品本身，背景环境要逼真有质感。注意：画面中不要出现任何文字、标签或水印。'
 const DEFAULT_MULTI_SHOT_VIDEO_PROMPT = '根据图片内容生成一段自然流畅的展示视频'
+
+const imagePlatformSettingKey = `${props.settingsKeyPrefix}_image_platform`
+const imageProviderSettingKey = `${props.settingsKeyPrefix}_image_provider`
+const videoPlatformSettingKey = `${props.settingsKeyPrefix}_video_platform`
+const videoProviderSettingKey = `${props.settingsKeyPrefix}_video_provider`
+
+const isSora2Mode = computed(() => selectedVideoPlatform.value === 'sora2')
+const batchDialogTitle = computed(() => `批量添加${props.pageTitle}任务`)
+const addDialogTitle = computed(() => `添加${props.pageTitle}任务`)
+const emptyStateTitle = computed(() => `暂无${props.pageTitle}任务`)
+
+const resolveImageDefaults = (settings = {}) => ({
+  platform: (settings.nanobanana_model ? 'nanobanana' : null) || settings[imagePlatformSettingKey] || 'nanobanana',
+  provider: settings.nanobanana_model || settings[imageProviderSettingKey] || 'yunwu',
+})
+
+const resolveVideoDefaults = (settings = {}) => {
+  if (props.videoPlatform === 'veo3') {
+    return {
+      platform: 'veo3',
+      provider: settings.veo_model || settings[videoProviderSettingKey] || 'hetang',
+    }
+  }
+  return {
+    platform: 'sora2',
+    provider: settings.sora2_model || settings[videoProviderSettingKey] || 'dayangyu',
+  }
+}
 
 const defaultImagePrompt = ref(DEFAULT_MULTI_SHOT_IMAGE_PROMPT)
 const defaultVideoPrompt = ref(DEFAULT_MULTI_SHOT_VIDEO_PROMPT)
@@ -104,15 +147,6 @@ const persistSavedPromptPairs = async (pairs) => {
   return applySavedPromptPairs(normalized)
 }
 
-const buildPlatformOptions = (options) => {
-  const seen = new Set()
-  return options.filter((item) => {
-    if (seen.has(item.platform)) return false
-    seen.add(item.platform)
-    return true
-  }).map(item => ({ value: item.platform, label: item.platform_label }))
-}
-
 const getProviderOptions = (options, platform) =>
   options.filter(item => item.platform === platform)
 
@@ -134,30 +168,6 @@ const normalizeGeneratorSelection = (options, platform, provider) => {
   }
   const fallback = providerOptions.find(item => item.configured) || providerOptions[0]
   return { platform: fallback.platform, provider: fallback.provider }
-}
-
-const imagePlatformOptions = computed(() => buildPlatformOptions(imageGeneratorOptions.value))
-const videoPlatformOptions = computed(() => buildPlatformOptions(videoGeneratorOptions.value))
-const updateSelectedImagePlatform = () => {
-  const normalized = normalizeGeneratorSelection(
-    imageGeneratorOptions.value,
-    selectedImagePlatform.value,
-    selectedImageProvider.value,
-  )
-  selectedImagePlatform.value = normalized.platform
-  selectedImageProvider.value = normalized.provider
-  persistGeneratorDefaults()
-}
-
-const updateSelectedVideoPlatform = () => {
-  const normalized = normalizeGeneratorSelection(
-    videoGeneratorOptions.value,
-    selectedVideoPlatform.value,
-    selectedVideoProvider.value,
-  )
-  selectedVideoPlatform.value = normalized.platform
-  selectedVideoProvider.value = normalized.provider
-  persistGeneratorDefaults()
 }
 
 const openPromptDialog = async (type) => {
@@ -212,23 +222,20 @@ onMounted(async () => {
       imageGeneratorOptions.value = generatorRes.image_options || []
       videoGeneratorOptions.value = generatorRes.video_options || []
 
-      // 优先使用“设置”页面的全局渠道；仅在全局未配置时回退到页面历史默认值。
-      const imagePlatformFromSettings = (settings.nanobanana_model ? 'nanobanana' : null) || settings.video_product_image_platform
-      const imageProviderFromSettings = settings.nanobanana_model || settings.video_product_image_provider || 'yunwu'
+      const imagePreference = resolveImageDefaults(settings)
       const imageDefaults = normalizeGeneratorSelection(
         imageGeneratorOptions.value,
-        imagePlatformFromSettings || 'nanobanana',
-        imageProviderFromSettings,
+        imagePreference.platform,
+        imagePreference.provider,
       )
       selectedImagePlatform.value = imageDefaults.platform
       selectedImageProvider.value = imageDefaults.provider
 
-      const videoPlatformFromSettings = (settings.sora2_model ? 'sora2' : null) || settings.video_product_video_platform
-      const videoProviderFromSettings = settings.sora2_model || settings.video_product_video_provider || 'dayangyu'
+      const videoPreference = resolveVideoDefaults(settings)
       const videoDefaults = normalizeGeneratorSelection(
         videoGeneratorOptions.value,
-        videoPlatformFromSettings || 'sora2',
-        videoProviderFromSettings,
+        videoPreference.platform,
+        videoPreference.provider,
       )
       selectedVideoPlatform.value = videoDefaults.platform
       selectedVideoProvider.value = videoDefaults.provider
@@ -369,10 +376,10 @@ const batchAutoVideo = ref(true)
 
 const persistGeneratorDefaults = () => {
   window.pywebview.api.save_settings({
-    video_product_image_platform: selectedImagePlatform.value,
-    video_product_image_provider: selectedImageProvider.value,
-    video_product_video_platform: selectedVideoPlatform.value,
-    video_product_video_provider: selectedVideoProvider.value,
+    [imagePlatformSettingKey]: selectedImagePlatform.value,
+    [imageProviderSettingKey]: selectedImageProvider.value,
+    [videoPlatformSettingKey]: selectedVideoPlatform.value,
+    [videoProviderSettingKey]: selectedVideoProvider.value,
   }).catch(() => {})
 }
 
@@ -401,10 +408,10 @@ const submitBatchDialog = () => {
     glin_nanobanana_quality: batchImageQuality.value,
     hetang_veo_orientation: batchVideoOrientation.value,
     sora2_duration: String(batchVideoDuration.value),
-    video_product_image_platform: selectedImagePlatform.value,
-    video_product_image_provider: selectedImageProvider.value,
-    video_product_video_platform: selectedVideoPlatform.value,
-    video_product_video_provider: selectedVideoProvider.value,
+    [imagePlatformSettingKey]: selectedImagePlatform.value,
+    [imageProviderSettingKey]: selectedImageProvider.value,
+    [videoPlatformSettingKey]: selectedVideoPlatform.value,
+    [videoProviderSettingKey]: selectedVideoProvider.value,
   }).catch(() => {})
 
   const tasks = batchImages.value.map(img => reactive({
@@ -416,6 +423,10 @@ const submitBatchDialog = () => {
     videoPrompt,
     videoOrientation: batchVideoOrientation.value,
     videoDuration: batchVideoDuration.value,
+    imagePlatform: selectedImagePlatform.value,
+    imageProvider: selectedImageProvider.value,
+    videoPlatform: selectedVideoPlatform.value,
+    videoProvider: selectedVideoProvider.value,
     autoVideo: batchAutoVideo.value,
     resultImageSrc: '',
     resultImageBase64: '',
@@ -506,10 +517,10 @@ const submitDialog = async () => {
     glin_nanobanana_quality: dialogImageQuality.value,
     hetang_veo_orientation: dialogVideoOrientation.value,
     sora2_duration: String(dialogVideoDuration.value),
-    video_product_image_platform: selectedImagePlatform.value,
-    video_product_image_provider: selectedImageProvider.value,
-    video_product_video_platform: selectedVideoPlatform.value,
-    video_product_video_provider: selectedVideoProvider.value,
+    [imagePlatformSettingKey]: selectedImagePlatform.value,
+    [imageProviderSettingKey]: selectedImageProvider.value,
+    [videoPlatformSettingKey]: selectedVideoPlatform.value,
+    [videoProviderSettingKey]: selectedVideoProvider.value,
   }).catch(() => {})
   if (isPromptRecordEnabled.value) {
     try {
@@ -529,6 +540,10 @@ const submitDialog = async () => {
       videoPrompt: pair.videoPrompt,
       videoOrientation: dialogVideoOrientation.value,
       videoDuration: dialogVideoDuration.value,
+      imagePlatform: selectedImagePlatform.value,
+      imageProvider: selectedImageProvider.value,
+      videoPlatform: selectedVideoPlatform.value,
+      videoProvider: selectedVideoProvider.value,
       autoVideo: dialogAutoVideo.value,
       resultImageSrc: '',
       resultImageBase64: '',
@@ -584,6 +599,8 @@ const generateImage = async (task) => {
         refImages,
         task.imageRatio,
         task.imageQuality,
+        task.imagePlatform,
+        task.imageProvider,
       )
       applyActualGenerator(task, 'image', res)
       if (res.ok && res.image_data && res.mime_type) {
@@ -642,6 +659,8 @@ const generateVideo = async (task) => {
         refImages,
         task.videoOrientation,
         task.videoDuration || 10,
+        task.videoPlatform,
+        task.videoProvider,
       )
       applyActualGenerator(task, 'video', res)
       if (res.ok && res.video_url) {
@@ -790,7 +809,7 @@ const editImagePrompt = ref('')
 const editVideoPrompt = ref('')
 const editImageRatio = ref('9:16')
 const editImageQuality = ref('1K')
-const editVideoPlatform = ref('veo3')
+const editVideoPlatform = ref(props.videoPlatform)
 const editVideoOrientation = ref('portrait')
 const editVideoDuration = ref(10)
 
@@ -801,7 +820,7 @@ const openEditDialog = (task) => {
   editVideoPrompt.value = task.videoPrompt
   editImageRatio.value = task.imageRatio
   editImageQuality.value = task.imageQuality
-  editVideoPlatform.value = task.actualVideoPlatform || selectedVideoPlatform.value
+  editVideoPlatform.value = task.videoPlatform || task.actualVideoPlatform || selectedVideoPlatform.value
   editVideoOrientation.value = task.videoOrientation
   editVideoDuration.value = task.videoDuration || 10
   showEditDialog.value = true
@@ -837,7 +856,7 @@ const statusClass = (status) => {
   <div class="page">
     <!-- 顶栏 -->
     <div class="page-toolbar">
-      <h2 class="page-title">多镜头带货</h2>
+      <h2 class="page-title">{{ props.pageTitle }}</h2>
       <div class="toolbar-actions">
         <button class="tool-btn refresh-btn" @click="() => window.location.reload()">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -916,7 +935,7 @@ const statusClass = (status) => {
           <line x1="8" y1="21" x2="16" y2="21"/>
           <line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
-        <p class="empty-text">暂无多镜头带货任务</p>
+        <p class="empty-text">{{ emptyStateTitle }}</p>
         <p class="empty-hint">点击"添加任务"，用同一组图片录入多组提示词</p>
       </div>
 
@@ -1057,7 +1076,7 @@ const statusClass = (status) => {
       <div v-if="showBatchDialog" class="dialog-overlay" @click.self="closeBatchDialog">
         <div class="dialog dialog--image">
           <div class="dialog-header">
-            <h3 class="dialog-title">批量添加带货任务（{{ batchImages.length }} 张图 = {{ batchImages.length }} 条任务）</h3>
+            <h3 class="dialog-title">{{ batchDialogTitle }}（{{ batchImages.length }} 张图 = {{ batchImages.length }} 条任务）</h3>
             <button class="dialog-close" @click="closeBatchDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -1124,7 +1143,7 @@ const statusClass = (status) => {
                   </div>
                 </div>
               </div>
-              <div v-if="selectedVideoPlatform === 'sora2'" class="form-row">
+              <div v-if="isSora2Mode" class="form-row">
                 <div class="field field-inline">
                   <span class="field-label">视频时长</span>
                   <div class="toggle-group">
@@ -1166,7 +1185,7 @@ const statusClass = (status) => {
       <div v-if="showDialog" class="dialog-overlay" @click.self="closeDialog">
         <div class="dialog dialog--image dialog--multi-shot">
           <div class="dialog-header">
-            <h3 class="dialog-title">添加多镜头带货任务</h3>
+            <h3 class="dialog-title">{{ addDialogTitle }}</h3>
             <button class="dialog-close" @click="closeDialog">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -1235,7 +1254,7 @@ const statusClass = (status) => {
                     </button>
                   </div>
                 </div>
-                <div v-if="selectedVideoPlatform === 'sora2'" class="field field-inline dialog-field-gap">
+                <div v-if="isSora2Mode" class="field field-inline dialog-field-gap">
                   <span class="field-label">视频时长</span>
                   <div class="toggle-group">
                     <button :class="['toggle-btn', { active: dialogVideoDuration === 10 }]" @click="dialogVideoDuration = 10">10S</button>

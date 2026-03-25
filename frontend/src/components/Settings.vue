@@ -297,14 +297,14 @@ onMounted(() => {
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">多镜头带货</h3></div>
+              <div class="card-header"><h3 class="card-title">多镜头提示词</h3></div>
               <div class="card-body">
                 <label class="checkbox-item">
                   <input type="checkbox" v-model="multi_shot_prompt_record_enabled" />
                   <span class="checkbox-label">记录多镜头提示词</span>
                 </label>
                 <div class="field-hint" style="margin-top: 10px;">
-                  关闭后，多镜头带货的添加任务弹窗会默认只显示一对空白提示词，不再自动回填历史记录。
+                  关闭后，Sora2 多镜头和 VEO 多镜头的添加任务弹窗都会默认只显示一对空白提示词，不再自动回填历史记录。
                 </div>
               </div>
             </div>

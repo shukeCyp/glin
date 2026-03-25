@@ -112,6 +112,18 @@ class Sora2BandianwaTests(unittest.TestCase):
         self.assertIn("无效的令牌", result.error_message)
 
     @patch("app.services.sora2.dayangyu.requests.get")
+    def test_query_task_keeps_polling_on_connection_reset(self, mock_get):
+        mock_get.side_effect = requests.exceptions.ConnectionError(
+            "('Connection aborted.', ConnectionResetError(10054, '远程主机强迫关闭了一个现有的连接。', None, 10054, None))"
+        )
+
+        result = self.service.query_task("test_task_id")
+
+        self.assertEqual(result.task_id, "test_task_id")
+        self.assertEqual(result.status, Sora2TaskStatus.PROCESSING)
+        self.assertIn("Connection aborted", result.error_message)
+
+    @patch("app.services.sora2.dayangyu.requests.get")
     def test_get_video_content_extracts_real_unauthorized_error_shape(self, mock_get):
         mock_response = MagicMock()
         mock_response.status_code = 401
@@ -129,7 +141,8 @@ class Sora2BandianwaTests(unittest.TestCase):
         http_error = requests.exceptions.HTTPError("401 Client Error")
         http_error.response = mock_response
         mock_response.raise_for_status.side_effect = http_error
-        mock_get.return_value = mock_response
+        mock_get.return_value.__enter__.return_value = mock_response
+        mock_get.return_value.__exit__.return_value = None
 
         data, content_type, error_message = self.service.get_video_content("test_task_id")
 

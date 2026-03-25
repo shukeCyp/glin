@@ -217,6 +217,9 @@ class Sora2Yunwu(Sora2Base):
             logger.error(f"[{self.provider_name}] Sora2 查询失败 | {e.response.status_code} | {e.response.text[:500]}")
             raise
         except Exception as e:
+            if self.is_transient_query_exception(e):
+                logger.warning(f"[{self.provider_name}] Sora2 查询网络异常，跳过本次轮询 | {task_id} | {type(e).__name__}: {e}")
+                return self.build_transient_query_task(task_id, e)
             logger.error(f"[{self.provider_name}] Sora2 查询异常 | {type(e).__name__}: {e}")
             raise
 

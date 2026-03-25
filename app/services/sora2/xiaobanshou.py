@@ -192,6 +192,9 @@ class Sora2Xiaobanshou(Sora2Base):
                 error_message=msg or str(e),
             )
         except Exception as e:
+            if self.is_transient_query_exception(e):
+                logger.warning(f"[{self.provider_name}] 查询任务网络异常，跳过本次轮询 | {task_id} | {type(e).__name__}: {e}")
+                return self.build_transient_query_task(task_id, e)
             logger.error(f"[{self.provider_name}] 查询任务异常 | {task_id} | {type(e).__name__}: {e}")
             return Sora2Task(
                 task_id=task_id,

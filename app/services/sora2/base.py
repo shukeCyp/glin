@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Optional, Tuple
 
+import requests
+
 
 class Sora2TaskStatus(Enum):
     """任务状态"""
@@ -43,6 +45,27 @@ class Sora2Base(ABC):
             api_key: API密钥
         """
         self.api_key = api_key
+
+    def build_transient_query_task(self, task_id: str, exc: Exception) -> Sora2Task:
+        """将可重试的查询异常包装为处理中状态，交给上层继续轮询。"""
+        return Sora2Task(
+            task_id=task_id,
+            status=Sora2TaskStatus.PROCESSING,
+            prompt="",
+            error_message=str(exc),
+        )
+
+    @staticmethod
+    def is_transient_query_exception(exc: Exception) -> bool:
+        """判断查询阶段是否属于可跳过的瞬时网络异常。"""
+        return isinstance(
+            exc,
+            (
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
+                requests.exceptions.ChunkedEncodingError,
+            ),
+        )
 
     @property
     @abstractmethod

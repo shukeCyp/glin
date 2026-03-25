@@ -23,7 +23,7 @@ class Sora2XiaobanshouTests(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
-        result = service.create_task("a cat in a garden", model="sora-2-landscape-10s")
+        result = service.create_task("a cat in a garden")
 
         self.assertEqual(result.task_id, "task_xbs_123")
         self.assertEqual(result.status, Sora2TaskStatus.PENDING)
@@ -31,7 +31,7 @@ class Sora2XiaobanshouTests(unittest.TestCase):
         _, kwargs = mock_post.call_args
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer test-key")
         self.assertEqual(kwargs["headers"]["Content-Type"], "application/json")
-        self.assertEqual(kwargs["json"]["model"], "sora-2-landscape-10s")
+        self.assertEqual(kwargs["json"]["model"], "sora-2-portrait-10s")
         self.assertEqual(kwargs["json"]["prompt"], "a cat in a garden")
 
     @patch("app.services.sora2.xiaobanshou.requests.post")
@@ -57,7 +57,7 @@ class Sora2XiaobanshouTests(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_post.return_value = mock_response
 
-        result = service.create_task("a cat in a garden", model="sora-2-landscape-10s")
+        result = service.create_task("a cat in a garden")
 
         self.assertEqual(result.task_id, "task_Vzc8ezUuftzGMOtQ7uy55cK491xIvxrJ")
         self.assertEqual(result.status, Sora2TaskStatus.PENDING)
@@ -86,7 +86,7 @@ class Sora2XiaobanshouTests(unittest.TestCase):
         mock_response.raise_for_status.side_effect = http_error
         mock_post.return_value = mock_response
 
-        result = service.create_task("a cat in a garden", model="sora-2-landscape-10s")
+        result = service.create_task("a cat in a garden")
 
         self.assertEqual(result.status, Sora2TaskStatus.FAILED)
         self.assertIn("无效的令牌", result.error_message)
@@ -124,6 +124,20 @@ class Sora2XiaobanshouTests(unittest.TestCase):
         self.assertEqual(result.completed_at, "1774004604")
 
     @patch("app.services.sora2.xiaobanshou.requests.get")
+    def test_query_task_keeps_polling_on_connection_reset(self, mock_get):
+        service = Sora2Xiaobanshou("test-key")
+
+        mock_get.side_effect = requests.exceptions.ConnectionError(
+            "('Connection aborted.', ConnectionResetError(10054, '远程主机强迫关闭了一个现有的连接。', None, 10054, None))"
+        )
+
+        result = service.query_task("task_xbs_123")
+
+        self.assertEqual(result.task_id, "task_xbs_123")
+        self.assertEqual(result.status, Sora2TaskStatus.PROCESSING)
+        self.assertIn("Connection aborted", result.error_message)
+
+    @patch("app.services.sora2.xiaobanshou.requests.get")
     def test_get_video_content_parses_live_binary_download(self, mock_get):
         service = Sora2Xiaobanshou("test-key")
 
@@ -132,7 +146,8 @@ class Sora2XiaobanshouTests(unittest.TestCase):
         mock_response.content = b"fake-mp4-bytes"
         mock_response.headers = {"Content-Type": "video/mp4"}
         mock_response.raise_for_status.return_value = None
-        mock_get.return_value = mock_response
+        mock_get.return_value.__enter__.return_value = mock_response
+        mock_get.return_value.__exit__.return_value = None
 
         data, content_type, error_message = service.get_video_content("task_xbs_123")
 
