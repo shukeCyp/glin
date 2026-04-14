@@ -358,11 +358,14 @@ const generateVideo = async (task) => {
   task.filePath = ''
 
   let maxRetry = 0
+  let veoProvider = 'hetang'
   try {
     const settings = await window.pywebview.api.get_all_settings()
     if (settings.auto_retry === 'true') {
       maxRetry = parseInt(settings.video_max_retry || '3', 10)
     }
+    // 从设置中读取 VEO 渠道
+    veoProvider = settings.veo_model || 'hetang'
   } catch { /* ignore */ }
 
   let attempts = 0
@@ -378,7 +381,7 @@ const generateVideo = async (task) => {
         task.videoOrientation,
         10,
         'veo3',
-        'hetang',
+        veoProvider,
       )
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url

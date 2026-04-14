@@ -20,14 +20,14 @@ import requests
 
 from ..constants import SettingKeys
 from ..logger import logger
-from .nanobanana import NanoBananaGlinCustom, NanoBananaXiaobanshou, NanoBananaYunwu
+from .nanobanana import NanoBananaGlinCustom, NanoBananaXiaobanshou, NanoBananaYunwu, NanoBananaBandianwa
 from .sora2 import (
     Sora2Bandianwa,
     Sora2Dayangyu,
     Sora2TaskStatus,
     Sora2Xiaobanshou,
 )
-from .veo import VeoHetang
+from .veo import VeoHetang, VeoBandianwa, VeoXiaobanshou, VeoZyg
 
 _IMAGE_EXT_MAP = {
     "image/png": ".png",
@@ -174,6 +174,11 @@ def _write_temp_image(ref_images: list) -> Optional[str]:
         tmp.close()
 
 
+def _is_invalid_bearer_token(value: str) -> bool:
+    token = (value or "").strip()
+    return (not token) or (not token.isascii()) or any(ch.isspace() for ch in token)
+
+
 def _poll_sora_task(service, task_id: str, timeout_seconds: int = 900, interval_seconds: int = 5):
     deadline = time.time() + timeout_seconds
     last_task = None
@@ -229,7 +234,6 @@ class NanoBananaYunwuGenerator(BaseImageGenerator):
             mime_type=result.mime_type,
             file_path=file_path,
         )
-
 
 
 class NanoBananaXiaobanshouGenerator(BaseImageGenerator):
@@ -321,6 +325,50 @@ class NanoBananaHetangGenerator(BaseImageGenerator):
         )
 
 
+class NanoBananaBandianwaGenerator(BaseImageGenerator):
+    platform = "nanobanana"
+    provider = "bandianwa"
+    platform_label = "香蕉生图"
+    provider_label = "BDW"
+    setting_key = SettingKeys.BANDIANWA_API_KEY
+
+    def generate(self, request: ImageGenerationRequest, settings: dict) -> ImageGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return ImageGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        service = NanoBananaBandianwa(api_key)
+        kwargs = {
+            "ref_images": request.ref_images or [],
+            "download_dir": request.download_dir,
+        }
+
+        result = service.generate(
+            prompt=request.prompt,
+            aspect_ratio=request.aspect_ratio,
+            image_size=request.image_size,
+            **kwargs,
+        )
+        if not result.success:
+            return ImageGenerationResult(success=False, error_message=result.error_message)
+
+        file_path = result.file_path
+        if not file_path and result.image_data and result.mime_type and request.download_dir:
+            file_path = _save_base64_image(
+                result.image_data,
+                result.mime_type,
+                request.download_dir,
+                "nanobanana_bdw",
+            )
+
+        return ImageGenerationResult(
+            success=True,
+            image_data=result.image_data,
+            mime_type=result.mime_type,
+            file_path=file_path,
+        )
+
+
 class HetangVeo3Generator(BaseVideoGenerator):
     platform = "veo3"
     provider = "hetang"
@@ -347,6 +395,137 @@ class HetangVeo3Generator(BaseVideoGenerator):
 
         try:
             service = VeoHetang(api_key, base_url)
+            result = service.generate(
+                prompt=request.prompt,
+                orientation=request.orientation,
+                duration=request.duration,
+                ref_image_path=image_path,
+                download_dir=str(request.download_dir) if request.download_dir else None,
+            )
+            if not result.success:
+                return VideoGenerationResult(success=False, error_message=result.error_message)
+
+            return VideoGenerationResult(
+                success=True,
+                video_url=result.video_url,
+                file_path=result.file_path,
+            )
+        except Exception as exc:
+            logger.error(f"[{self.platform_label}/{self.provider_label}] 视频生成异常: {exc}")
+            return VideoGenerationResult(success=False, error_message=str(exc))
+        finally:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
+
+
+class BandianwaVeoGenerator(BaseVideoGenerator):
+    platform = "veo3"
+    provider = "bandianwa"
+    platform_label = "VEO3"
+    provider_label = "BDW"
+    setting_key = SettingKeys.BANDIANWA_API_KEY
+
+    def generate(self, request: VideoGenerationRequest, settings: dict) -> VideoGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return VideoGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        image_path = _write_temp_image(request.ref_images)
+
+        try:
+            service = VeoBandianwa(api_key)
+            result = service.generate(
+                prompt=request.prompt,
+                orientation=request.orientation,
+                duration=request.duration,
+                ref_image_path=image_path,
+                download_dir=str(request.download_dir) if request.download_dir else None,
+            )
+            if not result.success:
+                return VideoGenerationResult(success=False, error_message=result.error_message)
+
+            return VideoGenerationResult(
+                success=True,
+                video_url=result.video_url,
+                file_path=result.file_path,
+            )
+        except Exception as exc:
+            logger.error(f"[{self.platform_label}/{self.provider_label}] 视频生成异常: {exc}")
+            return VideoGenerationResult(success=False, error_message=str(exc))
+        finally:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
+
+
+class XiaobanshouVeoGenerator(BaseVideoGenerator):
+    platform = "veo3"
+    provider = "xiaobanshou"
+    platform_label = "VEO3"
+    provider_label = "XBS"
+    setting_key = SettingKeys.XIAOBANSHOU_API_KEY
+
+    def generate(self, request: VideoGenerationRequest, settings: dict) -> VideoGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return VideoGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        image_path = _write_temp_image(request.ref_images)
+
+        try:
+            service = VeoXiaobanshou(api_key)
+            result = service.generate(
+                prompt=request.prompt,
+                orientation=request.orientation,
+                duration=request.duration,
+                ref_image_path=image_path,
+                download_dir=str(request.download_dir) if request.download_dir else None,
+            )
+            if not result.success:
+                return VideoGenerationResult(success=False, error_message=result.error_message)
+
+            return VideoGenerationResult(
+                success=True,
+                video_url=result.video_url,
+                file_path=result.file_path,
+            )
+        except Exception as exc:
+            logger.error(f"[{self.platform_label}/{self.provider_label}] 视频生成异常: {exc}")
+            return VideoGenerationResult(success=False, error_message=str(exc))
+        finally:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
+
+
+class ZygVeoGenerator(BaseVideoGenerator):
+    platform = "veo3"
+    provider = "zyg"
+    platform_label = "VEO3"
+    provider_label = "ZYG"
+    setting_key = SettingKeys.ZYG_API_KEY
+
+    def generate(self, request: VideoGenerationRequest, settings: dict) -> VideoGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return VideoGenerationResult(success=False, error_message=self.get_missing_key_message())
+        if _is_invalid_bearer_token(api_key):
+            return VideoGenerationResult(
+                success=False,
+                error_message="ZYG API Key 配置异常：当前内容包含中文或空白字符，请在设置页重新粘贴正确的 API Key",
+            )
+
+        image_path = _write_temp_image(request.ref_images)
+
+        try:
+            service = VeoZyg(api_key)
             result = service.generate(
                 prompt=request.prompt,
                 orientation=request.orientation,
@@ -530,6 +709,9 @@ class MediaGenerationRegistry:
     def _resolve_generator(self, generators: dict, settings: dict, platform: str, provider: str, candidates: list[tuple[str, str]]):
         platform = self._clean(platform)
         provider = self._clean(provider)
+        
+        logger.info(f"[Registry] _resolve_generator 调用 | platform='{platform}', provider='{provider}'")
+        logger.info(f"[Registry] candidates={candidates}")
 
         if platform:
             if not provider:
@@ -538,10 +720,13 @@ class MediaGenerationRegistry:
                     candidate_provider = self._clean(candidate_provider)
                     if candidate_platform == platform and candidate_provider:
                         provider = candidate_provider
+                        logger.info(f"[Registry] 从 candidates 中获取 provider='{provider}'")
                         break
             generator = self._pick_from_platform(generators, settings, platform, provider)
             if generator:
+                logger.info(f"[Registry] 选择生成器 | platform={generator.platform}, provider={generator.provider}")
                 return generator, generator.platform, generator.provider
+            logger.warning(f"[Registry] 未找到匹配的生成器 | platform={platform}, provider={provider}")
             return None, platform, provider
 
         for candidate_platform, candidate_provider in candidates:
@@ -605,8 +790,12 @@ media_generation_registry = MediaGenerationRegistry()
 media_generation_registry.register_image(NanoBananaYunwuGenerator())
 media_generation_registry.register_image(NanoBananaXiaobanshouGenerator())
 media_generation_registry.register_image(NanoBananaHetangGenerator())
+media_generation_registry.register_image(NanoBananaBandianwaGenerator())
 
 media_generation_registry.register_video(HetangVeo3Generator())
+media_generation_registry.register_video(BandianwaVeoGenerator())
+media_generation_registry.register_video(XiaobanshouVeoGenerator())
+media_generation_registry.register_video(ZygVeoGenerator())
 media_generation_registry.register_video(Sora2DayangyuGenerator())
 media_generation_registry.register_video(Sora2XiaobanshouGenerator())
 media_generation_registry.register_video(Sora2BandianwaGenerator())

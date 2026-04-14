@@ -29,6 +29,7 @@ const xiaobanshou_api_key = ref('')
 const xiaobanshou_base_url = ref('')
 const bandianwa_api_key = ref('')
 const bandianwa_base_url = ref('')
+const zyg_api_key = ref('')
 const hetang_veo_base_url = ref('')
 const hetang_veo_api_key = ref('')
 // 荷塘 VEO 与 NanoBanana 共用同一 Base URL 和 API Key
@@ -115,6 +116,7 @@ const saveSettings = async () => {
       xiaobanshou_base_url: xiaobanshou_base_url.value,
       bandianwa_api_key: bandianwa_api_key.value,
       bandianwa_base_url: bandianwa_base_url.value,
+      zyg_api_key: zyg_api_key.value,
       hetang_veo_base_url: hetang_veo_base_url.value,
       hetang_veo_api_key: hetang_veo_api_key.value,
       sora2_model: sora2_model.value,
@@ -195,6 +197,7 @@ const loadSettings = async () => {
     if (settings.xiaobanshou_base_url !== undefined) xiaobanshou_base_url.value = settings.xiaobanshou_base_url
     if (settings.bandianwa_api_key) bandianwa_api_key.value = settings.bandianwa_api_key
     if (settings.bandianwa_base_url !== undefined) bandianwa_base_url.value = settings.bandianwa_base_url
+    if (settings.zyg_api_key) zyg_api_key.value = settings.zyg_api_key
     if (settings.hetang_veo_base_url !== undefined) hetang_veo_base_url.value = settings.hetang_veo_base_url
     if (settings.hetang_veo_api_key) hetang_veo_api_key.value = settings.hetang_veo_api_key
     if (settings.sora2_model) sora2_model.value = settings.sora2_model
@@ -267,6 +270,9 @@ onMounted(() => {
               <div class="card-body">
                 <div class="radio-group">
                   <label class="radio-item"><input type="radio" v-model="veo_model" value="hetang" /><span class="radio-label">荷塘渠道</span></label>
+                  <label class="radio-item"><input type="radio" v-model="veo_model" value="xiaobanshou" /><span class="radio-label">XBS</span></label>
+                  <label class="radio-item"><input type="radio" v-model="veo_model" value="bandianwa" /><span class="radio-label">BDW</span></label>
+                  <label class="radio-item"><input type="radio" v-model="veo_model" value="zyg" /><span class="radio-label">ZYG</span></label>
                 </div>
               </div>
             </div>
@@ -276,6 +282,8 @@ onMounted(() => {
                 <div class="radio-group">
                   <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="hetang" /><span class="radio-label">荷塘渠道</span></label>
                   <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="xiaobanshou" /><span class="radio-label">XBS</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="bandianwa" /><span class="radio-label">BDW</span></label>
                 </div>
               </div>
             </div>
@@ -367,6 +375,15 @@ onMounted(() => {
                 <label class="field">
                   <span class="field-label">API Key</span>
                   <input v-model="bandianwa_api_key" type="password" placeholder="请输入 BDW API Key" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">ZYG</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="zyg_api_key" type="password" placeholder="请输入 ZYG API Key" autocomplete="off" />
                 </label>
               </div>
             </div>

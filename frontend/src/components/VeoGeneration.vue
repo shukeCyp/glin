@@ -95,13 +95,16 @@ const generateTask = async (task) => {
   task.statusText = '生成中...'
   task.videoUrl = ''
 
-  // 读取重试次数
+  // 读取重试次数和 VEO 渠道配置
   let maxRetry = 0
+  let veoProvider = 'hetang'
   try {
     const settings = await window.pywebview.api.get_all_settings()
     if (settings.auto_retry === 'true') {
       maxRetry = parseInt(settings.video_max_retry || '3', 10)
     }
+    // 从设置中读取 VEO 渠道
+    veoProvider = settings.veo_model || 'hetang'
   } catch { /* ignore */ }
 
   let attempts = 0
@@ -118,7 +121,7 @@ const generateTask = async (task) => {
         task.orientation,
         10,
         'veo3',
-        'hetang',
+        veoProvider,
       )
       if (res.ok && res.video_url) {
         task.videoUrl = res.video_url

@@ -199,6 +199,7 @@ class Api:
         """保存设置"""
         logger.info(f"[API] save_settings 调用, keys={list(settings.keys())}")
         for key, value in settings.items():
+            logger.info(f"[API] save_settings: {key} = {value}")
             set_setting(key, str(value))
         logger.info(f"[API] save_settings -> 保存成功, 共 {len(settings)} 项")
         return {"ok": True}
@@ -641,13 +642,16 @@ class Api:
         """VEO 文生视频兼容入口，内部走统一视频生成器。"""
         logger.info(f"[API] veo_text_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
         try:
+            # 从设置中读取 VEO provider
+            settings = get_all_settings()
+            veo_provider = settings.get("veo_model", "hetang")
             return self._generate_video_via_registry(
                 prompt=prompt,
                 ref_images=[],
                 orientation=orientation,
                 duration=10,
                 platform="veo3",
-                provider="hetang",
+                provider=veo_provider,
                 download=False,
             )
         except Exception as e:
@@ -658,13 +662,16 @@ class Api:
         """VEO 图生视频兼容入口，内部走统一视频生成器。"""
         logger.info(f"[API] veo_image_to_video 调用, orientation={orientation}, prompt={prompt[:50]}...")
         try:
+            # 从设置中读取 VEO provider
+            settings = get_all_settings()
+            veo_provider = settings.get("veo_model", "hetang")
             return self._generate_video_via_registry(
                 prompt=prompt,
                 ref_images=[{"base64": image_base64, "mime": mime_type}],
                 orientation=orientation,
                 duration=10,
                 platform="veo3",
-                provider="hetang",
+                provider=veo_provider,
                 download=False,
             )
         except Exception as e:
@@ -675,13 +682,16 @@ class Api:
         """荷塘 VEO 兼容入口，内部走统一视频生成器。"""
         logger.info(f"[API] hetang_veo_generate 调用, orientation={orientation}, 模式={'图生视频' if ref_images else '文生视频'}")
         try:
+            # 从设置中读取 VEO provider
+            settings = get_all_settings()
+            veo_provider = settings.get("veo_model", "hetang")
             return self._generate_video_via_registry(
                 prompt=prompt,
                 ref_images=ref_images or [],
                 orientation=orientation,
                 duration=10,
                 platform="veo3",
-                provider="hetang",
+                provider=veo_provider,
                 download=True,
             )
         except Exception as e:
@@ -1242,7 +1252,7 @@ class Api:
         try:
             from .constants import SettingKeys
             from .services.nanobanana import NanoBananaYunwu, NanoBananaGlinCustom, NanoBananaXiaobanshou
-            from .services.veo import VeoHetang
+            from .services.veo import VeoHetang, VeoXiaobanshou, VeoZyg
             from .services.sora2 import Sora2Dayangyu, Sora2Xiaobanshou, Sora2Bandianwa
 
             settings = get_all_settings()
@@ -1253,6 +1263,8 @@ class Api:
                 {"key": "nb_yunwu",        "label": "云雾 (YW)",      "tab": "nanobanana", "configured": bool(_key(settings, SettingKeys.YUNWU_API_KEY))},
                 {"key": "nb_hetang",        "label": "荷塘 (HT)",      "tab": "nanobanana", "configured": bool(_key(settings, SettingKeys.HETANG_VEO_API_KEY) and _key(settings, SettingKeys.HETANG_VEO_BASE_URL))},
                 {"key": "veo_hetang",       "label": "荷塘 (HT)",      "tab": "veo",        "configured": bool(_key(settings, SettingKeys.HETANG_VEO_API_KEY) and _key(settings, SettingKeys.HETANG_VEO_BASE_URL))},
+                {"key": "veo_xiaobanshou",  "label": "小扳手 (XBS)",   "tab": "veo",        "configured": bool(_key(settings, SettingKeys.XIAOBANSHOU_API_KEY))},
+                {"key": "veo_zyg",          "label": "ZYG",           "tab": "veo",        "configured": bool(_key(settings, SettingKeys.ZYG_API_KEY))},
                 {"key": "sora2_dayangyu",   "label": "大洋芋 (DYY)",   "tab": "sora2",      "configured": bool(_key(settings, SettingKeys.DAYANGYU_API_KEY))},
                 {"key": "sora2_xiaobanshou","label": "小扳手 (XBS)",   "tab": "sora2",      "configured": bool(_key(settings, SettingKeys.XIAOBANSHOU_API_KEY))},
                 {"key": "sora2_bandianwa",  "label": "斑点蛙 (BDW)",   "tab": "sora2",      "configured": bool(_key(settings, SettingKeys.BANDIANWA_API_KEY))},
@@ -1277,7 +1289,7 @@ class Api:
         try:
             from .constants import SettingKeys
             from .services.nanobanana import NanoBananaYunwu, NanoBananaGlinCustom, NanoBananaXiaobanshou
-            from .services.veo import VeoHetang
+            from .services.veo import VeoHetang, VeoXiaobanshou, VeoZyg
             from .services.sora2 import Sora2Dayangyu, Sora2Xiaobanshou, Sora2Bandianwa, Sora2TaskStatus
             from .services.veo.utils import download_video
 
@@ -1332,6 +1344,32 @@ class Api:
                 # ── VEO ──
                 if channel_key == "veo_hetang":
                     veo = VeoHetang(_key(SettingKeys.HETANG_VEO_API_KEY), _key(SettingKeys.HETANG_VEO_BASE_URL))
+                    result = veo.generate(
+                        prompt=params.get("prompt", ""),
+                        orientation=params.get("orientation", "portrait"),
+                        duration=int(params.get("duration", 10)),
+                        ref_image_path=params.get("ref_image_path"),
+                        download_dir=str(output_dir),
+                    )
+                    if not result.success:
+                        return {"ok": False, "msg": result.error_message}
+                    return {"ok": True, "file_path": result.file_path, "video_url": result.video_url}
+
+                if channel_key == "veo_xiaobanshou":
+                    veo = VeoXiaobanshou(_key(SettingKeys.XIAOBANSHOU_API_KEY))
+                    result = veo.generate(
+                        prompt=params.get("prompt", ""),
+                        orientation=params.get("orientation", "portrait"),
+                        duration=int(params.get("duration", 10)),
+                        ref_image_path=params.get("ref_image_path"),
+                        download_dir=str(output_dir),
+                    )
+                    if not result.success:
+                        return {"ok": False, "msg": result.error_message}
+                    return {"ok": True, "file_path": result.file_path, "video_url": result.video_url}
+
+                if channel_key == "veo_zyg":
+                    veo = VeoZyg(_key(SettingKeys.ZYG_API_KEY))
                     result = veo.generate(
                         prompt=params.get("prompt", ""),
                         orientation=params.get("orientation", "portrait"),

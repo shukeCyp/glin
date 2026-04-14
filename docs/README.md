@@ -22,7 +22,8 @@ docs/
 │   ├── overview.md
 │   ├── yunwu.md
 │   ├── hetang.md
-│   └── xiaobanshou.md
+│   ├── xiaobanshou.md
+│   └── bandianwa.md
 ├── sora2/
 │   ├── overview.md
 │   ├── dayangyu.md
@@ -30,7 +31,10 @@ docs/
 │   ├── xiaobanshou.md
 │   └── bandianwa.md
 └── veo/
-    └── hetang.md
+    ├── hetang.md
+    ├── xiaobanshou.md
+    ├── bandianwa.md
+    └── zyg.md
 ```
 
 ## 按能力查看
@@ -41,9 +45,10 @@ docs/
 
 | 渠道 | provider | 默认 Base URL | 接口风格 | 文档 |
 |------|----------|---------------|----------|------|
-| 云雾 | `yunwu` | `https://yunwu.ai` | fal-ai 队列接口 | [yunwu.md](./nanobanana/yunwu.md) |
+| 云雾 | `yunwu` | `https://yunwu.ai` | Gemini generateContent 接口 | [yunwu.md](./nanobanana/yunwu.md) |
 | 荷塘 | `hetang` | 用户自定义 | OpenAI 兼容 SSE | [hetang.md](./nanobanana/hetang.md) |
-| 小搬手 | `xiaobanshou` | `https://api.xintianwengai.com` | OpenAI 兼容 SSE | [xiaobanshou.md](./nanobanana/xiaobanshou.md) |
+| 小搬手 | `xiaobanshou` | `https://api.xintianwengai.com` | 异步任务轮询 | [xiaobanshou.md](./nanobanana/xiaobanshou.md) |
+| 斑点蛙 | `bandianwa` | `https://api.hellobabygo.com` | 异步任务轮询 | [bandianwa.md](./nanobanana/bandianwa.md) |
 
 ### Sora2 视频生成
 
@@ -61,6 +66,9 @@ docs/
 | 渠道 | provider | 默认 Base URL | 接口风格 | 文档 |
 |------|----------|---------------|----------|------|
 | 荷塘 | `hetang` | 用户自定义 | OpenAI 兼容 SSE | [hetang.md](./veo/hetang.md) |
+| 小扳手 | `xiaobanshou` | `https://xibapi.com` | `multipart/form-data` 创建 + 异步任务轮询 | [xiaobanshou.md](./veo/xiaobanshou.md) |
+| 斑点蛙 | `bandianwa` | `https://api.hellobabygo.com` | 异步任务轮询 | [bandianwa.md](./veo/bandianwa.md) |
+| ZYG | `zyg` | `https://otuapi.com` | `multipart/form-data` 创建 + 异步任务轮询 | [zyg.md](./veo/zyg.md) |
 
 ## 公共约定
 
@@ -89,12 +97,13 @@ Authorization: Bearer <API_KEY>
 |--------|------|
 | `yunwu_api_key` | 云雾 API Key，NanoBanana 与 Sora2 共用 |
 | `yunwu_base_url` | 云雾 Base URL |
-| `xiaobanshou_api_key` | 小搬手 API Key，NanoBanana 与 Sora2 共用 |
-| `xiaobanshou_base_url` | 小搬手 Base URL |
+| `xiaobanshou_api_key` | 小搬手 API Key，NanoBanana、Sora2 与 VEO3 共用 |
+| `xiaobanshou_base_url` | 小搬手 Base URL（当前主要用于既有 NanoBanana/Sora2 接入） |
 | `dayangyu_api_key` | 大洋鱼 API Key |
 | `dayangyu_base_url` | 大洋鱼 Base URL |
 | `bandianwa_api_key` | 斑点蛙 API Key |
 | `bandianwa_base_url` | 斑点蛙 Base URL |
+| `zyg_api_key` | ZYG API Key |
 | `hetang_veo_api_key` | 荷塘 API Key，VEO3 与 NanoBanana 共用 |
 | `hetang_veo_base_url` | 荷塘 Base URL，VEO3 与 NanoBanana 共用 |
 

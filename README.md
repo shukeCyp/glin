@@ -24,9 +24,9 @@ Glin 是一个基于 `pywebview + Vue 3` 的桌面应用，用来统一管理多
 
 | 能力 | 渠道 | 标识 |
 |------|------|------|
-| NanoBanana 图片生成 | 云雾 / 荷塘 / 小搬手 | `nanobanana/{provider}` |
+| NanoBanana 图片生成 | 云雾 / 荷塘 / 小搬手 / 斑点蛙 | `nanobanana/{provider}` |
 | Sora2 视频生成 | 大洋鱼 / 云雾 / 小搬手 / 斑点蛙 | `sora2/{provider}` |
-| VEO3 视频生成 | 荷塘 | `veo3/hetang` |
+| VEO3 视频生成 | 荷塘 / 斑点蛙 | `veo3/{provider}` |
 
 更细的请求格式、认证字段和响应结构见 [docs/README.md](./docs/README.md)。
 
