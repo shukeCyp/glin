@@ -553,6 +553,19 @@ class Api:
     def get_media_generator_options(self) -> dict:
         """返回可用的图片/视频生成器选项以及当前默认值。"""
         settings = get_all_settings()
+        image_platform = settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PLATFORM, "nanobanana") or "nanobanana"
+        image_provider = settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PROVIDER, "yunwu") or "yunwu"
+        global_image_model = (settings.get(SettingKeys.NANOBANANA_MODEL, "") or "").strip()
+        if global_image_model == "gpt-image:bandianwa":
+            image_platform = "gpt-image"
+            image_provider = "bandianwa"
+        elif global_image_model == "gpt-image:xiaobanshou":
+            image_platform = "gpt-image"
+            image_provider = "xiaobanshou"
+        elif global_image_model:
+            image_platform = "nanobanana"
+            image_provider = global_image_model
+
         image_options = [
             {
                 "platform": option.platform,
@@ -581,8 +594,8 @@ class Api:
             "image_options": image_options,
             "video_options": video_options,
             "defaults": {
-                "image_platform": settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PLATFORM, "nanobanana") or "nanobanana",
-                "image_provider": settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PROVIDER, "yunwu") or "yunwu",
+                "image_platform": image_platform,
+                "image_provider": image_provider,
                 "video_platform": settings.get(SettingKeys.VIDEO_PRODUCT_VIDEO_PLATFORM, "veo3") or "veo3",
                 "video_provider": settings.get(SettingKeys.VIDEO_PRODUCT_VIDEO_PROVIDER, "hetang") or "hetang",
             },

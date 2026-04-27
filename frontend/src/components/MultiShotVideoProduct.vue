@@ -42,10 +42,21 @@ const batchDialogTitle = computed(() => `批量添加${props.pageTitle}任务`)
 const addDialogTitle = computed(() => `添加${props.pageTitle}任务`)
 const emptyStateTitle = computed(() => `暂无${props.pageTitle}任务`)
 
-const resolveImageDefaults = (settings = {}) => ({
-  platform: (settings.nanobanana_model ? 'nanobanana' : null) || settings[imagePlatformSettingKey] || 'nanobanana',
-  provider: settings.nanobanana_model || settings[imageProviderSettingKey] || 'yunwu',
-})
+const resolveImageDefaults = (settings = {}) => {
+  if (settings.nanobanana_model === 'gpt-image:bandianwa') {
+    return { platform: 'gpt-image', provider: 'bandianwa' }
+  }
+  if (settings.nanobanana_model === 'gpt-image:xiaobanshou') {
+    return { platform: 'gpt-image', provider: 'xiaobanshou' }
+  }
+  if (settings.nanobanana_model) {
+    return { platform: 'nanobanana', provider: settings.nanobanana_model }
+  }
+  return {
+    platform: settings[imagePlatformSettingKey] || 'nanobanana',
+    provider: settings[imageProviderSettingKey] || 'yunwu',
+  }
+}
 
 const resolveVideoDefaults = (settings = {}) => {
   if (props.videoPlatform === 'veo3') {

@@ -158,7 +158,7 @@ onMounted(() => {
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
             </svg>
-            <span>香蕉生图</span>
+            <span>图片生成</span>
           </button>
           <button
             :class="['nav-item', { active: currentPage === 'video_product' }]"
@@ -264,7 +264,7 @@ onMounted(() => {
 
       <!-- Main content -->
       <main class="main-content">
-        <!-- 香蕉生图 -->
+        <!-- 图片生成 -->
         <NanoBanana
           v-show="currentPage === 'nanobanana'"
           @toast="(msg, type) => toastRef?.show(msg, type)"

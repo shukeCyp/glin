@@ -51,6 +51,22 @@ const normalizeGeneratorSelection = (options, platform, provider) => {
   return { platform: fallback.platform, provider: fallback.provider }
 }
 
+const resolveGlobalImageSelection = (settings = {}) => {
+  if (settings.nanobanana_model === 'gpt-image:bandianwa') {
+    return { platform: 'gpt-image', provider: 'bandianwa' }
+  }
+  if (settings.nanobanana_model === 'gpt-image:xiaobanshou') {
+    return { platform: 'gpt-image', provider: 'xiaobanshou' }
+  }
+  if (settings.nanobanana_model) {
+    return { platform: 'nanobanana', provider: settings.nanobanana_model }
+  }
+  return {
+    platform: settings.video_product_image_platform || 'nanobanana',
+    provider: settings.video_product_image_provider || 'yunwu',
+  }
+}
+
 const imagePlatformOptions = computed(() => buildPlatformOptions(imageGeneratorOptions.value))
 const videoPlatformOptions = computed(() => buildPlatformOptions(videoGeneratorOptions.value))
 const updateSelectedImagePlatform = () => {
@@ -120,12 +136,11 @@ onMounted(async () => {
       videoGeneratorOptions.value = generatorRes.video_options || []
 
       // 优先使用“设置”页面的全局渠道；仅在全局未配置时回退到页面历史默认值。
-      const imagePlatformFromSettings = (settings.nanobanana_model ? 'nanobanana' : null) || settings.video_product_image_platform
-      const imageProviderFromSettings = settings.nanobanana_model || settings.video_product_image_provider || 'yunwu'
+      const imagePreference = resolveGlobalImageSelection(settings)
       const imageDefaults = normalizeGeneratorSelection(
         imageGeneratorOptions.value,
-        imagePlatformFromSettings || 'nanobanana',
-        imageProviderFromSettings,
+        imagePreference.platform,
+        imagePreference.provider,
       )
       selectedImagePlatform.value = imageDefaults.platform
       selectedImageProvider.value = imageDefaults.provider

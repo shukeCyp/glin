@@ -277,13 +277,15 @@ onMounted(() => {
               </div>
             </div>
             <div class="settings-card">
-              <div class="card-header"><h3 class="card-title">NanoBanana 生图渠道</h3></div>
+              <div class="card-header"><h3 class="card-title">图片生成渠道</h3></div>
               <div class="card-body">
                 <div class="radio-group">
                   <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="hetang" /><span class="radio-label">荷塘渠道</span></label>
                   <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="yunwu" /><span class="radio-label">YW</span></label>
                   <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="xiaobanshou" /><span class="radio-label">XBS</span></label>
                   <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="bandianwa" /><span class="radio-label">BDW</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="gpt-image:xiaobanshou" /><span class="radio-label">GPT 图片 / XBS</span></label>
+                  <label class="radio-item"><input type="radio" v-model="nanobanana_model" value="gpt-image:bandianwa" /><span class="radio-label">GPT 图片 / BDW</span></label>
                 </div>
               </div>
             </div>

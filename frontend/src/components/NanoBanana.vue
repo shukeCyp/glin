@@ -126,6 +126,8 @@ const submitAddTask = () => {
     resultBase64: '',
     resultMime: '',
     filePath: '',
+    resultPlatform: '',
+    resultProvider: '',
   })
   taskList.value.unshift(task)
   showAddDialog.value = false
@@ -177,6 +179,8 @@ const generateTask = async (task) => {
         task.resultBase64 = res.image_data
         task.resultMime = res.mime_type
         task.filePath = res.file_path || ''
+        task.resultPlatform = res.platform || ''
+        task.resultProvider = res.provider || ''
         task.status = 'completed'
         task.statusText = '已完成'
         if (task.filePath) {
@@ -219,7 +223,8 @@ const downloadImage = async (task) => {
   if (!task.resultBase64) { emit('toast', '暂无生成结果', 'error'); return }
   try {
     emit('toast', '开始下载...', 'success')
-    const res = await window.pywebview.api.download_image(task.resultBase64, task.resultMime, 'nanobanana')
+    const prefix = task.resultPlatform === 'gpt-image' ? 'gpt_image' : 'nanobanana'
+    const res = await window.pywebview.api.download_image(task.resultBase64, task.resultMime, prefix)
     if (res.ok) {
       emit('toast', '图片已保存', 'success')
     } else {
@@ -266,7 +271,7 @@ const ratioLabel = (val) => ratioOptions.find(o => o.value === val)?.label || va
   <div class="page">
     <!-- 顶栏 -->
     <div class="page-toolbar">
-      <h2 class="page-title">香蕉生图</h2>
+      <h2 class="page-title">图片生成</h2>
       <div class="toolbar-actions">
         <button class="tool-btn refresh-btn" @click="() => window.location.reload()">
           <svg class="tool-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

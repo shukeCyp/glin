@@ -20,6 +20,7 @@ import requests
 
 from ..constants import SettingKeys
 from ..logger import logger
+from .gpt_image import GptImageBandianwa, GptImageXiaobanshou
 from .nanobanana import NanoBananaGlinCustom, NanoBananaXiaobanshou, NanoBananaYunwu, NanoBananaBandianwa
 from .sora2 import (
     Sora2Bandianwa,
@@ -359,6 +360,86 @@ class NanoBananaBandianwaGenerator(BaseImageGenerator):
                 result.mime_type,
                 request.download_dir,
                 "nanobanana_bdw",
+            )
+
+        return ImageGenerationResult(
+            success=True,
+            image_data=result.image_data,
+            mime_type=result.mime_type,
+            file_path=file_path,
+        )
+
+
+class GptImageBandianwaGenerator(BaseImageGenerator):
+    platform = "gpt-image"
+    provider = "bandianwa"
+    platform_label = "GPT 图片"
+    provider_label = "BDW"
+    setting_key = SettingKeys.BANDIANWA_API_KEY
+
+    def generate(self, request: ImageGenerationRequest, settings: dict) -> ImageGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return ImageGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        service = GptImageBandianwa(api_key)
+        result = service.generate(
+            prompt=request.prompt,
+            aspect_ratio=request.aspect_ratio,
+            image_size=request.image_size,
+            ref_images=request.ref_images or [],
+            download_dir=request.download_dir,
+        )
+        if not result.success:
+            return ImageGenerationResult(success=False, error_message=result.error_message)
+
+        file_path = result.file_path
+        if not file_path and result.image_data and result.mime_type and request.download_dir:
+            file_path = _save_base64_image(
+                result.image_data,
+                result.mime_type,
+                request.download_dir,
+                "gpt_image_bdw",
+            )
+
+        return ImageGenerationResult(
+            success=True,
+            image_data=result.image_data,
+            mime_type=result.mime_type,
+            file_path=file_path,
+        )
+
+
+class GptImageXiaobanshouGenerator(BaseImageGenerator):
+    platform = "gpt-image"
+    provider = "xiaobanshou"
+    platform_label = "GPT 图片"
+    provider_label = "XBS"
+    setting_key = SettingKeys.XIAOBANSHOU_API_KEY
+
+    def generate(self, request: ImageGenerationRequest, settings: dict) -> ImageGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return ImageGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        service = GptImageXiaobanshou(api_key)
+        result = service.generate(
+            prompt=request.prompt,
+            aspect_ratio=request.aspect_ratio,
+            image_size=request.image_size,
+            ref_images=request.ref_images or [],
+            download_dir=request.download_dir,
+        )
+        if not result.success:
+            return ImageGenerationResult(success=False, error_message=result.error_message)
+
+        file_path = result.file_path
+        if not file_path and result.image_data and result.mime_type and request.download_dir:
+            file_path = _save_base64_image(
+                result.image_data,
+                result.mime_type,
+                request.download_dir,
+                "gpt_image_xbs",
             )
 
         return ImageGenerationResult(
@@ -749,19 +830,29 @@ class MediaGenerationRegistry:
         return None, platform, provider
 
     def resolve_image_generator(self, settings: dict, platform: str = "", provider: str = ""):
+        legacy_image_platform, legacy_image_provider = self._legacy_image_candidate(settings)
         return self._resolve_generator(
             self._image_generators,
             settings,
             platform,
             provider,
             candidates=[
-                ("nanobanana", settings.get(SettingKeys.NANOBANANA_MODEL, "")),
+                (legacy_image_platform, legacy_image_provider),
                 (
                     settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PLATFORM, "nanobanana"),
                     settings.get(SettingKeys.VIDEO_PRODUCT_IMAGE_PROVIDER, ""),
                 ),
             ],
         )
+
+    @staticmethod
+    def _legacy_image_candidate(settings: dict) -> tuple[str, str]:
+        value = (settings.get(SettingKeys.NANOBANANA_MODEL, "") or "").strip()
+        if value == "gpt-image:bandianwa":
+            return "gpt-image", "bandianwa"
+        if value == "gpt-image:xiaobanshou":
+            return "gpt-image", "xiaobanshou"
+        return "nanobanana", value
 
     def resolve_video_generator(self, settings: dict, platform: str = "", provider: str = ""):
         return self._resolve_generator(
@@ -791,6 +882,8 @@ media_generation_registry.register_image(NanoBananaYunwuGenerator())
 media_generation_registry.register_image(NanoBananaXiaobanshouGenerator())
 media_generation_registry.register_image(NanoBananaHetangGenerator())
 media_generation_registry.register_image(NanoBananaBandianwaGenerator())
+media_generation_registry.register_image(GptImageBandianwaGenerator())
+media_generation_registry.register_image(GptImageXiaobanshouGenerator())
 
 media_generation_registry.register_video(HetangVeo3Generator())
 media_generation_registry.register_video(BandianwaVeoGenerator())
