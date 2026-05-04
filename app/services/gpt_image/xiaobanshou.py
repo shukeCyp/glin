@@ -1,4 +1,4 @@
-"""小扳手 GPT 图片生成（OpenAI 原生图片接口）"""
+"""小扳手 GPT-image-2 图片生成（/v1/videos 异步接口）"""
 
 import base64
 import os
@@ -17,10 +17,10 @@ _FAILED_STATUSES = {"failed", "error", "cancelled"}
 
 _RATIO_TO_SIZE = {
     "1:1": "1024x1024",
-    "16:9": "1792x1024",
-    "4:3": "1792x1024",
-    "9:16": "1024x1792",
-    "3:4": "1024x1792",
+    "16:9": "1920x1080",
+    "4:3": "1920x1080",
+    "9:16": "1080x1920",
+    "3:4": "1080x1920",
 }
 
 _MIME_TO_EXT = {
@@ -54,18 +54,18 @@ class GptImageXiaobanshou:
     ) -> NanoBananaResult:
         ref_images = self._collect_ref_images(kwargs)
         download_dir = kwargs.get("download_dir")
+        urls = [self._to_image_value(image) for image in ref_images[:5]]
 
         payload = {
-            "model": "image2",
+            "model": "gpt-image-2",
             "prompt": prompt,
-            "size": self._resolve_size(aspect_ratio),
+            "metadata": {
+                "size": self._resolve_size(aspect_ratio),
+                "urls": urls,
+            },
         }
-        if ref_images:
-            image_values = [self._to_image_value(image) for image in ref_images[:5]]
-            payload["image"] = image_values[0] if len(image_values) == 1 else image_values
 
-        endpoint = "/v1/images/edits" if ref_images else "/v1/images/generations"
-        result = self._submit(endpoint, payload)
+        result = self._submit(payload)
         if result and result.success and result.image_data and download_dir:
             result.file_path = self._save_to_dir(
                 result.image_data,
@@ -74,19 +74,20 @@ class GptImageXiaobanshou:
             )
         return result or NanoBananaResult(success=False, error_message="未从小扳手 GPT 图片返回中提取到结果")
 
-    def _submit(self, endpoint: str, payload: dict) -> Optional[NanoBananaResult]:
-        url = f"{self.base_url.rstrip('/')}{endpoint}"
+    def _submit(self, payload: dict) -> Optional[NanoBananaResult]:
+        url = f"{self.base_url.rstrip('/')}/v1/videos"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        mode = f"图生图({len(payload.get('image') if isinstance(payload.get('image'), list) else [payload.get('image')])}张)" if payload.get("image") else "文生图"
+        ref_count = len(payload.get("metadata", {}).get("urls", []))
+        mode = f"图生图({ref_count}张)" if ref_count else "文生图"
 
         try:
             logger.info(
                 f"[{self.provider_name}] 请求 | POST {url} | "
-                f"model={payload.get('model')} | size={payload.get('size')} | 模式={mode}"
+                f"model={payload.get('model')} | size={payload.get('metadata', {}).get('size')} | 模式={mode}"
             )
             response = requests.post(url, headers=headers, json=payload, timeout=300)
             logger.info(f"[{self.provider_name}] 响应状态码: {response.status_code}")

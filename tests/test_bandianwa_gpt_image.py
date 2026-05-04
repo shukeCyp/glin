@@ -39,8 +39,15 @@ class GptImageBandianwaTests(unittest.TestCase):
         self.assertEqual(kwargs["json"]["model"], "auto-image")
         self.assertEqual(kwargs["json"]["prompt"], "white dog")
         self.assertEqual(kwargs["json"]["response_format"], "url")
-        self.assertEqual(kwargs["json"]["size"], "1536x1024")
+        self.assertEqual(kwargs["json"]["size"], "1920x1080")
         self.assertNotIn("image", kwargs["json"])
+
+    def test_resolve_size_uses_exact_aspect_ratios(self):
+        self.assertEqual(GptImageBandianwa._resolve_size("1:1"), "1024x1024")
+        self.assertEqual(GptImageBandianwa._resolve_size("16:9"), "1920x1080")
+        self.assertEqual(GptImageBandianwa._resolve_size("9:16"), "1080x1920")
+        self.assertEqual(GptImageBandianwa._resolve_size("4:3"), "1536x1152")
+        self.assertEqual(GptImageBandianwa._resolve_size("3:4"), "1152x1536")
 
     @patch("app.services.gpt_image.bandianwa.requests.get")
     @patch("app.services.gpt_image.bandianwa.requests.post")

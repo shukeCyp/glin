@@ -51,6 +51,44 @@ onMounted(async () => {
 // ==================== 任务列表（内存中，不持久化） ====================
 const taskList = ref([])
 let taskIdCounter = 0
+const videoQueue = []
+let activeVideoCount = 0
+let videoQueueLimit = 3
+
+const resolveVideoConcurrency = async () => {
+  let concurrency = 3
+  try {
+    const settings = await window.pywebview.api.get_all_settings()
+    concurrency = parseInt(settings.thread_pool_size || '3', 10)
+    if (concurrency < 1) concurrency = 1
+    if (concurrency > 50) concurrency = 50
+  } catch { /* ignore */ }
+  videoQueueLimit = concurrency
+  return concurrency
+}
+
+const pumpVideoQueue = () => {
+  while (activeVideoCount < videoQueueLimit && videoQueue.length) {
+    const task = videoQueue.shift()
+    if (!task || task.status !== 'video_queued' || !task.resultImageBase64) continue
+    activeVideoCount++
+    generateVideo(task).finally(() => {
+      activeVideoCount--
+      pumpVideoQueue()
+    })
+  }
+}
+
+const enqueueVideoGeneration = async (task) => {
+  if (!task || !task.resultImageBase64) return false
+  if (['video_queued', 'video_processing'].includes(task.status)) return false
+  await resolveVideoConcurrency()
+  task.status = 'video_queued'
+  task.statusText = '视频排队中...'
+  videoQueue.push(task)
+  pumpVideoQueue()
+  return true
+}
 
 // ==================== 添加任务 弹窗 ====================
 const showDialog = ref(false)
@@ -240,7 +278,7 @@ const startBatchGeneration = async (tasks) => {
 const stats = computed(() => {
   const total = taskList.value.length
   const completed = taskList.value.filter(t => t.status === 'completed').length
-  const processing = taskList.value.filter(t => ['image_processing', 'video_processing'].includes(t.status)).length
+  const processing = taskList.value.filter(t => ['image_processing', 'video_queued', 'video_processing'].includes(t.status)).length
   const failed = taskList.value.filter(t => t.status === 'failed').length
   return { total, completed, processing, failed }
 })
@@ -330,8 +368,8 @@ const generateImage = async (task) => {
         task.resultImageMime = res.mime_type
         task.status = 'image_done'
         if (task.autoVideo) {
-          task.statusText = '图片完成，开始生成视频...'
-          generateVideo(task)
+          task.statusText = '图片完成，等待生成视频...'
+          enqueueVideoGeneration(task)
         } else {
           task.statusText = '图片已完成，待手动生成视频'
         }
@@ -407,7 +445,7 @@ const generateVideo = async (task) => {
 }
 
 // ==================== 操作 ====================
-const isTaskBusy = (task) => ['image_processing', 'video_processing'].includes(task.status)
+const isTaskBusy = (task) => ['image_processing', 'video_queued', 'video_processing'].includes(task.status)
 
 const regenImage = (task) => {
   if (isTaskBusy(task)) return
@@ -422,7 +460,7 @@ const regenVideo = (task) => {
     emit('toast', '暂无生成图片，请先重新生成图片', 'error')
     return
   }
-  generateVideo(task)
+  enqueueVideoGeneration(task)
 }
 
 const deleteTask = (idx) => {
@@ -478,28 +516,11 @@ const batchGenerateVideo = async () => {
   const tasks = taskList.value.filter(t => t.status === 'image_done' && t.resultImageBase64)
   if (!tasks.length) { emit('toast', '暂无待生成视频的任务', 'error'); return }
 
-  let concurrency = 3
-  try {
-    const settings = await window.pywebview.api.get_all_settings()
-    concurrency = parseInt(settings.thread_pool_size || '3', 10)
-    if (concurrency < 1) concurrency = 1
-    if (concurrency > 50) concurrency = 50
-  } catch { /* ignore */ }
+  const concurrency = await resolveVideoConcurrency()
 
-  emit('toast', `开始生成 ${tasks.length} 条视频...`, 'success')
-
-  let idx = 0
-  const runNext = async () => {
-    while (idx < tasks.length) {
-      const task = tasks[idx++]
-      if (task.status === 'image_done') {
-        await generateVideo(task)
-      }
-    }
-  }
-  const workers = []
-  for (let i = 0; i < Math.min(concurrency, tasks.length); i++) {
-    workers.push(runNext())
+  emit('toast', `开始生成 ${tasks.length} 条视频，并发 ${concurrency}`, 'success')
+  for (const task of tasks) {
+    await enqueueVideoGeneration(task)
   }
 }
 
@@ -552,7 +573,7 @@ const saveEditDialog = () => {
 // 状态标签样式类
 const statusClass = (status) => {
   if (status === 'pending') return 'pending'
-  if (status === 'image_processing' || status === 'video_processing') return 'processing'
+  if (status === 'image_processing' || status === 'video_queued' || status === 'video_processing') return 'processing'
   if (status === 'image_done') return 'image-done'
   if (status === 'completed') return 'completed'
   return 'failed'
