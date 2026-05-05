@@ -181,6 +181,40 @@ const normalizeGeneratorSelection = (options, platform, provider) => {
   return { platform: fallback.platform, provider: fallback.provider }
 }
 
+const applyGeneratorSelections = (settings = {}, generatorRes = null) => {
+  if (generatorRes?.ok) {
+    imageGeneratorOptions.value = generatorRes.image_options || []
+    videoGeneratorOptions.value = generatorRes.video_options || []
+  }
+
+  const imagePreference = resolveImageDefaults(settings)
+  const imageDefaults = normalizeGeneratorSelection(
+    imageGeneratorOptions.value,
+    imagePreference.platform,
+    imagePreference.provider,
+  )
+  selectedImagePlatform.value = imageDefaults.platform
+  selectedImageProvider.value = imageDefaults.provider
+
+  const videoPreference = resolveVideoDefaults(settings)
+  const videoDefaults = normalizeGeneratorSelection(
+    videoGeneratorOptions.value,
+    videoPreference.platform,
+    videoPreference.provider,
+  )
+  selectedVideoPlatform.value = videoDefaults.platform
+  selectedVideoProvider.value = videoDefaults.provider
+}
+
+const refreshGeneratorSelections = async (settingsOverride = null) => {
+  const [settings, generatorRes] = await Promise.all([
+    settingsOverride ? Promise.resolve(settingsOverride) : window.pywebview.api.get_all_settings(),
+    window.pywebview.api.get_media_generator_options(),
+  ])
+  applyGeneratorSelections(settings, generatorRes)
+  return settings
+}
+
 const openPromptDialog = async (type) => {
   await loadSavedPromptPairs()
   if (!isPromptRecordEnabled.value) {
@@ -229,28 +263,7 @@ onMounted(async () => {
       dialogVideoDuration.value = duration
       batchVideoDuration.value = duration
     }
-    if (generatorRes.ok) {
-      imageGeneratorOptions.value = generatorRes.image_options || []
-      videoGeneratorOptions.value = generatorRes.video_options || []
-
-      const imagePreference = resolveImageDefaults(settings)
-      const imageDefaults = normalizeGeneratorSelection(
-        imageGeneratorOptions.value,
-        imagePreference.platform,
-        imagePreference.provider,
-      )
-      selectedImagePlatform.value = imageDefaults.platform
-      selectedImageProvider.value = imageDefaults.provider
-
-      const videoPreference = resolveVideoDefaults(settings)
-      const videoDefaults = normalizeGeneratorSelection(
-        videoGeneratorOptions.value,
-        videoPreference.platform,
-        videoPreference.provider,
-      )
-      selectedVideoPlatform.value = videoDefaults.platform
-      selectedVideoProvider.value = videoDefaults.provider
-    }
+    applyGeneratorSelections(settings, generatorRes)
   } catch { /* ignore */ }
 })
 
@@ -318,7 +331,8 @@ const dialogFileInput = ref(null)
 
 const openAddDialog = async () => {
   dialogImages.value = []
-  const pairs = await loadSavedPromptPairs()
+  const settings = await refreshGeneratorSelections().catch(() => null)
+  const pairs = await loadSavedPromptPairs(settings)
   dialogPromptPairs.value = pairs.map(pair => createDialogPromptPair(pair.imagePrompt, pair.videoPrompt))
   showDialog.value = true
 }
@@ -433,7 +447,8 @@ const persistGeneratorDefaults = () => {
 }
 
 const openBatchDialog = async (imgs) => {
-  const pairs = await loadSavedPromptPairs()
+  const settings = await refreshGeneratorSelections().catch(() => null)
+  const pairs = await loadSavedPromptPairs(settings)
   batchImages.value = imgs
   batchImagePrompt.value = pairs[0].imagePrompt
   batchVideoPrompt.value = pairs[0].videoPrompt
