@@ -1,9 +1,0 @@
-{
-  "video_id": "2026-05-14_tiktok_7630529670580030727",
-  "video_path": "/Users/chaiyapeng/Downloads/tabcut_videos/470_xime_luis_7630529670580030727.mp4",
-  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7630529670580030727/analysis.md",
-  "model": "gemini-3.1-pro-preview",
-  "duration_seconds": 14.2,
-  "created_at": "2026-05-14",
-  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent"
-}

@@ -1,9 +1,0 @@
-{
-  "video_id": "2026-05-14_tiktok_7631063312356232455",
-  "video_path": "/Users/chaiyapeng/Downloads/tabcut_videos/396_la.vida.en.rosa15_7631063312356232455.mp4",
-  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7631063312356232455/analysis.md",
-  "model": "gemini-3.1-pro-preview",
-  "duration_seconds": 22.5,
-  "created_at": "2026-05-14",
-  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent"
-}

@@ -1,9 +1,0 @@
-{
-  "video_id": "2026-05-14_tiktok_7634968777142160647",
-  "video_path": "/Users/chaiyapeng/Downloads/tabcut_videos/288_deivy.junior1_7634968777142160647.mp4",
-  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7634968777142160647/analysis.md",
-  "model": "gemini-3.1-pro-preview",
-  "duration_seconds": 41.7,
-  "created_at": "2026-05-14",
-  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent"
-}

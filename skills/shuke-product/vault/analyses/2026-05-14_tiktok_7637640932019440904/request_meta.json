@@ -1,9 +1,0 @@
-{
-  "video_id": "2026-05-14_tiktok_7637640932019440904",
-  "video_path": "/Users/chaiyapeng/Downloads/tabcut_videos/048_el_paaul_7637640932019440904.mp4",
-  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7637640932019440904/analysis.md",
-  "model": "gemini-3.1-pro-preview",
-  "duration_seconds": 70.7,
-  "created_at": "2026-05-14",
-  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent"
-}
