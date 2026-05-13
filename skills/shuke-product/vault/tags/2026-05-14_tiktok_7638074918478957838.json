@@ -12,38 +12,28 @@
     "category": "男士护理",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "希望提升个人魅力、吸引异性注意、容易受“社交认证”影响的女性（TikTok Shop 冲动消费人群）"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "男士护理"
     ],
     "video_type_tags": [
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "价格刺激",
-      "剧情反转",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "价格跳水",
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "反常识",
-      "尴尬痛点"
+      "视觉猎奇（擦边） + 悬念冲突"
     ],
-    "proof_tags": [
-      "产品特写",
-      "第三方背书",
-      "成分展示"
+    "proof_tags": [],
+    "audience_tags": [
+      "希望提升个人魅力、吸引异性注意、容易受“社交认证”影响的女性（TikTok Shop 冲动消费人群）"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -53,7 +43,7 @@
     "type": "视觉猎奇（擦边） + 悬念冲突",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -62,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 6.0,
-    "trust": 7.0,
-    "product_display": 8.0,
-    "purchase_impulse": 9.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 7.8
   },
   "remake": {
@@ -78,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：Bellavita Luxury Honey Oud（蜂蜜乌木）香水。品类：男士护理。视频类型：UGC口播、质地实测、场景种草。钩子：价格跳水、反常识、尴尬痛点，。风险：无CTA、信任不足。评分：7.8"
+  "search_text": "产品：Bellavita Luxury Honey Oud（蜂蜜乌木）香水。品类：男士护理。人群：希望提升个人魅力、吸引异性注意、容易受“社交认证”影响的女性（TikTok Sh。钩子：视觉猎奇（擦边） + 悬念冲突。评分：7.8"
 }

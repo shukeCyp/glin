@@ -12,41 +12,28 @@
     "category": "服饰穿搭",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "深受伴侣物品杂乱困扰的女性（女友/妻子）、帽子收集爱好者、家居收纳人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "服饰穿搭"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "开箱展示",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "库存震撼",
-      "身份点名",
-      "尴尬痛点"
+      "痛点代入 + 极速反差"
     ],
-    "proof_tags": [
-      "库存展示",
-      "前后对比",
-      "第三方背书",
-      "尺寸容量"
+    "proof_tags": [],
+    "audience_tags": [
+      "深受伴侣物品杂乱困扰的女性（女友/妻子）、帽子收集爱好者、家居收纳人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -56,7 +43,7 @@
     "type": "痛点代入 + 极速反差",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -65,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 10.0,
-    "trust": 9.0,
-    "product_display": 9.0,
-    "purchase_impulse": 8.5,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 9.1
   },
   "remake": {
@@ -81,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：布艺可视前窗棒球帽收纳盒。品类：服饰穿搭。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、尴尬痛点、结果前置，。风险：无CTA、信任不足。评分：9.1"
+  "search_text": "产品：布艺可视前窗棒球帽收纳盒。品类：服饰穿搭。人群：深受伴侣物品杂乱困扰的女性（女友/妻子）、帽子收集爱好者、家居收纳人群。钩子：痛点代入 + 极速反差。评分：9.1"
 }

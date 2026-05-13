@@ -12,40 +12,29 @@
     "category": "男士护理",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "年轻男性、冷兵器爱好者、EDC（日常携带）玩家、蝙蝠侠/超英IP粉丝、喜欢炫酷车载小物件的人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "男士护理"
     ],
     "video_type_tags": [
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "价格跳水",
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "限时稀缺",
-      "尴尬痛点"
+      "好奇+场景代入"
     ],
-    "proof_tags": [
-      "产品特写",
-      "第三方背书",
-      "前后对比",
-      "尺寸容量",
-      "使用场景"
+    "proof_tags": [],
+    "audience_tags": [
+      "年轻男性、冷兵器爱好者、EDC（日常携带）玩家、蝙蝠侠/超英IP粉丝、喜欢炫酷车载小物件的人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
       "无CTA",
-      "口播缺失"
+      "口播缺失",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -55,7 +44,7 @@
     "type": "好奇+场景代入",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -64,11 +53,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 8.0,
-    "trust": 7.0,
-    "product_display": 9.0,
-    "purchase_impulse": 8.5,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.3
   },
   "remake": {
@@ -80,5 +69,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：一款蝙蝠侠造型的黑化双刃折叠战术刀/EDC玩具。品类：男士护理。视频类型：效果前后对比、UGC口播、质地实测。钩子：价格跳水、尴尬痛点、结果前置，。风险：无CTA、口播缺失、信任不足。评分：8.3"
+  "search_text": "产品：一款蝙蝠侠造型的黑化双刃折叠战术刀/EDC玩具。品类：男士护理。人群：年轻男性、冷兵器爱好者、EDC（日常携带）玩家、蝙蝠侠/超英IP粉丝、喜欢炫酷车。钩子：好奇+场景代入。评分：8.3"
 }

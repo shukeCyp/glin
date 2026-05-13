@@ -12,43 +12,28 @@
     "category": "数码配件",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "拥有独立房屋、带有庭院/车道/走廊，且希望节省家庭电费支出的房屋所有者"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "数码配件"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "清仓福利",
-      "价格刺激",
-      "工厂源头",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "价格跳水",
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "限时稀缺",
-      "反常识",
-      "尴尬痛点"
+      "反差冲击 + 夸张隐喻"
     ],
-    "proof_tags": [
-      "使用场景",
-      "产品特写",
-      "第三方背书",
-      "尺寸容量"
+    "proof_tags": [],
+    "audience_tags": [
+      "拥有独立房屋、带有庭院/车道/走廊，且希望节省家庭电费支出的房屋所有者"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -58,7 +43,7 @@
     "type": "反差冲击 + 夸张隐喻",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 8
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -67,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 8.0,
-    "clarity": 9.0,
-    "trust": 9.0,
-    "product_display": 6.0,
-    "purchase_impulse": 6.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 7.6
   },
   "remake": {
@@ -83,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：大功率（4200W）户外太阳能庭院灯/路灯（一盒两件套）。品类：数码配件。视频类型：测评对比、效果前后对比、UGC口播。钩子：价格跳水、反常识、尴尬痛点，。风险：无CTA、信任不足。评分：7.6"
+  "search_text": "产品：大功率（4200W）户外太阳能庭院灯/路灯（一盒两件套）。品类：数码配件。人群：拥有独立房屋、带有庭院/车道/走廊，且希望节省家庭电费支出的房屋所有者。钩子：反差冲击 + 夸张隐喻。评分：7.6"
 }

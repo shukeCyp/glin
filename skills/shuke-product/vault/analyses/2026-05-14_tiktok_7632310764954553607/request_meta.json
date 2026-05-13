@@ -1,0 +1,9 @@
+{
+  "video_id": "2026-05-14_tiktok_7632310764954553607",
+  "video_path": "/Users/chaiyapeng/Downloads/tabcut_videos/137_santiago.ah32_7632310764954553607.mp4",
+  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7632310764954553607/analysis.md",
+  "model": "gemini-3.1-pro-preview",
+  "duration_seconds": 15.1,
+  "created_at": "2026-05-14",
+  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent"
+}

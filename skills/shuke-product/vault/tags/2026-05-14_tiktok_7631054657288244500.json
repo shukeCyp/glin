@@ -12,43 +12,28 @@
     "category": "身体护理",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "烹饪爱好者、家庭主妇/夫、户外烧烤/露营爱好者"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "身体护理"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "价格刺激",
-      "库存背书",
-      "直播切片",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "限时稀缺",
-      "身份点名",
-      "尴尬痛点"
+      "身份代入类（“你是铸铁锅的粉丝吗？”） + 直给型展示（直接展示重叠的5件套）"
     ],
-    "proof_tags": [
-      "第三方背书",
-      "库存展示",
-      "尺寸容量",
-      "使用场景",
-      "打包发货"
+    "proof_tags": [],
+    "audience_tags": [
+      "烹饪爱好者、家庭主妇/夫、户外烧烤/露营爱好者"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -58,7 +43,7 @@
     "type": "身份代入类（“你是铸铁锅的粉丝吗？”） + 直给型展示（直接展示重叠的5件套）",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 7
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -67,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 7.0,
-    "clarity": 9.0,
-    "trust": 6.0,
-    "product_display": 8.0,
-    "purchase_impulse": 5.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 7.0
   },
   "remake": {
@@ -83,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：一套5件套的黑色铸铁煎锅（嵌套设计，尺寸递增）。品类：身体护理。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、尴尬痛点、结果前置，。风险：无CTA、信任不足。评分：7.0"
+  "search_text": "产品：一套5件套的黑色铸铁煎锅（嵌套设计，尺寸递增）。品类：身体护理。人群：烹饪爱好者、家庭主妇/夫、户外烧烤/露营爱好者。钩子：身份代入类（“你是铸铁锅的粉丝吗？”） + 直给型展示（直接展示重叠的5件套）。评分：7.0"
 }

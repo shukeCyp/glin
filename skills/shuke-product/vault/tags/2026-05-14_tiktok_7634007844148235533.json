@@ -12,42 +12,28 @@
     "category": "家居清洁",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "已有O-Cedar拖把桶的家庭主妇/清洁人群，对地板深层清洁有需求，且对高性价比替换装敏感的人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "家居清洁"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "场景种草",
-      "清仓福利",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "低价占便宜",
-      "场景冲突",
-      "限时稀缺",
-      "尴尬痛点"
+      "认知挑战型（Challenging belief）+ 视觉解压型（ASMR/Satisfying）"
     ],
-    "proof_tags": [
-      "产品特写",
-      "第三方背书",
-      "质地展示",
-      "前后对比",
-      "使用场景",
-      "成分展示"
+    "proof_tags": [],
+    "audience_tags": [
+      "已有O-Cedar拖把桶的家庭主妇/清洁人群，对地板深层清洁有需求，且对高性价比替换装敏感的人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -66,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 0.0,
-    "clarity": 0.0,
-    "trust": 0.0,
-    "product_display": 0.0,
-    "purchase_impulse": 0.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.8
   },
   "remake": {
@@ -82,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：O-Cedar（雪松）旋转拖把的平替/升级替换头套装（包含2个红色硬毛刷头+4个白色超细纤维拖把头）。品类：家居清洁。视频类型：测评对比、效果前后对比、UGC口播。钩子：尴尬痛点、结果前置、限时稀缺，。风险：无CTA、信任不足。评分：8.8"
+  "search_text": "产品：O-Cedar（雪松）旋转拖把的平替/升级替换头套装（包含2个红色硬毛刷头+4个白色超细纤维拖把头）。品类：家居清洁。人群：已有O-Cedar拖把桶的家庭主妇/清洁人群，对地板深层清洁有需求，且对高性价比。钩子：认知挑战型（Challenging belief）+ 视觉解压型（ASMR/Sa。评分：8.8"
 }

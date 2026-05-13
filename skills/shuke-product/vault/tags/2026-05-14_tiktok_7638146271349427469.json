@@ -12,40 +12,28 @@
     "category": "男士护理",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "夏季有户外通勤、旅游、工作需求，追求快速降温及便携性的人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "男士护理"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "限时稀缺",
-      "反常识",
-      "尴尬痛点"
+      "场景冲突 + 悬念比较（\"My manager really thought...\"）"
     ],
-    "proof_tags": [
-      "使用场景",
-      "前后对比",
-      "第三方背书",
-      "尺寸容量"
+    "proof_tags": [],
+    "audience_tags": [
+      "夏季有户外通勤、旅游、工作需求，追求快速降温及便携性的人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -55,7 +43,7 @@
     "type": "场景冲突 + 悬念比较（\"My manager really thought...\"）",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 7
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -64,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 7.0,
-    "clarity": 9.0,
-    "trust": 9.0,
-    "product_display": 9.0,
-    "purchase_impulse": 8.5,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.5
   },
   "remake": {
@@ -80,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：一款带有数显、百档风力且具备半导体制冷（冰敷）功能的便携式手持小风扇（品牌疑似为Coolhill）。品类：男士护理。视频类型：测评对比、效果前后对比、UGC口播。钩子：反常识、尴尬痛点、结果前置，。风险：无CTA、信任不足。评分：8.5"
+  "search_text": "产品：一款带有数显、百档风力且具备半导体制冷（冰敷）功能的便携式手持小风扇（品牌疑似为Coolhill）。品类：男士护理。人群：夏季有户外通勤、旅游、工作需求，追求快速降温及便携性的人群。钩子：场景冲突 + 悬念比较（\"My manager really thought..。评分：8.5"
 }

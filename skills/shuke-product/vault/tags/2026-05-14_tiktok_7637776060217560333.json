@@ -12,39 +12,28 @@
     "category": "男士护理",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "渴望在夏季前练出腹肌、追求身材管理的男性，特别是觉得传统健腹轮难以平衡发力或容易伤腰的健身人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "男士护理"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "价格跳水",
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "限时稀缺",
-      "尴尬痛点"
+      "结果展示 + 极限挑战（反差）"
     ],
-    "proof_tags": [
-      "前后对比",
-      "第三方背书",
-      "手背实测"
+    "proof_tags": [],
+    "audience_tags": [
+      "渴望在夏季前练出腹肌、追求身材管理的男性，特别是觉得传统健腹轮难以平衡发力或容易伤腰的健身人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -54,7 +43,7 @@
     "type": "结果展示 + 极限挑战（反差）",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -63,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 9.0,
-    "trust": 7.0,
-    "product_display": 8.0,
-    "purchase_impulse": 9.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.4
   },
   "remake": {
@@ -79,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：一款带有手肘支撑垫的双轮健腹轮（Ab Roller）。品类：男士护理。视频类型：测评对比、效果前后对比、UGC口播。钩子：价格跳水、尴尬痛点、结果前置，。风险：无CTA、信任不足。评分：8.4"
+  "search_text": "产品：一款带有手肘支撑垫的双轮健腹轮（Ab Roller）。品类：男士护理。人群：渴望在夏季前练出腹肌、追求身材管理的男性，特别是觉得传统健腹轮难以平衡发力或容易。钩子：结果展示 + 极限挑战（反差）。评分：8.4"
 }

@@ -12,39 +12,28 @@
     "category": "美妆护肤",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "对自身唇部厚度不满意（特别是原生薄唇）、追求欧美丰满厚唇效果（“嘟嘟唇”）的年轻女性"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "美妆护肤"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "价格跳水",
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "身份点名",
-      "尴尬痛点"
+      "强反差 + 痛点代入 + 视觉震撼（结果前置）"
     ],
-    "proof_tags": [
-      "前后对比",
-      "第三方背书",
-      "手背实测"
+    "proof_tags": [],
+    "audience_tags": [
+      "对自身唇部厚度不满意（特别是原生薄唇）、追求欧美丰满厚唇效果（“嘟嘟唇”）的年轻女性"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "字幕不清",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -63,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 0.0,
-    "clarity": 0.0,
-    "trust": 0.0,
-    "product_display": 0.0,
-    "purchase_impulse": 0.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 7.6
   },
   "remake": {
@@ -79,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：DEROL 品牌的强效丰唇液（Lip Plumper / 唇部丰满唇蜜）。品类：美妆护肤。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、价格跳水、尴尬痛点，。风险：无CTA、字幕不清、信任不足。评分：7.6"
+  "search_text": "产品：DEROL 品牌的强效丰唇液（Lip Plumper / 唇部丰满唇蜜）。品类：美妆护肤。人群：对自身唇部厚度不满意（特别是原生薄唇）、追求欧美丰满厚唇效果（“嘟嘟唇”）的年轻。钩子：强反差 + 痛点代入 + 视觉震撼（结果前置）。评分：7.6"
 }

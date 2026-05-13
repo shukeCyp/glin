@@ -12,36 +12,28 @@
     "category": "家居清洁",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "讨厌繁重家务的年轻人群、家庭主妇/夫、腰膝不好不便弯腰的人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "家居清洁"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "好奇悬念",
-      "场景冲突",
-      "尴尬痛点",
-      "结果前置"
+      "痛点共鸣 + 视觉解压"
     ],
-    "proof_tags": [
-      "前后对比",
-      "第三方背书"
+    "proof_tags": [],
+    "audience_tags": [
+      "讨厌繁重家务的年轻人群、家庭主妇/夫、腰膝不好不便弯腰的人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -51,7 +43,7 @@
     "type": "痛点共鸣 + 视觉解压",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 8
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -60,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 8.0,
-    "clarity": 7.0,
-    "trust": 6.0,
-    "product_display": 9.0,
-    "purchase_impulse": 5.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 7.0
   },
   "remake": {
@@ -76,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：8合1长柄电动清洁刷（视频结尾明确口播提及 \"8-in-1 electric brush\"）。品类：家居清洁。视频类型：测评对比、效果前后对比、UGC口播。钩子：尴尬痛点、结果前置、好奇悬念，。风险：无CTA、信任不足。评分：7.0"
+  "search_text": "产品：8合1长柄电动清洁刷（视频结尾明确口播提及 \"8-in-1 electric brush\"）。品类：家居清洁。人群：讨厌繁重家务的年轻人群、家庭主妇/夫、腰膝不好不便弯腰的人群。钩子：痛点共鸣 + 视觉解压。评分：7.0"
 }

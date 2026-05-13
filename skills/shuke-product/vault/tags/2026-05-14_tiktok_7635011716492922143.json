@@ -13,42 +13,23 @@
     "sub_category": "",
     "price_position": "",
     "target_audience": [],
-    "confidence": 0.3
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "美妆护肤"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "直播切片",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "价格跳水",
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "限时稀缺",
-      "身份点名",
-      "尴尬痛点"
+      "强烈反差 + 猎奇视觉 + 痛点共鸣"
     ],
-    "proof_tags": [
-      "产品特写",
-      "第三方背书",
-      "质地展示",
-      "用户评价",
-      "前后对比",
-      "成分展示",
-      "手背实测"
-    ],
+    "proof_tags": [],
     "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -58,7 +39,7 @@
     "type": "强烈反差 + 猎奇视觉 + 痛点共鸣",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -67,11 +48,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 9.0,
-    "trust": 8.0,
-    "product_display": 8.0,
-    "purchase_impulse": 9.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.6
   },
   "remake": {
@@ -83,5 +64,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：未知。品类：美妆护肤。视频类型：痛点解决、效果前后对比、质地实测。钩子：身份点名、价格跳水、尴尬痛点，。风险：无CTA、信任不足。评分：8.6"
+  "search_text": "产品：未知。品类：美妆护肤。人群：。钩子：强烈反差 + 猎奇视觉 + 痛点共鸣。评分：8.6"
 }

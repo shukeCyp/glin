@@ -12,40 +12,29 @@
     "category": "服饰穿搭",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "讨厌繁琐熨烫流程的人、经常出差的商旅人士、对衣物平整度有要求但缺乏时间（上班族、学生党）的人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "服饰穿搭"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "身份点名",
-      "尴尬痛点"
+      "结果展示（视觉奇观） + 痛点共鸣"
     ],
-    "proof_tags": [
-      "使用场景",
-      "产品特写",
-      "第三方背书",
-      "前后对比"
+    "proof_tags": [],
+    "audience_tags": [
+      "讨厌繁琐熨烫流程的人、经常出差的商旅人士、对衣物平整度有要求但缺乏时间（上班族、学生党）的人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
       "无CTA",
-      "口播缺失"
+      "口播缺失",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -55,7 +44,7 @@
     "type": "结果展示（视觉奇观） + 痛点共鸣",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -64,11 +53,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 10.0,
-    "trust": 8.0,
-    "product_display": 10.0,
-    "purchase_impulse": 9.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 9.2
   },
   "remake": {
@@ -80,5 +69,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：Jack & Rose 便携式手持蒸汽熨斗。品类：服饰穿搭。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、尴尬痛点、结果前置，。风险：无CTA、口播缺失、信任不足。评分：9.2"
+  "search_text": "产品：Jack & Rose 便携式手持蒸汽熨斗。品类：服饰穿搭。人群：讨厌繁琐熨烫流程的人、经常出差的商旅人士、对衣物平整度有要求但缺乏时间（上班族、。钩子：结果展示（视觉奇观） + 痛点共鸣。评分：9.2"
 }

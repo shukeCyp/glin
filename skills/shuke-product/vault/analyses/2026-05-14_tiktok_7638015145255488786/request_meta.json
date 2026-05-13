@@ -1,0 +1,9 @@
+{
+  "video_id": "2026-05-14_tiktok_7638015145255488786",
+  "video_path": "/Users/chaiyapeng/Downloads/tabcut_videos/002_skllyy___7638015145255488786.mp4",
+  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7638015145255488786/analysis.md",
+  "model": "gemini-3.1-pro-preview",
+  "duration_seconds": 34.2,
+  "created_at": "2026-05-14",
+  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent"
+}

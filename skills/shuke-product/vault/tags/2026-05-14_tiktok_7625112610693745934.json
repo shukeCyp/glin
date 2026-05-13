@@ -12,36 +12,28 @@
     "category": "身体护理",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "有穿抹胸、吊带、露肩装需求，且深受“无肩带内衣容易掉/需要反复拉扯”痛点困扰的年轻女性"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "身体护理"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "好奇悬念",
-      "反常识",
-      "尴尬痛点",
-      "结果前置"
+      "实测预告（To the test）+ 场景代入（穿抹胸衣服的场景）"
     ],
-    "proof_tags": [
-      "前后对比",
-      "第三方背书",
-      "手背实测"
+    "proof_tags": [],
+    "audience_tags": [
+      "有穿抹胸、吊带、露肩装需求，且深受“无肩带内衣容易掉/需要反复拉扯”痛点困扰的年轻女性"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "口播缺失"
+      "口播缺失",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -56,15 +48,15 @@
   "selling_points": [],
   "proof_points": [],
   "cta": {
-    "text": "夏天爱穿辣妹装的姐妹，左下角闭眼入！",
+    "text": "指引左下角小黄车",
     "clarity": "clear"
   },
   "scores": {
-    "retention": 0.0,
-    "clarity": 0.0,
-    "trust": 0.0,
-    "product_display": 0.0,
-    "purchase_impulse": 0.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 0.0
   },
   "remake": {
@@ -76,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：一款防滑无肩带内衣（视频中最初展示的黑色抹胸式内衣）。品类：身体护理。视频类型：测评对比、效果前后对比、UGC口播。钩子：反常识、尴尬痛点、结果前置，。风险：口播缺失、信任不足"
+  "search_text": "产品：一款防滑无肩带内衣（视频中最初展示的黑色抹胸式内衣）。品类：身体护理。人群：有穿抹胸、吊带、露肩装需求，且深受“无肩带内衣容易掉/需要反复拉扯”痛点困扰的年。钩子：实测预告（To the test）+ 场景代入（穿抹胸衣服的场景）。评分：0.0"
 }

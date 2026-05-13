@@ -12,38 +12,29 @@
     "category": "厨房用品",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "家有幼儿的母亲（Toddler moms）、追求高效带货的家庭主妇/主夫"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "厨房用品"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "直播切片",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "身份点名",
-      "尴尬痛点"
+      "身份代入（Toddler moms）+ 行为反差/猎奇（为什么要把好好的松饼搅碎？）"
     ],
-    "proof_tags": [
-      "使用场景",
-      "第三方背书"
+    "proof_tags": [],
+    "audience_tags": [
+      "家有幼儿的母亲（Toddler moms）、追求高效带货的家庭主妇/主夫"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
       "无CTA",
-      "口播缺失"
+      "口播缺失",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -53,7 +44,7 @@
     "type": "身份代入（Toddler moms）+ 行为反差/猎奇（为什么要把好好的松饼搅碎？）",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -62,11 +53,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 4.0,
-    "trust": 9.0,
-    "product_display": 7.0,
-    "purchase_impulse": 4.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 6.6
   },
   "remake": {
@@ -78,5 +69,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：视频表面是一个育儿生活小妙招（Life Hack），但极具潜力作为高颜值陶瓷不粘锅或硅胶锅铲的带货种草视频（隐含植入）。品类：厨房用品。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、尴尬痛点、结果前置，。风险：无CTA、口播缺失、信任不足。评分：6.6"
+  "search_text": "产品：视频表面是一个育儿生活小妙招（Life Hack），但极具潜力作为高颜值陶瓷不粘锅或硅胶锅铲的带货种草视频（隐含植入）。品类：厨房用品。人群：家有幼儿的母亲（Toddler moms）、追求高效带货的家庭主妇/主夫。钩子：身份代入（Toddler moms）+ 行为反差/猎奇（为什么要把好好的松饼搅碎。评分：6.6"
 }

@@ -12,40 +12,29 @@
     "category": "数码配件",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "有开车导航需求、饱受手机无处安放或传统支架掉落/挡视野困扰的车主"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "数码配件"
     ],
     "video_type_tags": [
-      "测评对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "库存背书",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "限时稀缺",
-      "身份点名",
-      "尴尬痛点"
+      "痛点前置 + 场景代入"
     ],
-    "proof_tags": [
-      "库存展示",
-      "第三方背书",
-      "使用场景"
+    "proof_tags": [],
+    "audience_tags": [
+      "有开车导航需求、饱受手机无处安放或传统支架掉落/挡视野困扰的车主"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "字幕不清",
       "无CTA",
-      "口播缺失"
+      "口播缺失",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -55,7 +44,7 @@
     "type": "痛点前置 + 场景代入",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -64,11 +53,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 10.0,
-    "trust": 8.0,
-    "product_display": 9.0,
-    "purchase_impulse": 8.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.8
   },
   "remake": {
@@ -80,5 +69,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：车载多功能真空吸盘/胶盘磁吸手机支架（形似相机镜头，带折叠悬臂）。品类：数码配件。视频类型：测评对比、UGC口播、质地实测。钩子：身份点名、尴尬痛点、结果前置，。风险：无CTA、字幕不清、口播缺失。评分：8.8"
+  "search_text": "产品：车载多功能真空吸盘/胶盘磁吸手机支架（形似相机镜头，带折叠悬臂）。品类：数码配件。人群：有开车导航需求、饱受手机无处安放或传统支架掉落/挡视野困扰的车主。钩子：痛点前置 + 场景代入。评分：8.8"
 }

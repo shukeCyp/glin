@@ -12,39 +12,27 @@
     "category": "数码配件",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "年轻车主、汽车改装爱好者、追求车内个性化氛围与新鲜感的人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "数码配件"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "清仓福利",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "低价占便宜",
-      "场景冲突",
-      "限时稀缺",
-      "尴尬痛点"
+      "好奇/互动提问（利用评论贴纸）+ 结果展示（瞬间点亮）"
     ],
-    "proof_tags": [
-      "使用场景",
-      "第三方背书"
+    "proof_tags": [],
+    "audience_tags": [
+      "年轻车主、汽车改装爱好者、追求车内个性化氛围与新鲜感的人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -59,15 +47,15 @@
   "selling_points": [],
   "proof_points": [],
   "cta": {
-    "text": "",
-    "clarity": "none"
+    "text": "强调“平常很贵，现在特价”，制造稀缺性和紧迫感，明确指示购买路径",
+    "clarity": "clear"
   },
   "scores": {
-    "retention": 0.0,
-    "clarity": 0.0,
-    "trust": 0.0,
-    "product_display": 0.0,
-    "purchase_impulse": 0.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.6
   },
   "remake": {
@@ -79,5 +67,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：汽车内部无线LED氛围灯（脚部空间照明灯）。品类：数码配件。视频类型：测评对比、效果前后对比、UGC口播。钩子：尴尬痛点、结果前置、限时稀缺，。风险：无CTA、信任不足。评分：8.6"
+  "search_text": "产品：汽车内部无线LED氛围灯（脚部空间照明灯）。品类：数码配件。人群：年轻车主、汽车改装爱好者、追求车内个性化氛围与新鲜感的人群。钩子：好奇/互动提问（利用评论贴纸）+ 结果展示（瞬间点亮）。评分：8.6"
 }

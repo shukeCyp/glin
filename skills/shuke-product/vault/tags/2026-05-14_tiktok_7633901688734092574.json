@@ -12,41 +12,28 @@
     "category": "家居清洁",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "有牙结石（视频中称为“butter tooth”）、牙菌斑、在意口腔卫生，且追求高性价比/不想去诊所洗牙的人群"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "家居清洁"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "清仓福利",
-      "价格刺激",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "尴尬痛点",
-      "低价占便宜"
+      "痛点放大（图片刺激） + 猎奇展示（高频震动测试）"
     ],
-    "proof_tags": [
-      "产品特写",
-      "第三方背书",
-      "前后对比",
-      "使用场景",
-      "手背实测"
+    "proof_tags": [],
+    "audience_tags": [
+      "有牙结石（视频中称为“butter tooth”）、牙菌斑、在意口腔卫生，且追求高性价比/不想去诊所洗牙的人群"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -65,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 0.0,
-    "clarity": 0.0,
-    "trust": 0.0,
-    "product_display": 0.0,
-    "purchase_impulse": 0.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.4
   },
   "remake": {
@@ -81,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：家用超声波电动洁牙器/牙结石去除仪。品类：家居清洁。视频类型：测评对比、效果前后对比、UGC口播。钩子：尴尬痛点、结果前置、低价占便宜，。风险：无CTA、信任不足。评分：8.4"
+  "search_text": "产品：家用超声波电动洁牙器/牙结石去除仪。品类：家居清洁。人群：有牙结石（视频中称为“butter tooth”）、牙菌斑、在意口腔卫生，且追求。钩子：痛点放大（图片刺激） + 猎奇展示（高频震动测试）。评分：8.4"
 }

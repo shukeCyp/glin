@@ -12,40 +12,29 @@
     "category": "美妆护肤",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "有车一族，特别是经常面临户外停车、受困于车内夏季高温及内饰暴晒老化的车主"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "美妆护肤"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "价格刺激",
-      "直播切片",
-      "工厂源头",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "身份点名",
-      "尴尬痛点"
+      "结果展示 / 场景反差"
     ],
-    "proof_tags": [
-      "使用场景",
-      "第三方背书"
+    "proof_tags": [],
+    "audience_tags": [
+      "有车一族，特别是经常面临户外停车、受困于车内夏季高温及内饰暴晒老化的车主"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
       "无CTA",
-      "口播缺失"
+      "口播缺失",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -55,7 +44,7 @@
     "type": "结果展示 / 场景反差",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 8
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -64,11 +53,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 8.0,
-    "clarity": 9.0,
-    "trust": 8.0,
-    "product_display": 10.0,
-    "purchase_impulse": 6.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 8.2
   },
   "remake": {
@@ -80,5 +69,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：汽车前挡风玻璃遮阳伞（伞式汽车遮阳挡）。品类：美妆护肤。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、尴尬痛点、结果前置，。风险：无CTA、口播缺失、信任不足。评分：8.2"
+  "search_text": "产品：汽车前挡风玻璃遮阳伞（伞式汽车遮阳挡）。品类：美妆护肤。人群：有车一族，特别是经常面临户外停车、受困于车内夏季高温及内饰暴晒老化的车主。钩子：结果展示 / 场景反差。评分：8.2"
 }

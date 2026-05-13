@@ -12,38 +12,28 @@
     "category": "美妆护肤",
     "sub_category": "",
     "price_position": "",
-    "target_audience": [],
-    "confidence": 0.7
+    "target_audience": [
+      "在家自己给狗狗美容的宠物主，特别是对使用剪刀有恐惧感、狗狗胆小易激动的受众"
+    ],
+    "confidence": 0.6
   },
   "tags": {
     "product_tags": [
       "美妆护肤"
     ],
     "video_type_tags": [
-      "测评对比",
-      "效果前后对比",
-      "UGC口播",
-      "质地实测",
-      "场景种草",
-      "痛点解决"
+      "其他"
     ],
     "hook_tags": [
-      "结果前置",
-      "好奇悬念",
-      "场景冲突",
-      "身份点名",
-      "尴尬痛点"
+      "痛点放大 + 视觉奇观/反差"
     ],
-    "proof_tags": [
-      "使用场景",
-      "前后对比",
-      "第三方背书"
+    "proof_tags": [],
+    "audience_tags": [
+      "在家自己给狗狗美容的宠物主，特别是对使用剪刀有恐惧感、狗狗胆小易激动的受众"
     ],
-    "audience_tags": [],
     "risk_tags": [
-      "信任不足",
-      "字幕不清",
-      "无CTA"
+      "无CTA",
+      "信任不足"
     ],
     "platform_tags": [
       "tiktok"
@@ -53,7 +43,7 @@
     "type": "痛点放大 + 视觉奇观/反差",
     "first_3s_text": "",
     "mechanism": "",
-    "retention_score": 9
+    "retention_score": 0
   },
   "selling_points": [],
   "proof_points": [],
@@ -62,11 +52,11 @@
     "clarity": "none"
   },
   "scores": {
-    "retention": 9.0,
-    "clarity": 10.0,
-    "trust": 9.0,
-    "product_display": 9.0,
-    "purchase_impulse": 9.0,
+    "retention": 0,
+    "clarity": 0,
+    "trust": 0,
+    "product_display": 0,
+    "purchase_impulse": 0,
     "total": 9.2
   },
   "remake": {
@@ -78,5 +68,5 @@
     "ai_image_prompts": [],
     "ai_video_prompts": []
   },
-  "search_text": "产品：宠物局部剃毛器（带有LED照明灯，专用于修剪眼周、脚底等狭窄区域）。品类：美妆护肤。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、尴尬痛点、结果前置，。风险：无CTA、字幕不清、信任不足。评分：9.2"
+  "search_text": "产品：宠物局部剃毛器（带有LED照明灯，专用于修剪眼周、脚底等狭窄区域）。品类：美妆护肤。人群：在家自己给狗狗美容的宠物主，特别是对使用剪刀有恐惧感、狗狗胆小易激动的受众。钩子：痛点放大 + 视觉奇观/反差。评分：9.2"
 }

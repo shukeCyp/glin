@@ -1,0 +1,9 @@
+{
+  "video_id": "2026-05-14_tiktok_7634755123629002004",
+  "video_path": "/Users/chaiyapeng/Downloads/tabcut_videos/458_drigueztv0_7634755123629002004.mp4",
+  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7634755123629002004/analysis.md",
+  "model": "gemini-3.1-pro-preview",
+  "duration_seconds": 20.8,
+  "created_at": "2026-05-14",
+  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent"
+}
