@@ -1,0 +1,91 @@
+{
+  "video_id": "2026-05-14_tiktok_7634535993684593933",
+  "source": {
+    "video_path": "/Users/chaiyapeng/Downloads/26/TikVideo.App_7634535993684593933.mp4",
+    "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7634535993684593933/analysis.md",
+    "model": "gemini-3.1-pro-preview",
+    "duration_seconds": 41.9,
+    "created_at": "2026-05-14"
+  },
+  "product": {
+    "name": "一款带金属滑轮卡扣的户外防风绳/捆扎绳（品牌显示为 SEESE）",
+    "category": "男士护理",
+    "sub_category": "",
+    "price_position": "",
+    "target_audience": [],
+    "confidence": 0.7
+  },
+  "tags": {
+    "product_tags": [
+      "男士护理"
+    ],
+    "video_type_tags": [
+      "测评对比",
+      "效果前后对比",
+      "UGC口播",
+      "质地实测",
+      "场景种草",
+      "开箱展示",
+      "清仓福利",
+      "价格刺激",
+      "痛点解决"
+    ],
+    "hook_tags": [
+      "价格跳水",
+      "结果前置",
+      "好奇悬念",
+      "场景冲突",
+      "限时稀缺",
+      "反常识",
+      "身份点名",
+      "尴尬痛点"
+    ],
+    "proof_tags": [
+      "产品特写",
+      "第三方背书",
+      "库存展示",
+      "用户评价",
+      "尺寸容量",
+      "使用场景",
+      "打包发货"
+    ],
+    "audience_tags": [],
+    "risk_tags": [
+      "信任不足",
+      "无CTA"
+    ],
+    "platform_tags": [
+      "tiktok"
+    ]
+  },
+  "hook": {
+    "type": "利益刺激（醒目的 PRICE DROP 红字） + 结果展示（皮卡车厢牢固绑好的重物） + 好奇心（“发明这东西的人该加薪”）",
+    "first_3s_text": "",
+    "mechanism": "",
+    "retention_score": 0
+  },
+  "selling_points": [],
+  "proof_points": [],
+  "cta": {
+    "text": "",
+    "clarity": "none"
+  },
+  "scores": {
+    "retention": 0.0,
+    "clarity": 0.0,
+    "trust": 0.0,
+    "product_display": 0.0,
+    "purchase_impulse": 0.0,
+    "total": 8.8
+  },
+  "remake": {
+    "angle": "",
+    "script_outline": [],
+    "shot_list": [],
+    "voiceover": "",
+    "subtitles": [],
+    "ai_image_prompts": [],
+    "ai_video_prompts": []
+  },
+  "search_text": "产品：一款带金属滑轮卡扣的户外防风绳/捆扎绳（品牌显示为 SEESE）。品类：男士护理。视频类型：测评对比、效果前后对比、UGC口播。钩子：身份点名、价格跳水、反常识，。风险：无CTA、信任不足。评分：8.8"
+}

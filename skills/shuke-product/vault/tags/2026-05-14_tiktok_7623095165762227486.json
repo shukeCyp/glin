@@ -1,0 +1,98 @@
+{
+  "video_id": "2026-05-14_tiktok_7623095165762227486",
+  "source": {
+    "video_path": "/Users/chaiyapeng/Downloads/26/TikVideo.App_7623095165762227486.mp4",
+    "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7623095165762227486/analysis.md",
+    "model": "gemini-3.1-pro-preview",
+    "duration_seconds": 15.1,
+    "created_at": "2026-05-14"
+  },
+  "product": {
+    "name": "疑似售卖一种具有“促进新陈代谢/辅助减脂”功效的条装固体饮料/补剂（冲泡粉）",
+    "category": "健康养生",
+    "sub_category": "",
+    "price_position": "",
+    "target_audience": [
+      "** 渴望在夏季快速瘦身",
+      "有身材焦虑",
+      "追求便捷高效减脂方式的年轻女性。"
+    ],
+    "confidence": 0.7
+  },
+  "tags": {
+    "product_tags": [
+      "健康养生"
+    ],
+    "video_type_tags": [
+      "UGC口播",
+      "质地实测",
+      "场景种草",
+      "剧情反转",
+      "痛点解决"
+    ],
+    "hook_tags": [
+      "好奇悬念",
+      "场景冲突",
+      "尴尬痛点",
+      "结果前置"
+    ],
+    "proof_tags": [
+      "产品特写",
+      "第三方背书",
+      "质地展示",
+      "使用场景",
+      "成分展示"
+    ],
+    "audience_tags": [
+      "** 渴望在夏季快速瘦身",
+      "有身材焦虑",
+      "追求便捷高效减脂方式的年轻女性。"
+    ],
+    "risk_tags": [
+      "信任不足",
+      "无CTA",
+      "口播缺失"
+    ],
+    "platform_tags": [
+      "tiktok"
+    ]
+  },
+  "hook": {
+    "type": "痛点（身材焦虑）+ 结果展示（主播本人的好身材）+ 场景冲突（车内冲泡）",
+    "first_3s_text": "",
+    "mechanism": "",
+    "retention_score": 0
+  },
+  "selling_points": [
+    "提升新陈代谢（Boosting metabolism - 字幕明确提及）。",
+    "隐含卖点：",
+    "极度便携：** 可以在车内完成，无需杯盖、无需摇摇杯。",
+    "冷水速溶：** 直接倒入冰块水中即可，适合夏天。"
+  ],
+  "proof_points": [
+    "视觉证明点：** 主播本人的马甲线/平坦小腹（暗示喝了这个就能拥有这样的身材）。",
+    "实测证明：** 镜头前真实冲泡，粉末遇水变色的过程清晰可见。"
+  ],
+  "cta": {
+    "text": "",
+    "clarity": "none"
+  },
+  "scores": {
+    "retention": 0.0,
+    "clarity": 0.0,
+    "trust": 0.0,
+    "product_display": 0.0,
+    "purchase_impulse": 0.0,
+    "total": 6.4
+  },
+  "remake": {
+    "angle": "",
+    "script_outline": [],
+    "shot_list": [],
+    "voiceover": "",
+    "subtitles": [],
+    "ai_image_prompts": [],
+    "ai_video_prompts": []
+  },
+  "search_text": "产品：疑似售卖一种具有“促进新陈代谢/辅助减脂”功效的条装固体饮料/补剂（冲泡粉）。品类：健康养生。人群：** 渴望在夏季快速瘦身, 有身材焦虑, 追求便捷高效减脂方式的年轻女性。。视频类型：UGC口播、质地实测、场景种草。钩子：尴尬痛点、结果前置、好奇悬念，。卖点：提升新陈代谢（Boosting metabolism - 字幕明确提及）。、隐含卖点：、极度便携：** 可以在车内完成，无需杯盖、无需摇摇杯。。证明：视觉证明点：** 主播本人的马甲线/平坦小腹（暗示喝了这个就能拥有这样的身材）。、实测证明：** 镜头前真实冲泡，粉末遇水变色的过程清晰可见。。风险：无CTA、口播缺失、信任不足。评分：6.4"
+}

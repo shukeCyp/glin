@@ -1,0 +1,10 @@
+{
+  "video_id": "2026-05-14_tiktok_7619090695910853901",
+  "video_path": "/Users/chaiyapeng/Downloads/用所选项目新建的文件夹/TikVideo.App_7619090695910853901.mp4",
+  "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7619090695910853901/analysis.md",
+  "model": "gemini-3.1-pro-preview",
+  "duration_seconds": 27.7,
+  "created_at": "2026-05-14T02:41:03.778381",
+  "endpoint": "https://yunwu.ai/v1beta/models/gemini-3.1-pro-preview:generateContent",
+  "prompt": "default_commerce_analysis"
+}

@@ -1,0 +1,84 @@
+{
+  "video_id": "2026-05-14_tiktok_7620074668254416142",
+  "source": {
+    "video_path": "/Users/chaiyapeng/Downloads/用所选项目新建的文件夹/TikVideo.App_7620074668254416142.mp4",
+    "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7620074668254416142/analysis.md",
+    "model": "gemini-3.1-pro-preview",
+    "duration_seconds": 22.9,
+    "created_at": "2026-05-14"
+  },
+  "product": {
+    "name": "Crocs Soho 坡跟/厚底凉鞋（及其搭配的立体花朵鞋花配件）",
+    "category": "服饰穿搭",
+    "sub_category": "",
+    "price_position": "",
+    "target_audience": [],
+    "confidence": 0.7
+  },
+  "tags": {
+    "product_tags": [
+      "服饰穿搭"
+    ],
+    "video_type_tags": [
+      "测评对比",
+      "UGC口播",
+      "质地实测",
+      "场景种草",
+      "直播切片",
+      "痛点解决"
+    ],
+    "hook_tags": [
+      "结果前置",
+      "好奇悬念",
+      "场景冲突",
+      "限时稀缺",
+      "反常识",
+      "尴尬痛点"
+    ],
+    "proof_tags": [
+      "产品特写",
+      "第三方背书",
+      "用户评价",
+      "前后对比",
+      "使用场景"
+    ],
+    "audience_tags": [],
+    "risk_tags": [
+      "信任不足",
+      "无CTA"
+    ],
+    "platform_tags": [
+      "tiktok"
+    ]
+  },
+  "hook": {
+    "type": "痛点引入（足底筋膜炎） + 结果展示（评论贴纸：穿一天脚不痛） + 视觉反差（厚底坡跟鞋通常被认为不舒服，但博主说很舒服）",
+    "first_3s_text": "",
+    "mechanism": "",
+    "retention_score": 8
+  },
+  "selling_points": [],
+  "proof_points": [],
+  "cta": {
+    "text": "",
+    "clarity": "none"
+  },
+  "scores": {
+    "retention": 8.0,
+    "clarity": 10.0,
+    "trust": 9.0,
+    "product_display": 8.0,
+    "purchase_impulse": 9.0,
+    "total": 8.8
+  },
+  "remake": {
+    "angle": "",
+    "script_outline": [],
+    "shot_list": [],
+    "voiceover": "",
+    "subtitles": [],
+    "ai_image_prompts": [],
+    "ai_video_prompts": []
+  },
+  "search_text": "产品：Crocs Soho 坡跟/厚底凉鞋（及其搭配的立体花朵鞋花配件）。品类：服饰穿搭。视频类型：测评对比、UGC口播、质地实测。钩子：反常识、尴尬痛点、结果前置，。风险：无CTA、信任不足。评分：8.8"
+}

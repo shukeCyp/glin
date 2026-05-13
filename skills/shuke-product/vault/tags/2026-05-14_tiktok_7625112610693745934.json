@@ -1,0 +1,80 @@
+{
+  "video_id": "2026-05-14_tiktok_7625112610693745934",
+  "source": {
+    "video_path": "/Users/chaiyapeng/Downloads/用所选项目新建的文件夹/TikVideo.App_7625112610693745934.mp4",
+    "analysis_path": "skills/shuke-product/vault/analyses/2026-05-14_tiktok_7625112610693745934/analysis.md",
+    "model": "gemini-3.1-pro-preview",
+    "duration_seconds": 9.6,
+    "created_at": "2026-05-14"
+  },
+  "product": {
+    "name": "一款防滑无肩带内衣（视频中最初展示的黑色抹胸式内衣）",
+    "category": "身体护理",
+    "sub_category": "",
+    "price_position": "",
+    "target_audience": [],
+    "confidence": 0.7
+  },
+  "tags": {
+    "product_tags": [
+      "身体护理"
+    ],
+    "video_type_tags": [
+      "测评对比",
+      "效果前后对比",
+      "UGC口播",
+      "质地实测",
+      "场景种草",
+      "痛点解决"
+    ],
+    "hook_tags": [
+      "好奇悬念",
+      "反常识",
+      "尴尬痛点",
+      "结果前置"
+    ],
+    "proof_tags": [
+      "前后对比",
+      "第三方背书",
+      "手背实测"
+    ],
+    "audience_tags": [],
+    "risk_tags": [
+      "信任不足",
+      "口播缺失"
+    ],
+    "platform_tags": [
+      "tiktok"
+    ]
+  },
+  "hook": {
+    "type": "实测预告（To the test）+ 场景代入（穿抹胸衣服的场景）",
+    "first_3s_text": "",
+    "mechanism": "",
+    "retention_score": 0
+  },
+  "selling_points": [],
+  "proof_points": [],
+  "cta": {
+    "text": "夏天爱穿辣妹装的姐妹，左下角闭眼入！",
+    "clarity": "clear"
+  },
+  "scores": {
+    "retention": 0.0,
+    "clarity": 0.0,
+    "trust": 0.0,
+    "product_display": 0.0,
+    "purchase_impulse": 0.0,
+    "total": 0.0
+  },
+  "remake": {
+    "angle": "",
+    "script_outline": [],
+    "shot_list": [],
+    "voiceover": "",
+    "subtitles": [],
+    "ai_image_prompts": [],
+    "ai_video_prompts": []
+  },
+  "search_text": "产品：一款防滑无肩带内衣（视频中最初展示的黑色抹胸式内衣）。品类：身体护理。视频类型：测评对比、效果前后对比、UGC口播。钩子：反常识、尴尬痛点、结果前置，。风险：口播缺失、信任不足"
+}
