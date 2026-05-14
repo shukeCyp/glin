@@ -28,7 +28,7 @@ from .sora2 import (
     Sora2TaskStatus,
     Sora2Xiaobanshou,
 )
-from .veo import VeoHetang, VeoBandianwa, VeoXiaobanshou, VeoZyg
+from .veo import VeoHetang, VeoBandianwa, VeoXiaobanshou, VeoZyg, VeoChaowen
 
 _IMAGE_EXT_MAP = {
     "image/png": ".png",
@@ -633,6 +633,52 @@ class ZygVeoGenerator(BaseVideoGenerator):
                     pass
 
 
+class ChaowenVeoGenerator(BaseVideoGenerator):
+    platform = "veo3"
+    provider = "chaowen"
+    platform_label = "VEO3"
+    provider_label = "CW"
+    setting_key = SettingKeys.CHAOWEN_VEO_API_KEY
+
+    def get_base_url(self, settings: dict) -> str:
+        return (settings.get(SettingKeys.CHAOWEN_VEO_BASE_URL) or "").strip().rstrip("/")
+
+    def generate(self, request: VideoGenerationRequest, settings: dict) -> VideoGenerationResult:
+        api_key = self.get_api_key(settings)
+        if not api_key:
+            return VideoGenerationResult(success=False, error_message=self.get_missing_key_message())
+
+        base_url = self.get_base_url(settings)
+        image_path = _write_temp_image(request.ref_images)
+
+        try:
+            service = VeoChaowen(api_key, base_url)
+            result = service.generate(
+                prompt=request.prompt,
+                orientation=request.orientation,
+                duration=request.duration,
+                ref_image_path=image_path,
+                download_dir=str(request.download_dir) if request.download_dir else None,
+            )
+            if not result.success:
+                return VideoGenerationResult(success=False, error_message=result.error_message)
+
+            return VideoGenerationResult(
+                success=True,
+                video_url=result.video_url,
+                file_path=result.file_path,
+            )
+        except Exception as exc:
+            logger.error(f"[{self.platform_label}/{self.provider_label}] 视频生成异常: {exc}")
+            return VideoGenerationResult(success=False, error_message=str(exc))
+        finally:
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
+
+
 class BaseSora2Generator(BaseVideoGenerator, ABC):
     platform = "sora2"
     platform_label = "Sora2"
@@ -889,6 +935,7 @@ media_generation_registry.register_video(HetangVeo3Generator())
 media_generation_registry.register_video(BandianwaVeoGenerator())
 media_generation_registry.register_video(XiaobanshouVeoGenerator())
 media_generation_registry.register_video(ZygVeoGenerator())
+media_generation_registry.register_video(ChaowenVeoGenerator())
 media_generation_registry.register_video(Sora2DayangyuGenerator())
 media_generation_registry.register_video(Sora2XiaobanshouGenerator())
 media_generation_registry.register_video(Sora2BandianwaGenerator())

@@ -3,6 +3,7 @@ from .hetang import VeoHetang
 from .bandianwa import VeoBandianwa
 from .xiaobanshou import VeoXiaobanshou
 from .zyg import VeoZyg
+from .chaowen import VeoChaowen
 
 __all__ = [
     "VeoBase",
@@ -13,4 +14,5 @@ __all__ = [
     "VeoBandianwa",
     "VeoXiaobanshou",
     "VeoZyg",
+    "VeoChaowen",
 ]
