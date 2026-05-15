@@ -10,6 +10,7 @@ class ApiUrls:
     BANDIANWA = "https://api.hellobabygo.com"
     ZYG = "https://otuapi.com"
     CHAOWEN = "https://api.chaowenai.com"
+    HOLO = "https://api.dealonhorizon.us"
     HETANG = ""  # 荷塘渠道 Base URL 由用户在设置页面配置，无默认值
 
 
@@ -21,6 +22,7 @@ class ModelProviders:
     BANDIANWA = "bandianwa"
     ZYG = "zyg"
     CHAOWEN = "chaowen"
+    HOLO = "holo"
 
 
 class SettingKeys:
@@ -39,6 +41,8 @@ class SettingKeys:
     ZYG_API_KEY = "zyg_api_key"
     CHAOWEN_VEO_API_KEY = "chaowen_veo_api_key"
     CHAOWEN_VEO_BASE_URL = "chaowen_veo_base_url"
+    HOLO_VEO_API_KEY = "holo_veo_api_key"
+    HOLO_VEO_BASE_URL = "holo_veo_base_url"
     HETANG_VEO_BASE_URL = "hetang_veo_base_url"   # 荷塘渠道（VEO + NanoBanana 共用）
     HETANG_VEO_API_KEY = "hetang_veo_api_key"      # 荷塘渠道（VEO + NanoBanana 共用）
     # 别名：NanoBanana 荷塘渠道与 VEO 共用同一地址和密钥
