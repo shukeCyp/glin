@@ -1,11 +1,14 @@
 """超稳 AI (chaowenai.com) VEO 视频生成（异步任务型）"""
 
 import base64
+import mimetypes
 import os
 import time
+from io import BytesIO
 from typing import Optional
 
 import requests
+from PIL import Image
 
 from ...logger import logger
 from .base import VeoBase, VeoResult
@@ -22,6 +25,101 @@ _MODELS = {
     "fast": "veo3.1-fast",
     "lite": "veo3.1-lite",
 }
+
+
+def _guess_mime_type(path):
+    mime_type, _ = mimetypes.guess_type(str(path))
+    return mime_type or "image/jpeg"
+
+
+def _compress_image_if_needed(file_path, threshold_bytes=1024 * 1024):
+    """对图片进行无损/近无损压缩，返回 (compressed_bytes, mime_type, original_size, compressed_size, used_compression, label)"""
+    file_path = str(file_path)
+    original_size = os.path.getsize(file_path)
+    original_mime = _guess_mime_type(file_path)
+    if original_size <= threshold_bytes:
+        return None, original_mime, original_size, original_size, False, "未触发"
+
+    def _save_candidate(img, target_format, target_mime, **save_kwargs):
+        output = BytesIO()
+        save_img = img
+        if target_format in ("JPEG",) and img.mode not in ("RGB", "L"):
+            save_img = img.convert("RGB")
+        save_img.save(output, format=target_format, **save_kwargs)
+        data = output.getvalue()
+        return data, target_mime
+
+    try:
+        with Image.open(file_path) as img:
+            fmt = (img.format or "").upper()
+            candidates = []
+
+            # 无损策略
+            try:
+                if fmt == "PNG" or original_mime == "image/png":
+                    data, mime = _save_candidate(img, "PNG", "image/png", optimize=True, compress_level=9)
+                    candidates.append(("无损PNG优化", data, mime))
+                    data, mime = _save_candidate(img, "WEBP", "image/webp", lossless=True, method=6)
+                    candidates.append(("无损WebP", data, mime))
+                elif fmt == "WEBP" or original_mime == "image/webp":
+                    data, mime = _save_candidate(img, "WEBP", "image/webp", lossless=True, method=6)
+                    candidates.append(("无损WebP", data, mime))
+                elif fmt == "GIF" or original_mime == "image/gif":
+                    data, mime = _save_candidate(img, "GIF", "image/gif", optimize=True, save_all=True)
+                    candidates.append(("无损GIF优化", data, mime))
+                    data, mime = _save_candidate(img.convert("RGBA"), "WEBP", "image/webp", lossless=True, method=6)
+                    candidates.append(("无损WebP", data, mime))
+                elif original_mime == "image/jpeg":
+                    data, mime = _save_candidate(img, "JPEG", "image/jpeg", optimize=True, progressive=True, quality=95, subsampling=0)
+                    candidates.append(("高质量JPEG优化", data, mime))
+                else:
+                    data, mime = _save_candidate(
+                        img.convert("RGBA") if img.mode not in ("RGB", "RGBA", "L") else img,
+                        "WEBP", "image/webp", lossless=True, method=6,
+                    )
+                    candidates.append(("无损WebP", data, mime))
+            except Exception:
+                pass
+
+            # 有损回退策略
+            try:
+                has_alpha = "A" in img.getbands()
+                if has_alpha:
+                    for quality in (95, 90, 85, 80):
+                        data, mime = _save_candidate(img.convert("RGBA"), "WEBP", "image/webp", quality=quality, method=6)
+                        candidates.append((f"高质量WebP(q={quality})", data, mime))
+                else:
+                    for quality in (95, 90, 85, 80):
+                        data, mime = _save_candidate(img, "JPEG", "image/jpeg", optimize=True, progressive=True, quality=quality)
+                        candidates.append((f"高质量JPEG(q={quality})", data, mime))
+                    for quality in (95, 90, 85):
+                        data, mime = _save_candidate(img, "WEBP", "image/webp", quality=quality, method=6)
+                        candidates.append((f"高质量WebP(q={quality})", data, mime))
+            except Exception:
+                pass
+
+            best = None
+            for label, data, mime in candidates:
+                size = len(data)
+                if size <= 0:
+                    continue
+                if best is None or size < best[3]:
+                    best = (label, data, mime, size)
+
+            if not best or best[3] >= original_size:
+                return None, original_mime, original_size, original_size, False, "收益不足"
+
+            label, compressed_bytes, compressed_mime, compressed_size = best
+            ratio = (1 - compressed_size / original_size) * 100
+            logger.info(
+                f"[超稳 AI] 图片压缩成功 [{label}]: {os.path.basename(file_path)} "
+                f"{original_size / 1024:.1f}KB -> {compressed_size / 1024:.1f}KB (-{ratio:.1f}%)"
+            )
+            return compressed_bytes, compressed_mime, original_size, compressed_size, True, label
+    except Exception as e:
+        logger.warning(f"[超稳 AI] 图片压缩失败，回退原图 {file_path}: {e}")
+
+    return None, original_mime, original_size, original_size, False, "异常回退"
 
 
 class VeoChaowen(VeoBase):
@@ -72,15 +170,21 @@ class VeoChaowen(VeoBase):
             "aspectRatio": aspect_ratio,
         }
 
-        # 如果有参考图，添加首帧
+        # 如果有参考图，添加首帧（先尝试无损压缩）
         if ref_image_path and os.path.isfile(ref_image_path):
-            with open(ref_image_path, "rb") as f:
-                img_b64 = base64.b64encode(f.read()).decode()
-            # 根据文件扩展名确定 MIME 类型
-            ext = os.path.splitext(ref_image_path)[1].lower()
-            mime_map = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
-            mime = mime_map.get(ext, "image/jpeg")
-            payload["firstFrameBase64"] = f"data:{mime};base64,{img_b64}"
+            compressed_bytes, mime_type, orig_size, comp_size, used_comp, label = \
+                _compress_image_if_needed(ref_image_path)
+            if compressed_bytes is not None:
+                img_b64 = base64.b64encode(compressed_bytes).decode()
+            else:
+                with open(ref_image_path, "rb") as f:
+                    img_b64 = base64.b64encode(f.read()).decode()
+                if orig_size > 1024 * 1024:
+                    logger.info(
+                        f"[超稳 AI] 图片未压缩 ({label})，保留原图: "
+                        f"{os.path.basename(ref_image_path)} {orig_size / 1024:.1f}KB"
+                    )
+            payload["firstFrameBase64"] = f"data:{mime_type};base64,{img_b64}"
 
         # 提交任务
         task_id = self._submit_task(payload, model)
