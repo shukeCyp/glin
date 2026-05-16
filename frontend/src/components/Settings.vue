@@ -34,6 +34,8 @@ const chaowen_veo_api_key = ref('')
 const chaowen_veo_base_url = ref('')
 const holo_veo_api_key = ref('')
 const holo_veo_base_url = ref('')
+const catking_veo_api_key = ref('')
+const catking_veo_base_url = ref('')
 const hetang_veo_base_url = ref('')
 const hetang_veo_api_key = ref('')
 // 荷塘 VEO 与 NanoBanana 共用同一 Base URL 和 API Key
@@ -125,6 +127,8 @@ const saveSettings = async () => {
       chaowen_veo_base_url: chaowen_veo_base_url.value,
       holo_veo_api_key: holo_veo_api_key.value,
       holo_veo_base_url: holo_veo_base_url.value,
+      catking_veo_api_key: catking_veo_api_key.value,
+      catking_veo_base_url: catking_veo_base_url.value,
       hetang_veo_base_url: hetang_veo_base_url.value,
       hetang_veo_api_key: hetang_veo_api_key.value,
       sora2_model: sora2_model.value,
@@ -210,6 +214,8 @@ const loadSettings = async () => {
     if (settings.chaowen_veo_base_url !== undefined) chaowen_veo_base_url.value = settings.chaowen_veo_base_url
     if (settings.holo_veo_api_key) holo_veo_api_key.value = settings.holo_veo_api_key
     if (settings.holo_veo_base_url !== undefined) holo_veo_base_url.value = settings.holo_veo_base_url
+    if (settings.catking_veo_api_key) catking_veo_api_key.value = settings.catking_veo_api_key
+    if (settings.catking_veo_base_url !== undefined) catking_veo_base_url.value = settings.catking_veo_base_url
     if (settings.hetang_veo_base_url !== undefined) hetang_veo_base_url.value = settings.hetang_veo_base_url
     if (settings.hetang_veo_api_key) hetang_veo_api_key.value = settings.hetang_veo_api_key
     if (settings.sora2_model) sora2_model.value = settings.sora2_model
@@ -287,6 +293,7 @@ onMounted(() => {
                   <label class="radio-item"><input type="radio" v-model="veo_model" value="zyg" /><span class="radio-label">ZYG</span></label>
                   <label class="radio-item"><input type="radio" v-model="veo_model" value="chaowen" /><span class="radio-label">CW</span></label>
                   <label class="radio-item"><input type="radio" v-model="veo_model" value="holo" /><span class="radio-label">HOLO</span></label>
+                  <label class="radio-item"><input type="radio" v-model="veo_model" value="catking" /><span class="radio-label">CatKing</span></label>
                 </div>
               </div>
             </div>
@@ -418,6 +425,15 @@ onMounted(() => {
                 <label class="field">
                   <span class="field-label">API Key</span>
                   <input v-model="holo_veo_api_key" type="password" placeholder="请输入 HOLO API Key" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="card-header"><h3 class="card-title">CatKing</h3></div>
+              <div class="card-body">
+                <label class="field">
+                  <span class="field-label">API Key</span>
+                  <input v-model="catking_veo_api_key" type="password" placeholder="请输入 CatKing API Key" autocomplete="off" />
                 </label>
               </div>
             </div>

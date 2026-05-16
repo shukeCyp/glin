@@ -4,6 +4,7 @@ from .bandianwa import VeoBandianwa
 from .xiaobanshou import VeoXiaobanshou
 from .zyg import VeoZyg
 from .chaowen import VeoChaowen
+from .catking import VeoCatking
 from .holo import VeoHolo
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "VeoZyg",
     "VeoChaowen",
     "VeoHolo",
+    "VeoCatking",
 ]

@@ -11,6 +11,7 @@ class ApiUrls:
     ZYG = "https://otuapi.com"
     CHAOWEN = "https://api.chaowenai.com"
     HOLO = "https://api.dealonhorizon.us"
+    CATKING = "https://api.catking.top"
     HETANG = ""  # 荷塘渠道 Base URL 由用户在设置页面配置，无默认值
 
 
@@ -23,6 +24,7 @@ class ModelProviders:
     ZYG = "zyg"
     CHAOWEN = "chaowen"
     HOLO = "holo"
+    CATKING = "catking"
 
 
 class SettingKeys:
@@ -43,6 +45,8 @@ class SettingKeys:
     CHAOWEN_VEO_BASE_URL = "chaowen_veo_base_url"
     HOLO_VEO_API_KEY = "holo_veo_api_key"
     HOLO_VEO_BASE_URL = "holo_veo_base_url"
+    CATKING_VEO_API_KEY = "catking_veo_api_key"
+    CATKING_VEO_BASE_URL = "catking_veo_base_url"
     HETANG_VEO_BASE_URL = "hetang_veo_base_url"   # 荷塘渠道（VEO + NanoBanana 共用）
     HETANG_VEO_API_KEY = "hetang_veo_api_key"      # 荷塘渠道（VEO + NanoBanana 共用）
     # 别名：NanoBanana 荷塘渠道与 VEO 共用同一地址和密钥
